@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { generateOccurrencesForSchedule, hasConflict, isWithinAvailability } from "@/lib/scheduling";
 import { nextOccurrenceUtc } from "@/lib/utils/timezone";
-import { createCalendarEvent, deleteCalendarEvent } from "@/lib/google/calendar";
+import { createCalendarEvent, deleteCalendarEvent, updateCalendarEvent } from "@/lib/google/calendar";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { OccurrenceStatus } from "@/lib/types/database";
@@ -180,5 +180,88 @@ export async function bookTrialClass(formData: FormData) {
 
   revalidatePath("/trials");
   revalidatePath("/leads");
+  redirect("/trials");
+}
+
+export async function updateTrialClass(occurrenceId: string, formData: FormData) {
+  const supabase = await createClient();
+
+  const teacherId = String(formData.get("teacher_id"));
+  const startAtLocal = String(formData.get("start_at_local"));
+  const timezone = String(formData.get("timezone"));
+  const durationMinutes = Number(formData.get("duration_minutes") || 30);
+
+  const { DateTime } = await import("luxon");
+  const startAt = DateTime.fromISO(startAtLocal, { zone: timezone });
+  const endAt = startAt.plus({ minutes: durationMinutes });
+
+  const conflict = await hasConflict({
+    teacherId,
+    startAt: startAt.toUTC().toISO()!,
+    endAt: endAt.toUTC().toISO()!,
+    excludeOccurrenceId: occurrenceId,
+  });
+  if (conflict) {
+    redirect(`/trials/${occurrenceId}?error=${encodeURIComponent("Teacher already has a class at that time.")}`);
+  }
+
+  const { data: existing } = await supabase
+    .from("class_occurrences")
+    .select("calendar_event_id, lead_id")
+    .eq("id", occurrenceId)
+    .single();
+
+  const { error } = await supabase
+    .from("class_occurrences")
+    .update({
+      teacher_id: teacherId,
+      start_at: startAt.toUTC().toISO()!,
+      end_at: endAt.toUTC().toISO()!,
+    })
+    .eq("id", occurrenceId);
+  if (error) throw new Error(error.message);
+
+  const [{ data: lead }, { data: teacher }] = await Promise.all([
+    existing?.lead_id
+      ? supabase.from("leads").select("full_name, email").eq("id", existing.lead_id).single()
+      : Promise.resolve({ data: null }),
+    supabase.from("teachers").select("profiles(full_name, email)").eq("id", teacherId).single(),
+  ]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const teacherProfile = (teacher as any)?.profiles;
+
+  if (existing?.calendar_event_id) {
+    await updateCalendarEvent(existing.calendar_event_id, {
+      summary: `Trial class: ${lead?.full_name ?? "Prospective student"} with ${teacherProfile?.full_name ?? "Teacher"}`,
+      startAtUtcIso: startAt.toUTC().toISO()!,
+      endAtUtcIso: endAt.toUTC().toISO()!,
+      attendeeEmails: [teacherProfile?.email, lead?.email].filter(Boolean) as string[],
+    }).catch((err) => console.error("Failed to update Google Calendar event", err));
+  }
+
+  revalidatePath("/trials");
+  revalidatePath(`/trials/${occurrenceId}`);
+  redirect("/trials");
+}
+
+export async function cancelTrialClass(occurrenceId: string) {
+  const supabase = await createClient();
+
+  const { data: occurrence } = await supabase
+    .from("class_occurrences")
+    .select("calendar_event_id")
+    .eq("id", occurrenceId)
+    .single();
+  if (occurrence?.calendar_event_id) {
+    await deleteCalendarEvent(occurrence.calendar_event_id).catch(() => {});
+  }
+
+  const { error } = await supabase
+    .from("class_occurrences")
+    .update({ status: "cancelled" })
+    .eq("id", occurrenceId);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/trials");
   redirect("/trials");
 }

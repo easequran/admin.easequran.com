@@ -2,8 +2,9 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button, LinkButton } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/input";
-import { updateLeadStatus, addLeadNote, convertLeadToStudent } from "@/lib/actions/leads";
+import { Input, Label, Textarea } from "@/components/ui/input";
+import { PhoneCountryTimezoneField } from "@/components/leads/phone-country-timezone-field";
+import { updateLead, updateLeadStatus, addLeadNote, convertLeadToStudent } from "@/lib/actions/leads";
 import { notFound } from "next/navigation";
 import type { LeadStatus } from "@/lib/types/database";
 import { DateTime } from "luxon";
@@ -36,6 +37,7 @@ export default async function LeadDetailPage({
 
   const boundAddNote = addLeadNote.bind(null, id);
   const boundConvert = convertLeadToStudent.bind(null, id);
+  const boundUpdate = updateLead.bind(null, id);
 
   return (
     <div className="space-y-6">
@@ -117,19 +119,31 @@ export default async function LeadDetailPage({
           <CardHeader>
             <CardTitle>Details</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <p>
-              <span className="text-slate-500">Country:</span> {lead.country ?? "—"}
-            </p>
-            <p>
-              <span className="text-slate-500">Timezone:</span> {lead.timezone ?? "—"}
-            </p>
-            <p>
-              <span className="text-slate-500">Source:</span> {lead.source ?? "—"}
-            </p>
-            <p>
-              <span className="text-slate-500">Notes:</span> {lead.notes ?? "—"}
-            </p>
+          <CardContent>
+            <form action={boundUpdate} className="space-y-4">
+              <div>
+                <Label htmlFor="full_name">Full name</Label>
+                <Input id="full_name" name="full_name" required defaultValue={lead.full_name} />
+              </div>
+              <div>
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" name="email" type="email" defaultValue={lead.email ?? ""} />
+              </div>
+              <PhoneCountryTimezoneField
+                defaultPhone={lead.phone ?? ""}
+                defaultCountry={lead.country ?? ""}
+                defaultTimezone={lead.timezone ?? "UTC"}
+              />
+              <div>
+                <Label htmlFor="source">Source</Label>
+                <Input id="source" name="source" defaultValue={lead.source ?? ""} />
+              </div>
+              <div>
+                <Label htmlFor="notes">Notes</Label>
+                <Textarea id="notes" name="notes" rows={3} defaultValue={lead.notes ?? ""} />
+              </div>
+              <Button type="submit">Save changes</Button>
+            </form>
           </CardContent>
         </Card>
       </div>

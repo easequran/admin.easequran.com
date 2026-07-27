@@ -27,6 +27,27 @@ export async function createLead(formData: FormData) {
   redirect(`/leads/${data.id}`);
 }
 
+export async function updateLead(leadId: string, formData: FormData) {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("leads")
+    .update({
+      full_name: String(formData.get("full_name")),
+      email: String(formData.get("email") || "") || null,
+      phone: String(formData.get("phone") || "") || null,
+      country: String(formData.get("country") || "") || null,
+      timezone: String(formData.get("timezone") || "UTC"),
+      source: String(formData.get("source") || "") || null,
+      notes: String(formData.get("notes") || "") || null,
+    })
+    .eq("id", leadId);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/leads");
+  revalidatePath(`/leads/${leadId}`);
+}
+
 export async function updateLeadStatus(leadId: string, status: LeadStatus) {
   const supabase = await createClient();
   const {
