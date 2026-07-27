@@ -2,6 +2,7 @@ import { getCurrentProfile } from "@/lib/data/profile";
 import { getCalendarConnection } from "@/lib/google/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button, LinkButton } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 import { redirect } from "next/navigation";
 
 export default async function IntegrationsPage({
@@ -17,7 +18,7 @@ export default async function IntegrationsPage({
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold text-primary-900">Integrations</h1>
+      <PageHeader title="Integrations" description="Connect third-party services to the academy." />
 
       {params.connected && (
         <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">

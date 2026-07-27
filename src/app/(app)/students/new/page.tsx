@@ -2,6 +2,7 @@ import { StudentForm } from "@/components/students/student-form";
 import { WeeklyScheduleFields } from "@/components/students/weekly-schedule-fields";
 import { createStudent } from "@/lib/actions/students";
 import { createClient } from "@/lib/supabase/server";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default async function NewStudentPage() {
   const supabase = await createClient();
@@ -20,7 +21,7 @@ export default async function NewStudentPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold text-primary-900">Add student</h1>
+      <PageHeader title="Add student" backHref="/students" backLabel="Back to Students" />
       <StudentForm action={createStudent}>
         <WeeklyScheduleFields teachers={teacherOptions} />
       </StudentForm>

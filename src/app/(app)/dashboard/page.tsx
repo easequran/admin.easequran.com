@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatInZone } from "@/lib/utils/timezone";
 import { DateTime } from "luxon";
 import Link from "next/link";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default async function DashboardPage() {
   const profile = await getCurrentProfile();
@@ -44,7 +45,7 @@ export default async function DashboardPage() {
 
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-semibold text-primary-900">Academy overview</h1>
+        <PageHeader title="Academy overview" description={`Today is ${DateTime.now().setZone(profile.timezone).toFormat("EEEE, MMMM d")}.`} />
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <StatCard label="Active students" value={studentCount ?? 0} />
@@ -121,7 +122,7 @@ export default async function DashboardPage() {
 
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-semibold text-primary-900">Your upcoming classes</h1>
+        <PageHeader title="Your upcoming classes" />
         <Card>
           <CardContent>
             {!upcoming || upcoming.length === 0 ? (
@@ -164,7 +165,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold text-primary-900">Your upcoming classes</h1>
+      <PageHeader title="Your upcoming classes" />
       <Card>
         <CardContent>
           {!upcoming || upcoming.length === 0 ? (

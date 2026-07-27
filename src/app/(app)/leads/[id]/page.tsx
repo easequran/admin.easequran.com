@@ -7,6 +7,7 @@ import { PhoneCountryTimezoneField } from "@/components/leads/phone-country-time
 import { FollowUpBadge } from "@/components/leads/follow-up-badge";
 import { LogContactForm } from "@/components/leads/log-contact-form";
 import { updateLead, updateLeadStatus, logLeadContact, convertLeadToStudent } from "@/lib/actions/leads";
+import { PageHeader } from "@/components/ui/page-header";
 import { notFound } from "next/navigation";
 import type { LeadStatus } from "@/lib/types/database";
 import { DateTime } from "luxon";
@@ -53,24 +54,26 @@ export default async function LeadDetailPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold text-primary-900">{lead.full_name}</h1>
-          <p className="text-sm text-slate-500">{lead.email ?? "No email"} · {lead.phone ?? "No phone"}</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <LinkButton href={`/trials/new?lead=${lead.id}`} variant="accent">
-            Book trial
-          </LinkButton>
-          {lead.status !== "converted" && (
-            <form action={boundConvert}>
-              <Button type="submit" variant="primary">
-                Convert to student
-              </Button>
-            </form>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        title={lead.full_name}
+        description={`${lead.email ?? "No email"} · ${lead.phone ?? "No phone"}`}
+        backHref="/leads"
+        backLabel="Back to Leads"
+        actions={
+          <>
+            <LinkButton href={`/trials/new?lead=${lead.id}`} variant="accent">
+              Book trial
+            </LinkButton>
+            {lead.status !== "converted" && (
+              <form action={boundConvert}>
+                <Button type="submit" variant="primary">
+                  Convert to student
+                </Button>
+              </form>
+            )}
+          </>
+        }
+      />
 
       <div className="flex flex-wrap items-center gap-3">
         <FollowUpBadge nextFollowUpAt={lead.next_follow_up_at} />

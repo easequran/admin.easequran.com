@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
 import { createFeePlan } from "@/lib/actions/invoices";
+import { PageHeader } from "@/components/ui/page-header";
 import { notFound } from "next/navigation";
 
 export default async function StudentDetailPage({
@@ -44,14 +45,18 @@ export default async function StudentDetailPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold text-primary-900">{student.full_name}</h1>
-        <form action={boundDelete}>
-          <Button type="submit" variant="danger" size="sm">
-            Delete student
-          </Button>
-        </form>
-      </div>
+      <PageHeader
+        title={student.full_name}
+        backHref="/students"
+        backLabel="Back to Students"
+        actions={
+          <form action={boundDelete}>
+            <Button type="submit" variant="danger" size="sm">
+              Delete student
+            </Button>
+          </form>
+        }
+      />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">

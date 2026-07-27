@@ -1,12 +1,13 @@
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { PhoneCountryTimezoneField } from "@/components/leads/phone-country-timezone-field";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 import { createLead } from "@/lib/actions/leads";
 
 export default function NewLeadPage() {
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold text-primary-900">Add lead</h1>
+      <PageHeader title="Add lead" backHref="/leads" backLabel="Back to Leads" />
       <form action={createLead} className="max-w-xl space-y-4">
         <div>
           <Label htmlFor="full_name">Full name</Label>

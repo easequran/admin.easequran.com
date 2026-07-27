@@ -3,6 +3,7 @@ import { Input, Label, Select } from "@/components/ui/input";
 import { TimezoneSelect } from "@/components/ui/timezone-select";
 import { Button } from "@/components/ui/button";
 import { bookTrialClass } from "@/lib/actions/schedule";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default async function NewTrialPage({
   searchParams,
@@ -19,7 +20,7 @@ export default async function NewTrialPage({
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold text-primary-900">Book a trial class</h1>
+      <PageHeader title="Book a trial class" backHref="/trials" backLabel="Back to Trial classes" />
       <form action={bookTrialClass} className="max-w-xl space-y-4">
         <div>
           <Label htmlFor="lead_id">Lead</Label>

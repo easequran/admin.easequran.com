@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/data/profile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AttendanceRow } from "@/components/attendance/attendance-row";
+import { PageHeader } from "@/components/ui/page-header";
 import { DateTime } from "luxon";
 
 export default async function AttendancePage() {
@@ -29,7 +30,7 @@ export default async function AttendancePage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold text-primary-900">Attendance</h1>
+      <PageHeader title="Attendance" description="Mark and review attendance for recent classes." />
       <Card>
         <CardHeader>
           <CardTitle>Recent classes</CardTitle>

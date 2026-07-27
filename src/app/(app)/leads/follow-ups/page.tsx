@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FollowUpBadge } from "@/components/leads/follow-up-badge";
+import { PageHeader } from "@/components/ui/page-header";
 import Link from "next/link";
 import { DateTime } from "luxon";
 
@@ -30,7 +31,12 @@ export default async function FollowUpsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold text-primary-900">Follow-ups</h1>
+      <PageHeader
+        title="Follow-ups"
+        description="Leads sorted by who needs a call next."
+        backHref="/leads"
+        backLabel="Back to Leads"
+      />
 
       {sections.map((section) => (
         <Card key={section.title}>

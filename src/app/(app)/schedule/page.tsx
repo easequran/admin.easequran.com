@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { NewScheduleForm } from "@/components/schedule/new-schedule-form";
 import { OccurrenceList } from "@/components/schedule/occurrence-list";
+import { PageHeader } from "@/components/ui/page-header";
 import { DateTime } from "luxon";
 
 export default async function SchedulePage({
@@ -67,7 +68,7 @@ export default async function SchedulePage({
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold text-primary-900">Schedule</h1>
+      <PageHeader title="Schedule" description="Upcoming classes, shown in your own timezone." />
 
       {params.error && (
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{params.error}</p>

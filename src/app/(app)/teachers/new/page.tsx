@@ -1,12 +1,13 @@
 import { Input, Label } from "@/components/ui/input";
 import { TimezoneSelect } from "@/components/ui/timezone-select";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 import { createTeacher } from "@/lib/actions/teachers";
 
 export default function NewTeacherPage() {
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold text-primary-900">Add teacher</h1>
+      <PageHeader title="Add teacher" backHref="/teachers" backLabel="Back to Teachers" />
       <form action={createTeacher} className="max-w-xl space-y-4">
         <div>
           <Label htmlFor="full_name">Full name</Label>

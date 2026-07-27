@@ -4,6 +4,7 @@ import { Input, Label, Textarea } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { AvailabilityEditor } from "@/components/teachers/availability-editor";
 import { updateTeacher, addAvailability, removeAvailability } from "@/lib/actions/teachers";
+import { PageHeader } from "@/components/ui/page-header";
 import { notFound } from "next/navigation";
 
 export default async function TeacherDetailPage({
@@ -38,7 +39,7 @@ export default async function TeacherDetailPage({
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold text-primary-900">{profile?.full_name}</h1>
+      <PageHeader title={profile?.full_name ?? "Teacher"} backHref="/teachers" backLabel="Back to Teachers" />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>

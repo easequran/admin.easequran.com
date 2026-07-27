@@ -3,6 +3,7 @@ import { getCurrentProfile } from "@/lib/data/profile";
 import { LinkButton } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { OccurrenceList } from "@/components/schedule/occurrence-list";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default async function TrialsPage({
   searchParams,
@@ -32,10 +33,11 @@ export default async function TrialsPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold text-primary-900">Trial classes</h1>
-        <LinkButton href="/trials/new">Book trial class</LinkButton>
-      </div>
+      <PageHeader
+        title="Trial classes"
+        description="Upcoming and past trial bookings."
+        actions={<LinkButton href="/trials/new">Book trial class</LinkButton>}
+      />
 
       {params.error && (
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{params.error}</p>

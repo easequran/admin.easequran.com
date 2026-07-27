@@ -5,6 +5,7 @@ import { Input, Label, Select } from "@/components/ui/input";
 import { TimezoneSelect } from "@/components/ui/timezone-select";
 import { Button } from "@/components/ui/button";
 import { updateTrialClass, cancelTrialClass } from "@/lib/actions/schedule";
+import { PageHeader } from "@/components/ui/page-header";
 import { notFound } from "next/navigation";
 import { DateTime } from "luxon";
 
@@ -48,14 +49,18 @@ export default async function EditTrialPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold text-primary-900">Edit trial: {lead?.full_name ?? "Trial"}</h1>
-        <form action={boundCancel}>
-          <Button type="submit" variant="danger" size="sm">
-            Cancel trial
-          </Button>
-        </form>
-      </div>
+      <PageHeader
+        title={`Edit trial: ${lead?.full_name ?? "Trial"}`}
+        backHref="/trials"
+        backLabel="Back to Trial classes"
+        actions={
+          <form action={boundCancel}>
+            <Button type="submit" variant="danger" size="sm">
+              Cancel trial
+            </Button>
+          </form>
+        }
+      />
 
       {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
