@@ -60,7 +60,9 @@ export function Sidebar({
       >
         <div className="flex items-center justify-between gap-3 px-5 py-5">
           <div className="flex items-center gap-3">
-            <Image src="/logo.png" alt="Ease Quran" width={36} height={36} unoptimized />
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white p-1.5 shadow-sm">
+              <Image src="/logo.png" alt="Ease Quran" width={32} height={32} unoptimized />
+            </div>
             <span className="text-lg font-semibold">Ease Quran</span>
           </div>
           <button
