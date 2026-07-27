@@ -46,8 +46,34 @@ export async function createTeacher(formData: FormData) {
   redirect(`/teachers/${teacher.id}`);
 }
 
-export async function updateTeacher(teacherId: string, formData: FormData) {
+export async function updateTeacher(teacherId: string, profileId: string, formData: FormData) {
   const supabase = await createClient();
+
+  const fullName = String(formData.get("full_name") || "").trim();
+  const timezone = String(formData.get("timezone") || "UTC");
+  const email = String(formData.get("email") || "").trim();
+
+  const { error: profileError } = await supabase
+    .from("profiles")
+    .update({ full_name: fullName, timezone })
+    .eq("id", profileId);
+  if (profileError) throw new Error(profileError.message);
+
+  // Changing the login email requires the admin API (auth.users), not just
+  // the profiles table, so only touch it if it actually changed.
+  const { data: currentProfile } = await supabase
+    .from("profiles")
+    .select("email")
+    .eq("id", profileId)
+    .single();
+
+  if (email && email !== currentProfile?.email) {
+    const admin = createAdminClient();
+    const { error: authError } = await admin.auth.admin.updateUserById(profileId, { email });
+    if (authError) throw new Error(authError.message);
+
+    await admin.from("profiles").update({ email }).eq("id", profileId);
+  }
 
   const { error } = await supabase
     .from("teachers")
@@ -61,18 +87,41 @@ export async function updateTeacher(teacherId: string, formData: FormData) {
   if (error) throw new Error(error.message);
 
   revalidatePath(`/teachers/${teacherId}`);
+  revalidatePath("/teachers");
+}
+
+export async function deleteTeacher(teacherId: string, profileId: string) {
+  const admin = createAdminClient();
+
+  // Deleting the auth user cascades: profiles -> teachers -> availability,
+  // recurring_schedules, class_occurrences. This is a full, irreversible
+  // removal of the teacher and everything scheduled with them.
+  const { error } = await admin.auth.admin.deleteUser(profileId);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/teachers");
+  redirect("/teachers");
 }
 
 export async function addAvailability(teacherId: string, formData: FormData) {
   const supabase = await createClient();
 
-  const { error } = await supabase.from("teacher_availability").insert({
-    teacher_id: teacherId,
-    day_of_week: Number(formData.get("day_of_week")),
-    local_start_time: String(formData.get("local_start_time")),
-    local_end_time: String(formData.get("local_end_time")),
-    timezone: String(formData.get("timezone")),
-  });
+  const days = formData.getAll("day_of_week").map((d) => Number(d));
+  const localStartTime = String(formData.get("local_start_time"));
+  const localEndTime = String(formData.get("local_end_time"));
+  const timezone = String(formData.get("timezone"));
+
+  if (days.length === 0) return;
+
+  const { error } = await supabase.from("teacher_availability").insert(
+    days.map((day_of_week) => ({
+      teacher_id: teacherId,
+      day_of_week,
+      local_start_time: localStartTime,
+      local_end_time: localEndTime,
+      timezone,
+    })),
+  );
   if (error) throw new Error(error.message);
 
   revalidatePath(`/teachers/${teacherId}`);

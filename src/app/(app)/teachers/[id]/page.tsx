@@ -1,9 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, Label, Textarea } from "@/components/ui/input";
+import { TimezoneSelect } from "@/components/ui/timezone-select";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { AvailabilityEditor } from "@/components/teachers/availability-editor";
-import { updateTeacher, addAvailability, removeAvailability } from "@/lib/actions/teachers";
+import { updateTeacher, deleteTeacher, addAvailability, removeAvailability } from "@/lib/actions/teachers";
 import { PageHeader } from "@/components/ui/page-header";
 import { notFound } from "next/navigation";
 
@@ -21,18 +23,37 @@ export default async function TeacherDetailPage({
   ]);
   if (!teacher) notFound();
 
-  const boundUpdate = updateTeacher.bind(null, id);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const profile = (teacher as any).profiles;
+
+  const boundUpdate = updateTeacher.bind(null, id, teacher.profile_id);
+  const boundDelete = deleteTeacher.bind(null, id, teacher.profile_id);
   const boundAdd = addAvailability.bind(null, id);
   const boundRemove = async (formData: FormData) => {
     "use server";
     await removeAvailability(id, String(formData.get("availability_id")));
   };
 
-  const profile = teacher.profiles;
-
   return (
     <div className="space-y-6">
-      <PageHeader title={profile?.full_name ?? "Teacher"} backHref="/teachers" backLabel="Back to Teachers" />
+      <PageHeader
+        title={profile?.full_name ?? "Teacher"}
+        description={profile?.email ?? undefined}
+        backHref="/teachers"
+        backLabel="Back to Teachers"
+        actions={
+          <>
+            <Badge tone={teacher.active ? "success" : "neutral"}>
+              {teacher.active ? "Active" : "Inactive"}
+            </Badge>
+            <form action={boundDelete}>
+              <Button type="submit" variant="danger" size="sm">
+                Delete teacher
+              </Button>
+            </form>
+          </>
+        }
+      />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
@@ -42,12 +63,19 @@ export default async function TeacherDetailPage({
           <CardContent>
             <form action={boundUpdate} className="space-y-4">
               <div>
-                <Label>Email</Label>
-                <Input value={profile?.email ?? ""} disabled />
+                <Label htmlFor="full_name">Full name</Label>
+                <Input id="full_name" name="full_name" required defaultValue={profile?.full_name ?? ""} />
               </div>
               <div>
-                <Label>Timezone</Label>
-                <Input value={profile?.timezone ?? ""} disabled />
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" name="email" type="email" required defaultValue={profile?.email ?? ""} />
+                <p className="mt-1 text-xs text-slate-400">
+                  Changing this updates their login email too.
+                </p>
+              </div>
+              <div>
+                <Label htmlFor="timezone">Timezone</Label>
+                <TimezoneSelect name="timezone" defaultValue={profile?.timezone ?? "UTC"} required />
               </div>
               <div>
                 <Label htmlFor="bio">Bio</Label>
@@ -81,7 +109,9 @@ export default async function TeacherDetailPage({
                   Active
                 </Label>
               </div>
-              <Button type="submit">Save changes</Button>
+              <Button type="submit" className="w-full">
+                Save changes
+              </Button>
             </form>
           </CardContent>
         </Card>
