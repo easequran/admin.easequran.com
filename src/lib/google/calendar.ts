@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 const SCOPES = [
   "https://www.googleapis.com/auth/calendar",
   "https://www.googleapis.com/auth/calendar.events",
+  "https://www.googleapis.com/auth/userinfo.email",
 ];
 
 function oauthClient() {
@@ -32,15 +33,23 @@ export async function exchangeCodeForConnection(code: string, connectedBy: strin
   }
 
   client.setCredentials(tokens);
-  const oauth2 = google.oauth2({ auth: client, version: "v2" });
-  const { data: userInfo } = await oauth2.userinfo.get();
+
+  let connectedEmail: string | null = null;
+  try {
+    const oauth2 = google.oauth2({ auth: client, version: "v2" });
+    const { data: userInfo } = await oauth2.userinfo.get();
+    connectedEmail = userInfo.email ?? null;
+  } catch (err) {
+    // Non-fatal: the connection still works without a display email.
+    console.error("Failed to fetch Google account email", err);
+  }
 
   const admin = createAdminClient();
   // Only one connection at a time for the academy calendar.
   await admin.from("calendar_connections").delete().neq("id", "00000000-0000-0000-0000-000000000000");
   const { error } = await admin.from("calendar_connections").insert({
     provider: "google",
-    connected_email: userInfo.email ?? null,
+    connected_email: connectedEmail,
     access_token: tokens.access_token,
     refresh_token: tokens.refresh_token,
     token_expiry: new Date(tokens.expiry_date).toISOString(),
