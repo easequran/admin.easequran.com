@@ -1,0 +1,101 @@
+import { getCurrentProfile } from "@/lib/data/profile";
+import { createClient } from "@/lib/supabase/server";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { NewScheduleForm } from "@/components/schedule/new-schedule-form";
+import { OccurrenceList } from "@/components/schedule/occurrence-list";
+import { DateTime } from "luxon";
+
+export default async function SchedulePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const params = await searchParams;
+  const profile = await getCurrentProfile();
+  const supabase = await createClient();
+
+  let occurrenceQuery = supabase
+    .from("class_occurrences")
+    .select("id, start_at, status, is_trial, students(full_name), teachers(profiles(full_name))")
+    .gte("start_at", DateTime.utc().startOf("day").toISO()!)
+    .order("start_at")
+    .limit(50);
+
+  if (profile.role === "teacher") {
+    const { data: teacher } = await supabase
+      .from("teachers")
+      .select("id")
+      .eq("profile_id", profile.id)
+      .single();
+    occurrenceQuery = occurrenceQuery.eq("teacher_id", teacher?.id ?? "");
+  } else if (profile.role === "student") {
+    const { data: student } = await supabase
+      .from("students")
+      .select("id")
+      .eq("profile_id", profile.id)
+      .single();
+    occurrenceQuery = occurrenceQuery.eq("student_id", student?.id ?? "");
+  }
+
+  const { data: occurrences } = await occurrenceQuery;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mapped = ((occurrences ?? []) as any[]).map((o) => ({
+    id: o.id,
+    start_at: o.start_at,
+    status: o.status,
+    is_trial: o.is_trial,
+    studentName: o.students?.full_name,
+    teacherName: o.teachers?.profiles?.full_name,
+  }));
+
+  let studentsForForm: { id: string; full_name: string; timezone: string }[] = [];
+  let teachersForForm: { id: string; name: string }[] = [];
+
+  if (profile.role === "admin") {
+    const [{ data: students }, { data: teachers }] = await Promise.all([
+      supabase.from("students").select("id, full_name, timezone").eq("enrollment_status", "active"),
+      supabase.from("teachers").select("id, profiles(full_name)").eq("active", true),
+    ]);
+    studentsForForm = students ?? [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    teachersForForm = ((teachers ?? []) as any[]).map((t) => ({
+      id: t.id,
+      name: t.profiles?.full_name ?? "Unnamed",
+    }));
+  }
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-semibold text-primary-900">Schedule</h1>
+
+      {params.error && (
+        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{params.error}</p>
+      )}
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Upcoming classes ({profile.timezone})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <OccurrenceList occurrences={mapped} viewerTimezone={profile.timezone} />
+            </CardContent>
+          </Card>
+        </div>
+
+        {profile.role === "admin" && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Schedule a weekly class</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <NewScheduleForm students={studentsForForm} teachers={teachersForForm} />
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </div>
+  );
+}
