@@ -183,9 +183,18 @@ const NANP_AREA_CODE_TIMEZONES: Record<string, string> = {
 export interface PhoneTimezoneGuess {
   timezone: string;
   countryCode: string; // ISO country, e.g. "PK", "US"
+  countryName: string; // e.g. "Pakistan"
   countryCallingCode: string; // e.g. "1", "92"
   areaCode?: string; // NANP area code, when applicable
   label: string; // human readable, e.g. "US +1 (312)" or "Pakistan +92"
+}
+
+function countryNameFor(countryCode: string): string {
+  try {
+    return new Intl.DisplayNames(["en"], { type: "region" }).of(countryCode) ?? countryCode;
+  } catch {
+    return countryCode;
+  }
 }
 
 export function guessTimezoneFromPhone(rawPhone: string): PhoneTimezoneGuess | null {
@@ -201,23 +210,26 @@ export function guessTimezoneFromPhone(rawPhone: string): PhoneTimezoneGuess | n
     const nationalNumber = parsed.nationalNumber; // e.g. "3125551234"
     const areaCode = nationalNumber.slice(0, 3);
     const zone = NANP_AREA_CODE_TIMEZONES[areaCode];
+    const resolvedCountry = countryCode || "US";
     if (zone) {
       return {
         timezone: zone,
-        countryCode: countryCode || "US",
+        countryCode: resolvedCountry,
+        countryName: countryNameFor(resolvedCountry),
         countryCallingCode,
         areaCode,
-        label: `${countryCode || "US"} +1 (${areaCode})`,
+        label: `${resolvedCountry} +1 (${areaCode})`,
       };
     }
     // Unknown area code but still NANP — fall back to Eastern as the most
     // common default, clearly marked as a rough guess via the label.
     return {
       timezone: "America/New_York",
-      countryCode: countryCode || "US",
+      countryCode: resolvedCountry,
+      countryName: countryNameFor(resolvedCountry),
       countryCallingCode,
       areaCode,
-      label: `${countryCode || "US"} +1 (${areaCode}) — approximate`,
+      label: `${resolvedCountry} +1 (${areaCode}) — approximate`,
     };
   }
 
@@ -227,7 +239,8 @@ export function guessTimezoneFromPhone(rawPhone: string): PhoneTimezoneGuess | n
   return {
     timezone: zone,
     countryCode,
+    countryName: countryNameFor(countryCode),
     countryCallingCode,
-    label: `${countryCode} +${countryCallingCode}`,
+    label: `${countryNameFor(countryCode)} +${countryCallingCode}`,
   };
 }
