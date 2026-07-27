@@ -12,6 +12,11 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Supabase project lives in ap-southeast-1 (Singapore); running the
+// serverless functions from the same region avoids paying a ~300ms
+// cross-region round-trip on every Supabase call.
+export const preferredRegion = "sin1";
+
 export const metadata: Metadata = {
   title: "Ease Quran",
   description: "Ease Quran Academy management system",
