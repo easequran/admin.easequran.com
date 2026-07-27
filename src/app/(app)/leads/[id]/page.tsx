@@ -6,7 +6,7 @@ import { Input, Label, Textarea } from "@/components/ui/input";
 import { PhoneCountryTimezoneField } from "@/components/leads/phone-country-timezone-field";
 import { FollowUpBadge } from "@/components/leads/follow-up-badge";
 import { LogContactForm } from "@/components/leads/log-contact-form";
-import { updateLead, updateLeadStatus, logLeadContact, convertLeadToStudent } from "@/lib/actions/leads";
+import { updateLead, updateLeadStatus, logLeadContact, convertLeadToStudent, deleteLead } from "@/lib/actions/leads";
 import { PageHeader } from "@/components/ui/page-header";
 import { notFound } from "next/navigation";
 import type { LeadStatus } from "@/lib/types/database";
@@ -48,6 +48,7 @@ export default async function LeadDetailPage({
   const boundLogContact = logLeadContact.bind(null, id);
   const boundConvert = convertLeadToStudent.bind(null, id);
   const boundUpdate = updateLead.bind(null, id);
+  const boundDelete = deleteLead.bind(null, id);
 
   return (
     <div className="space-y-6">
@@ -68,6 +69,11 @@ export default async function LeadDetailPage({
                 </Button>
               </form>
             )}
+            <form action={boundDelete}>
+              <Button type="submit" variant="danger">
+                Delete lead
+              </Button>
+            </form>
           </>
         }
       />

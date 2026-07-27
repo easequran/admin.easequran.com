@@ -1,10 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { LinkButton } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/page-header";
 import { LeadsBoard } from "@/components/leads/leads-board";
+import { FollowUpsButton } from "@/components/leads/follow-ups-button";
 import type { Lead } from "@/lib/types/database";
-import Link from "next/link";
 import { DateTime } from "luxon";
 
 export default async function LeadsPage() {
@@ -23,11 +22,7 @@ export default async function LeadsPage() {
         description="Your prospective-student pipeline, from first contact to enrollment."
         actions={
           <>
-            <Link href="/leads/follow-ups" prefetch={false}>
-              <Badge tone={overdueCount > 0 ? "danger" : "neutral"} className="cursor-pointer px-3 py-1.5">
-                {overdueCount > 0 ? `${overdueCount} overdue follow-up${overdueCount > 1 ? "s" : ""}` : "Follow-ups"}
-              </Badge>
-            </Link>
+            <FollowUpsButton overdueCount={overdueCount} />
             <LinkButton href="/leads/new">Add lead</LinkButton>
           </>
         }

@@ -48,6 +48,15 @@ export async function updateLead(leadId: string, formData: FormData) {
   revalidatePath(`/leads/${leadId}`);
 }
 
+export async function deleteLead(leadId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("leads").delete().eq("id", leadId);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/leads");
+  redirect("/leads");
+}
+
 export async function updateLeadStatus(leadId: string, status: LeadStatus) {
   const supabase = await createClient();
   const {
