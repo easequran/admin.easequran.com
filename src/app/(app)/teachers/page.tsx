@@ -33,7 +33,7 @@ export default async function TeachersPage() {
             {teachers?.map((t) => (
               <tr key={t.id} className="hover:bg-slate-50">
                 <td className="px-5 py-3">
-                  <Link href={`/teachers/${t.id}`} className="font-medium text-primary-900 hover:underline">
+                  <Link href={`/teachers/${t.id}`} prefetch={false} className="font-medium text-primary-900 hover:underline">
                     {t.profiles?.full_name}
                   </Link>
                 </td>

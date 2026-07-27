@@ -39,6 +39,7 @@ export default async function LeadsPage() {
                   <Link
                     key={l.id}
                     href={`/leads/${l.id}`}
+                    prefetch={false}
                     className="block rounded-lg border border-primary-50 bg-white p-2 text-sm shadow-sm hover:border-primary-200"
                   >
                     <p className="font-medium text-primary-900">{l.full_name}</p>

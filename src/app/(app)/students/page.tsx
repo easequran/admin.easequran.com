@@ -41,7 +41,7 @@ export default async function StudentsPage() {
             {(students as Student[] | null)?.map((s) => (
               <tr key={s.id} className="hover:bg-slate-50">
                 <td className="px-5 py-3">
-                  <Link href={`/students/${s.id}`} className="font-medium text-primary-900 hover:underline">
+                  <Link href={`/students/${s.id}`} prefetch={false} className="font-medium text-primary-900 hover:underline">
                     {s.full_name}
                   </Link>
                 </td>
