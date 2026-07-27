@@ -39,14 +39,11 @@ export default async function LeadDetailPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const { data: lead } = await supabase.from("leads").select("*").eq("id", id).single();
+  const [{ data: lead }, { data: activities }] = await Promise.all([
+    supabase.from("leads").select("*").eq("id", id).single(),
+    supabase.from("lead_activities").select("*, profiles(full_name)").eq("lead_id", id).order("created_at", { ascending: false }),
+  ]);
   if (!lead) notFound();
-
-  const { data: activities } = await supabase
-    .from("lead_activities")
-    .select("*, profiles(full_name)")
-    .eq("lead_id", id)
-    .order("created_at", { ascending: false });
 
   const boundLogContact = logLeadContact.bind(null, id);
   const boundConvert = convertLeadToStudent.bind(null, id);

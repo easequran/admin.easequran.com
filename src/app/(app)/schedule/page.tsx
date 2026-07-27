@@ -17,28 +17,34 @@ export default async function SchedulePage({
 
   let occurrenceQuery = supabase
     .from("class_occurrences")
-    .select("id, start_at, status, is_trial, students(full_name), teachers(profiles(full_name))")
+    .select(
+      profile.role === "teacher"
+        ? "id, start_at, status, is_trial, students(full_name), teachers!inner(profile_id, profiles(full_name))"
+        : profile.role === "student"
+          ? "id, start_at, status, is_trial, students!inner(full_name, profile_id), teachers(profiles(full_name))"
+          : "id, start_at, status, is_trial, students(full_name), teachers(profiles(full_name))",
+    )
     .gte("start_at", DateTime.utc().startOf("day").toISO()!)
     .order("start_at")
     .limit(50);
 
   if (profile.role === "teacher") {
-    const { data: teacher } = await supabase
-      .from("teachers")
-      .select("id")
-      .eq("profile_id", profile.id)
-      .single();
-    occurrenceQuery = occurrenceQuery.eq("teacher_id", teacher?.id ?? "");
+    occurrenceQuery = occurrenceQuery.eq("teachers.profile_id", profile.id);
   } else if (profile.role === "student") {
-    const { data: student } = await supabase
-      .from("students")
-      .select("id")
-      .eq("profile_id", profile.id)
-      .single();
-    occurrenceQuery = occurrenceQuery.eq("student_id", student?.id ?? "");
+    occurrenceQuery = occurrenceQuery.eq("students.profile_id", profile.id);
   }
 
-  const { data: occurrences } = await occurrenceQuery;
+  const isAdmin = profile.role === "admin";
+
+  const [{ data: occurrences }, adminLists] = await Promise.all([
+    occurrenceQuery,
+    isAdmin
+      ? Promise.all([
+          supabase.from("students").select("id, full_name, timezone").eq("enrollment_status", "active"),
+          supabase.from("teachers").select("id, profiles(full_name)").eq("active", true),
+        ])
+      : Promise.resolve(null),
+  ]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mapped = ((occurrences ?? []) as any[]).map((o) => ({
@@ -53,11 +59,8 @@ export default async function SchedulePage({
   let studentsForForm: { id: string; full_name: string; timezone: string }[] = [];
   let teachersForForm: { id: string; name: string }[] = [];
 
-  if (profile.role === "admin") {
-    const [{ data: students }, { data: teachers }] = await Promise.all([
-      supabase.from("students").select("id, full_name, timezone").eq("enrollment_status", "active"),
-      supabase.from("teachers").select("id, profiles(full_name)").eq("active", true),
-    ]);
+  if (adminLists) {
+    const [{ data: students }, { data: teachers }] = adminLists;
     studentsForForm = students ?? [];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     teachersForForm = ((teachers ?? []) as any[]).map((t) => ({

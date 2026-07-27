@@ -19,17 +19,12 @@ export default async function InvoicesPage() {
 
   let query = supabase
     .from("invoices")
-    .select("*, students(full_name)")
+    .select(profile.role === "student" ? "*, students!inner(full_name, profile_id)" : "*, students(full_name)")
     .order("due_date", { ascending: false })
     .limit(50);
 
   if (profile.role === "student") {
-    const { data: student } = await supabase
-      .from("students")
-      .select("id")
-      .eq("profile_id", profile.id)
-      .single();
-    query = query.eq("student_id", student?.id ?? "");
+    query = query.eq("students.profile_id", profile.id);
   }
 
   const { data: invoices } = await query;

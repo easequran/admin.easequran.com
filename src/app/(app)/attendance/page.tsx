@@ -11,19 +11,18 @@ export default async function AttendancePage() {
 
   let query = supabase
     .from("class_occurrences")
-    .select("id, start_at, students(full_name), attendance(status)")
+    .select(
+      profile.role === "teacher"
+        ? "id, start_at, students(full_name), attendance(status), teachers!inner(profile_id)"
+        : "id, start_at, students(full_name), attendance(status)",
+    )
     .not("student_id", "is", null)
     .lte("start_at", DateTime.utc().toISO()!)
     .order("start_at", { ascending: false })
     .limit(30);
 
   if (profile.role === "teacher") {
-    const { data: teacher } = await supabase
-      .from("teachers")
-      .select("id")
-      .eq("profile_id", profile.id)
-      .single();
-    query = query.eq("teacher_id", teacher?.id ?? "");
+    query = query.eq("teachers.profile_id", profile.id);
   }
 
   const { data: occurrences } = await query;

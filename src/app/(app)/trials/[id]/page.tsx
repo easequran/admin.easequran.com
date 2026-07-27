@@ -21,18 +21,11 @@ export default async function EditTrialPage({
   const profile = await getCurrentProfile();
   const supabase = await createClient();
 
-  const { data: occurrence } = await supabase
-    .from("class_occurrences")
-    .select("*, leads(full_name, timezone)")
-    .eq("id", id)
-    .eq("is_trial", true)
-    .single();
+  const [{ data: occurrence }, { data: teachers }] = await Promise.all([
+    supabase.from("class_occurrences").select("*, leads(full_name, timezone)").eq("id", id).eq("is_trial", true).single(),
+    supabase.from("teachers").select("id, profiles(full_name)").eq("active", true),
+  ]);
   if (!occurrence) notFound();
-
-  const { data: teachers } = await supabase
-    .from("teachers")
-    .select("id, profiles(full_name)")
-    .eq("active", true);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const lead = (occurrence as any).leads;

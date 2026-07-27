@@ -7,8 +7,9 @@ import type { AttendanceStatus } from "@/lib/types/database";
 export async function markAttendance(occurrenceId: string, formData: FormData) {
   const supabase = await createClient();
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
+  const user = session?.user;
 
   const status = formData.get("status") as AttendanceStatus;
   const notes = String(formData.get("notes") || "") || null;

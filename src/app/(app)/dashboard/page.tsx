@@ -104,21 +104,13 @@ export default async function DashboardPage() {
   }
 
   if (profile.role === "teacher") {
-    const { data: teacher } = await supabase
-      .from("teachers")
-      .select("id")
-      .eq("profile_id", profile.id)
-      .single();
-
-    const { data: upcoming } = teacher
-      ? await supabase
-          .from("class_occurrences")
-          .select("id, start_at, is_trial, students(full_name)")
-          .eq("teacher_id", teacher.id)
-          .gte("start_at", DateTime.utc().toISO()!)
-          .order("start_at")
-          .limit(10)
-      : { data: [] };
+    const { data: upcoming } = await supabase
+      .from("class_occurrences")
+      .select("id, start_at, is_trial, students(full_name), teachers!inner(profile_id)")
+      .eq("teachers.profile_id", profile.id)
+      .gte("start_at", DateTime.utc().toISO()!)
+      .order("start_at")
+      .limit(10);
 
     return (
       <div className="space-y-6">
@@ -147,21 +139,13 @@ export default async function DashboardPage() {
   }
 
   // student
-  const { data: student } = await supabase
-    .from("students")
-    .select("id")
-    .eq("profile_id", profile.id)
-    .single();
-
-  const { data: upcoming } = student
-    ? await supabase
-        .from("class_occurrences")
-        .select("id, start_at, teachers(profiles(full_name))")
-        .eq("student_id", student.id)
-        .gte("start_at", DateTime.utc().toISO()!)
-        .order("start_at")
-        .limit(10)
-    : { data: [] };
+  const { data: upcoming } = await supabase
+    .from("class_occurrences")
+    .select("id, start_at, teachers(profiles(full_name)), students!inner(profile_id)")
+    .eq("students.profile_id", profile.id)
+    .gte("start_at", DateTime.utc().toISO()!)
+    .order("start_at")
+    .limit(10);
 
   return (
     <div className="space-y-6">

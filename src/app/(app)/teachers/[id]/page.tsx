@@ -15,18 +15,11 @@ export default async function TeacherDetailPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const { data: teacher } = await supabase
-    .from("teachers")
-    .select("*, profiles(full_name, email, timezone)")
-    .eq("id", id)
-    .single();
+  const [{ data: teacher }, { data: availability }] = await Promise.all([
+    supabase.from("teachers").select("*, profiles(full_name, email, timezone)").eq("id", id).single(),
+    supabase.from("teacher_availability").select("*").eq("teacher_id", id).order("day_of_week"),
+  ]);
   if (!teacher) notFound();
-
-  const { data: availability } = await supabase
-    .from("teacher_availability")
-    .select("*")
-    .eq("teacher_id", id)
-    .order("day_of_week");
 
   const boundUpdate = updateTeacher.bind(null, id);
   const boundAdd = addAvailability.bind(null, id);

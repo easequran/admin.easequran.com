@@ -16,28 +16,13 @@ export default async function StudentDetailPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const { data: student } = await supabase.from("students").select("*").eq("id", id).single();
+  const [{ data: student }, { data: schedules }, { data: invoices }, { data: feePlan }] = await Promise.all([
+    supabase.from("students").select("*").eq("id", id).single(),
+    supabase.from("recurring_schedules").select("*, teachers(profiles(full_name))").eq("student_id", id).eq("active", true),
+    supabase.from("invoices").select("*").eq("student_id", id).order("due_date", { ascending: false }).limit(5),
+    supabase.from("fee_plans").select("*").eq("student_id", id).eq("active", true).maybeSingle(),
+  ]);
   if (!student) notFound();
-
-  const { data: schedules } = await supabase
-    .from("recurring_schedules")
-    .select("*, teachers(profiles(full_name))")
-    .eq("student_id", id)
-    .eq("active", true);
-
-  const { data: invoices } = await supabase
-    .from("invoices")
-    .select("*")
-    .eq("student_id", id)
-    .order("due_date", { ascending: false })
-    .limit(5);
-
-  const { data: feePlan } = await supabase
-    .from("fee_plans")
-    .select("*")
-    .eq("student_id", id)
-    .eq("active", true)
-    .maybeSingle();
 
   const boundUpdate = updateStudent.bind(null, id);
   const boundDelete = deleteStudent.bind(null, id);

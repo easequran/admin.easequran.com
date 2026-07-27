@@ -51,8 +51,9 @@ export async function updateLead(leadId: string, formData: FormData) {
 export async function updateLeadStatus(leadId: string, status: LeadStatus) {
   const supabase = await createClient();
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
+  const user = session?.user;
 
   const { error } = await supabase.from("leads").update({ status }).eq("id", leadId);
   if (error) throw new Error(error.message);
@@ -71,8 +72,9 @@ export async function updateLeadStatus(leadId: string, status: LeadStatus) {
 export async function logLeadContact(leadId: string, formData: FormData) {
   const supabase = await createClient();
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
+  const user = session?.user;
 
   const activityType = String(formData.get("activity_type") || "note");
   const outcome = String(formData.get("outcome") || "") || null;
