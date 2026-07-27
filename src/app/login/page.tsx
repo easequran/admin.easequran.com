@@ -14,7 +14,7 @@ export default async function LoginPage({
     <div className="flex min-h-screen items-center justify-center bg-primary-50 px-4">
       <div className="w-full max-w-sm rounded-2xl border border-primary-100 bg-white p-8 shadow-sm">
         <div className="mb-6 flex flex-col items-center gap-3">
-          <Image src="/logo.png" alt="Ease Quran" width={64} height={64} className="rounded-lg" />
+          <Image src="/logo.png" alt="Ease Quran" width={64} height={64} unoptimized />
           <h1 className="text-xl font-semibold text-primary-900">Ease Quran</h1>
           <p className="text-sm text-slate-500">Sign in to your academy account</p>
         </div>
