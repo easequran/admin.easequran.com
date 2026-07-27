@@ -12,7 +12,7 @@ export default function NewLeadPage() {
           <Label htmlFor="full_name">Full name</Label>
           <Input id="full_name" name="full_name" required />
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <Label htmlFor="email">Email</Label>
             <Input id="email" name="email" type="email" />

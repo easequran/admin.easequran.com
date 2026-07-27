@@ -26,7 +26,7 @@ export function StudentForm({
             defaultPhone={student?.guardian_phone ?? ""}
             defaultTimezone={student?.timezone}
           />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="guardian_name">Guardian name</Label>
               <Input id="guardian_name" name="guardian_name" defaultValue={student?.guardian_name ?? ""} />

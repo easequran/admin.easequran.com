@@ -23,7 +23,7 @@ export default function NewTeacherPage() {
           <Label htmlFor="timezone">Timezone</Label>
           <TimezoneSelect name="timezone" required />
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <Label htmlFor="hourly_rate">Hourly rate</Label>
             <Input id="hourly_rate" name="hourly_rate" type="number" step="0.01" defaultValue={450} />

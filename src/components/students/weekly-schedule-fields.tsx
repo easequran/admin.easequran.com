@@ -48,7 +48,7 @@ export function WeeklyScheduleFields({
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <Label htmlFor="class_time">Class time (student&apos;s local time)</Label>
             <Input id="class_time" name="class_time" type="time" />

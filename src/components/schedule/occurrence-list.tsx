@@ -31,8 +31,8 @@ export function OccurrenceList({
   return (
     <ul className="divide-y divide-primary-50">
       {occurrences.map((o) => (
-        <li key={o.id} className="flex items-center justify-between py-3 text-sm">
-          <div>
+        <li key={o.id} className="flex flex-col gap-1 py-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+          <div className="min-w-0">
             <span className="font-medium text-primary-900">{o.studentName ?? "Trial"}</span>
             {o.teacherName && <span className="text-slate-400"> with {o.teacherName}</span>}
             {o.is_trial && (
@@ -41,7 +41,7 @@ export function OccurrenceList({
               </Badge>
             )}
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex shrink-0 items-center gap-3">
             <span className="text-slate-500">{formatInZone(o.start_at, viewerTimezone)}</span>
             <Badge tone={statusTone[o.status]}>{o.status.replace("_", " ")}</Badge>
           </div>

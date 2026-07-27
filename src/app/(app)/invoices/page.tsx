@@ -37,7 +37,7 @@ export default async function InvoicesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold text-primary-900">Invoices & Fees</h1>
         {profile.role === "admin" && (
           <form action={generateMonthlyInvoices}>
@@ -49,7 +49,8 @@ export default async function InvoicesPage() {
       </div>
 
       <Card className="overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[720px] text-sm">
           <thead className="bg-primary-50 text-left text-xs uppercase text-primary-500">
             <tr>
               <th className="px-5 py-3">Student</th>
@@ -98,6 +99,7 @@ export default async function InvoicesPage() {
             )}
           </tbody>
         </table>
+        </div>
       </Card>
     </div>
   );

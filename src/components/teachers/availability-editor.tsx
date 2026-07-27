@@ -41,7 +41,7 @@ export function AvailabilityEditor({
         )}
       </ul>
 
-      <form action={onAdd} className="grid grid-cols-2 gap-3 rounded-lg border border-primary-100 p-4">
+      <form action={onAdd} className="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-lg border border-primary-100 p-4">
         <div className="col-span-2">
           <Label htmlFor="day_of_week">Day</Label>
           <Select id="day_of_week" name="day_of_week" defaultValue="1" required>

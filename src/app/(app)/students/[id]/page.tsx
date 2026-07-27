@@ -44,7 +44,7 @@ export default async function StudentDetailPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold text-primary-900">{student.full_name}</h1>
         <form action={boundDelete}>
           <Button type="submit" variant="danger" size="sm">
@@ -103,7 +103,7 @@ export default async function StudentDetailPage({
                 </p>
               ) : (
                 <form action={boundCreatePlan} className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <Label htmlFor="monthly_amount">Monthly amount</Label>
                       <Input id="monthly_amount" name="monthly_amount" type="number" step="0.01" required />

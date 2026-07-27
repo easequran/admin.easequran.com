@@ -13,13 +13,14 @@ export default async function TeachersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold text-primary-900">Teachers</h1>
         <LinkButton href="/teachers/new">Add teacher</LinkButton>
       </div>
 
       <Card className="overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[640px] text-sm">
           <thead className="bg-primary-50 text-left text-xs uppercase text-primary-500">
             <tr>
               <th className="px-5 py-3">Name</th>
@@ -56,6 +57,7 @@ export default async function TeachersPage() {
             )}
           </tbody>
         </table>
+        </div>
       </Card>
     </div>
   );

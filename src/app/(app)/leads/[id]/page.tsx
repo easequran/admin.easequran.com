@@ -39,12 +39,12 @@ export default async function LeadDetailPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold text-primary-900">{lead.full_name}</h1>
           <p className="text-sm text-slate-500">{lead.email ?? "No email"} · {lead.phone ?? "No phone"}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <LinkButton href={`/trials/new?lead=${lead.id}`} variant="accent">
             Book trial
           </LinkButton>

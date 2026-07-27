@@ -26,17 +26,20 @@ export function AttendanceRow({
   const boundMark = markAttendance.bind(null, occurrenceId);
 
   return (
-    <li className="flex items-center justify-between gap-4 py-3 text-sm">
-      <div>
+    <li className="flex flex-col gap-2 py-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+      <div className="min-w-0">
         <p className="font-medium text-primary-900">{studentName}</p>
         <p className="text-slate-500">{formatInZone(startAt, viewerTimezone)}</p>
       </div>
       {currentStatus ? (
-        <Badge tone={currentStatus === "present" ? "success" : currentStatus === "absent" ? "danger" : "warning"}>
+        <Badge
+          className="w-fit"
+          tone={currentStatus === "present" ? "success" : currentStatus === "absent" ? "danger" : "warning"}
+        >
           {currentStatus}
         </Badge>
       ) : (
-        <form action={boundMark} className="flex gap-2">
+        <form action={boundMark} className="flex flex-wrap gap-2">
           {OPTIONS.map((o) => (
             <button
               key={o.value}
