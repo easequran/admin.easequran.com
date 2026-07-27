@@ -32,7 +32,12 @@ export default async function LoginPage({
             <Input id="email" name="email" type="email" required placeholder="you@example.com" />
           </div>
           <div>
-            <Label htmlFor="password">Password</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">Password</Label>
+              <a href="/auth/forgot-password" className="mb-1 text-xs font-medium text-primary-600 hover:underline">
+                Forgot password?
+              </a>
+            </div>
             <Input id="password" name="password" type="password" required placeholder="••••••••" />
           </div>
           <Button type="submit" className="w-full">

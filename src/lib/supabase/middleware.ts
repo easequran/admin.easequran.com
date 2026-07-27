@@ -33,6 +33,10 @@ export async function updateSession(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const isAuthRoute = path.startsWith("/login") || path.startsWith("/auth");
   const isPublicRoute = path === "/" || isAuthRoute;
+  // A user can be authenticated via a fresh invite/recovery link and still
+  // need to land here — don't bounce them to the dashboard before they've
+  // set a password.
+  const isSetPasswordRoute = path.startsWith("/auth/set-password");
 
   if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();
@@ -41,7 +45,7 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (user && isAuthRoute) {
+  if (user && isAuthRoute && !isSetPasswordRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     return NextResponse.redirect(url);

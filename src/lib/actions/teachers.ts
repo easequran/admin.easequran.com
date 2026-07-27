@@ -12,8 +12,10 @@ export async function createTeacher(formData: FormData) {
   const fullName = String(formData.get("full_name"));
   const timezone = String(formData.get("timezone") || "UTC");
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3001";
   const { data: invited, error: inviteError } = await admin.auth.admin.inviteUserByEmail(email, {
     data: { full_name: fullName },
+    redirectTo: `${siteUrl}/auth/callback`,
   });
   if (inviteError) throw new Error(inviteError.message);
 
