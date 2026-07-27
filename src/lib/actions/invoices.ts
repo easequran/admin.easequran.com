@@ -72,8 +72,9 @@ export async function markInvoicePaid(invoiceId: string, formData: FormData) {
   revalidatePath("/invoices");
 }
 
-export async function markOverdueInvoices() {
-  const supabase = await createClient();
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function markOverdueInvoices(client?: any) {
+  const supabase = client ?? (await createClient());
   const today = DateTime.utc().toISODate();
 
   await supabase

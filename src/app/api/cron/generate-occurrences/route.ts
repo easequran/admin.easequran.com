@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { generateOccurrencesForSchedule } from "@/lib/scheduling";
+import { markOverdueInvoices } from "@/lib/actions/invoices";
 
 // Triggered on a schedule (see vercel.json) to keep occurrences generated
 // several weeks ahead for every active recurring schedule.
@@ -23,6 +24,8 @@ export async function GET(request: NextRequest) {
   for (const schedule of schedules ?? []) {
     await generateOccurrencesForSchedule(schedule.id, admin);
   }
+
+  await markOverdueInvoices(admin);
 
   return NextResponse.json({ generated: schedules?.length ?? 0 });
 }

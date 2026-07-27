@@ -3,7 +3,7 @@ import { getCurrentProfile } from "@/lib/data/profile";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { generateMonthlyInvoices, markInvoicePaid, markOverdueInvoices } from "@/lib/actions/invoices";
+import { generateMonthlyInvoices, markInvoicePaid } from "@/lib/actions/invoices";
 import { PageHeader } from "@/components/ui/page-header";
 
 const statusTone = {
@@ -16,8 +16,6 @@ const statusTone = {
 export default async function InvoicesPage() {
   const profile = await getCurrentProfile();
   const supabase = await createClient();
-
-  await markOverdueInvoices();
 
   let query = supabase
     .from("invoices")
