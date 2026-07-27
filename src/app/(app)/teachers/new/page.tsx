@@ -21,7 +21,7 @@ export default function NewTeacherPage() {
         </div>
         <div>
           <Label htmlFor="timezone">Timezone</Label>
-          <TimezoneSelect name="timezone" required />
+          <TimezoneSelect name="timezone" defaultValue="Asia/Karachi" required />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
