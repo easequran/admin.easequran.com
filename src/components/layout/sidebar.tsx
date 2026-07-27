@@ -14,6 +14,7 @@ import {
   ClipboardCheck,
   Receipt,
   Sparkles,
+  Settings,
   X,
 } from "lucide-react";
 
@@ -26,6 +27,7 @@ const NAV: { href: string; label: string; icon: React.ComponentType<{ className?
   { href: "/trials", label: "Trial Classes", icon: Sparkles, roles: ["admin", "teacher"] },
   { href: "/attendance", label: "Attendance", icon: ClipboardCheck, roles: ["admin", "teacher"] },
   { href: "/invoices", label: "Invoices & Fees", icon: Receipt, roles: ["admin", "student"] },
+  { href: "/settings/integrations", label: "Integrations", icon: Settings, roles: ["admin"] },
 ];
 
 export function Sidebar({

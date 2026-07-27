@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { generateOccurrencesForSchedule, hasConflict, isWithinAvailability } from "@/lib/scheduling";
 import { nextOccurrenceUtc } from "@/lib/utils/timezone";
+import { createCalendarEvent, deleteCalendarEvent } from "@/lib/google/calendar";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { OccurrenceStatus } from "@/lib/types/database";
@@ -73,6 +74,19 @@ export async function createRecurringSchedule(formData: FormData) {
 export async function cancelSchedule(scheduleId: string) {
   const supabase = await createClient();
   await supabase.from("recurring_schedules").update({ active: false }).eq("id", scheduleId);
+
+  const { data: upcoming } = await supabase
+    .from("class_occurrences")
+    .select("id, calendar_event_id")
+    .eq("recurring_schedule_id", scheduleId)
+    .gte("start_at", new Date().toISOString());
+
+  for (const occurrence of upcoming ?? []) {
+    if (occurrence.calendar_event_id) {
+      await deleteCalendarEvent(occurrence.calendar_event_id).catch(() => {});
+    }
+  }
+
   await supabase
     .from("class_occurrences")
     .update({ status: "cancelled" })
@@ -83,6 +97,18 @@ export async function cancelSchedule(scheduleId: string) {
 
 export async function updateOccurrenceStatus(occurrenceId: string, status: OccurrenceStatus) {
   const supabase = await createClient();
+
+  if (status === "cancelled") {
+    const { data: occurrence } = await supabase
+      .from("class_occurrences")
+      .select("calendar_event_id")
+      .eq("id", occurrenceId)
+      .single();
+    if (occurrence?.calendar_event_id) {
+      await deleteCalendarEvent(occurrence.calendar_event_id).catch(() => {});
+    }
+  }
+
   const { error } = await supabase
     .from("class_occurrences")
     .update({ status })
@@ -113,14 +139,40 @@ export async function bookTrialClass(formData: FormData) {
     redirect(`/trials?error=${encodeURIComponent("Teacher already has a class at that time.")}`);
   }
 
-  const { error } = await supabase.from("class_occurrences").insert({
-    lead_id: leadId,
-    teacher_id: teacherId,
-    is_trial: true,
-    start_at: startAt.toUTC().toISO()!,
-    end_at: endAt.toUTC().toISO()!,
-  });
+  const { data: occurrence, error } = await supabase
+    .from("class_occurrences")
+    .insert({
+      lead_id: leadId,
+      teacher_id: teacherId,
+      is_trial: true,
+      start_at: startAt.toUTC().toISO()!,
+      end_at: endAt.toUTC().toISO()!,
+    })
+    .select("id")
+    .single();
   if (error) throw new Error(error.message);
+
+  const [{ data: lead }, { data: teacher }] = await Promise.all([
+    leadId ? supabase.from("leads").select("full_name, email").eq("id", leadId).single() : Promise.resolve({ data: null }),
+    supabase.from("teachers").select("profiles(full_name, email)").eq("id", teacherId).single(),
+  ]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const teacherProfile = (teacher as any)?.profiles;
+
+  try {
+    const eventId = await createCalendarEvent({
+      summary: `Trial class: ${lead?.full_name ?? "Prospective student"} with ${teacherProfile?.full_name ?? "Teacher"}`,
+      description: "Ease Quran academy trial class",
+      startAtUtcIso: startAt.toUTC().toISO()!,
+      endAtUtcIso: endAt.toUTC().toISO()!,
+      attendeeEmails: [teacherProfile?.email, lead?.email].filter(Boolean) as string[],
+    });
+    if (eventId) {
+      await supabase.from("class_occurrences").update({ calendar_event_id: eventId }).eq("id", occurrence.id);
+    }
+  } catch (err) {
+    console.error("Failed to create Google Calendar event for trial", occurrence.id, err);
+  }
 
   if (leadId) {
     await supabase.from("leads").update({ status: "trial_scheduled" }).eq("id", leadId);

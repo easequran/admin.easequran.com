@@ -1,6 +1,7 @@
 import { DateTime } from "luxon";
 import { createClient } from "@/lib/supabase/server";
 import { nextOccurrenceUtc } from "@/lib/utils/timezone";
+import { createCalendarEvent } from "@/lib/google/calendar";
 
 const GENERATE_WEEKS_AHEAD = 8;
 
@@ -98,9 +99,36 @@ export async function generateOccurrencesForSchedule(
     cursor = startAt.plus({ weeks: 1 });
   }
 
-  if (rows.length > 0) {
-    const { error } = await supabase.from("class_occurrences").insert(rows);
-    if (error) throw new Error(error.message);
+  if (rows.length === 0) return;
+
+  const { data: inserted, error } = await supabase.from("class_occurrences").insert(rows).select("id, start_at, end_at");
+  if (error) throw new Error(error.message);
+
+  const [{ data: teacher }, { data: student }] = await Promise.all([
+    supabase.from("teachers").select("profiles(full_name, email)").eq("id", schedule.teacher_id).single(),
+    supabase.from("students").select("full_name, guardian_email, profiles(email)").eq("id", schedule.student_id).single(),
+  ]);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const teacherProfile = (teacher as any)?.profiles;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const studentEmail = (student as any)?.profiles?.email ?? (student as any)?.guardian_email;
+
+  for (const occurrence of inserted ?? []) {
+    try {
+      const eventId = await createCalendarEvent({
+        summary: `Quran class: ${student?.full_name ?? "Student"} with ${teacherProfile?.full_name ?? "Teacher"}`,
+        description: "Ease Quran academy class",
+        startAtUtcIso: occurrence.start_at,
+        endAtUtcIso: occurrence.end_at,
+        attendeeEmails: [teacherProfile?.email, studentEmail].filter(Boolean) as string[],
+      });
+      if (eventId) {
+        await supabase.from("class_occurrences").update({ calendar_event_id: eventId }).eq("id", occurrence.id);
+      }
+    } catch (err) {
+      console.error("Failed to create Google Calendar event for occurrence", occurrence.id, err);
+    }
   }
 }
 
