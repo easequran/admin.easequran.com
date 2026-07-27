@@ -68,24 +68,43 @@ export async function updateLeadStatus(leadId: string, status: LeadStatus) {
   revalidatePath("/leads");
 }
 
-export async function addLeadNote(leadId: string, formData: FormData) {
+export async function logLeadContact(leadId: string, formData: FormData) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const content = String(formData.get("content") || "").trim();
-  if (!content) return;
+  const activityType = String(formData.get("activity_type") || "note");
+  const outcome = String(formData.get("outcome") || "") || null;
+  const content = String(formData.get("content") || "").trim() || null;
+  const nextFollowUpLocal = String(formData.get("next_follow_up_at") || "");
 
   const { error } = await supabase.from("lead_activities").insert({
     lead_id: leadId,
     created_by: user?.id,
-    activity_type: "note",
+    activity_type: activityType,
+    outcome,
     content,
   });
   if (error) throw new Error(error.message);
 
+  const updates: Record<string, string | null> = {};
+  if (activityType !== "note") {
+    updates.last_contacted_at = new Date().toISOString();
+  }
+  if (nextFollowUpLocal) {
+    updates.next_follow_up_at = new Date(nextFollowUpLocal).toISOString();
+  } else if (outcome === "converted" || outcome === "not_interested") {
+    updates.next_follow_up_at = null;
+  }
+
+  if (Object.keys(updates).length > 0) {
+    await supabase.from("leads").update(updates).eq("id", leadId);
+  }
+
   revalidatePath(`/leads/${leadId}`);
+  revalidatePath("/leads");
+  revalidatePath("/dashboard");
 }
 
 export async function convertLeadToStudent(leadId: string) {

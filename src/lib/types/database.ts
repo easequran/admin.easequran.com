@@ -79,15 +79,28 @@ export interface Lead {
   assigned_to: string | null;
   notes: string | null;
   converted_student_id: string | null;
+  last_contacted_at: string | null;
+  next_follow_up_at: string | null;
   created_at: string;
   updated_at: string;
 }
+
+export type LeadContactType = "call" | "message" | "email" | "note";
+export type LeadContactOutcome =
+  | "interested"
+  | "not_interested"
+  | "no_answer"
+  | "callback_requested"
+  | "voicemail"
+  | "converted"
+  | "other";
 
 export interface LeadActivity {
   id: string;
   lead_id: string;
   created_by: string | null;
   activity_type: string;
+  outcome: string | null;
   content: string | null;
   created_at: string;
 }

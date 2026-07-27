@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatInZone } from "@/lib/utils/timezone";
 import { DateTime } from "luxon";
+import Link from "next/link";
 
 export default async function DashboardPage() {
   const profile = await getCurrentProfile();
@@ -19,6 +20,7 @@ export default async function DashboardPage() {
       { count: activeLeads },
       { data: todayClasses },
       { data: overdueInvoices },
+      { data: overdueFollowUps },
     ] = await Promise.all([
       supabase.from("students").select("*", { count: "exact", head: true }).eq("enrollment_status", "active"),
       supabase.from("teachers").select("*", { count: "exact", head: true }).eq("active", true),
@@ -30,6 +32,12 @@ export default async function DashboardPage() {
         .lte("start_at", endOfDay!)
         .order("start_at"),
       supabase.from("invoices").select("id, amount, currency").eq("status", "overdue"),
+      supabase
+        .from("leads")
+        .select("id")
+        .not("status", "in", "(converted,lost)")
+        .not("next_follow_up_at", "is", null)
+        .lt("next_follow_up_at", DateTime.utc().toISO()!),
     ]);
 
     const overdueTotal = (overdueInvoices ?? []).reduce((sum, inv) => sum + Number(inv.amount), 0);
@@ -38,10 +46,17 @@ export default async function DashboardPage() {
       <div className="space-y-6">
         <h1 className="text-2xl font-semibold text-primary-900">Academy overview</h1>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <StatCard label="Active students" value={studentCount ?? 0} />
           <StatCard label="Active teachers" value={teacherCount ?? 0} />
           <StatCard label="Open leads" value={activeLeads ?? 0} />
+          <Link href="/leads/follow-ups">
+            <StatCard
+              label="Overdue follow-ups"
+              value={overdueFollowUps?.length ?? 0}
+              tone={overdueFollowUps && overdueFollowUps.length > 0 ? "danger" : "neutral"}
+            />
+          </Link>
           <StatCard
             label="Overdue invoices"
             value={`${overdueInvoices?.length ?? 0}`}

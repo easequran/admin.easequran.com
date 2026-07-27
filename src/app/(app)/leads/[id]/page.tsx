@@ -4,7 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button, LinkButton } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { PhoneCountryTimezoneField } from "@/components/leads/phone-country-timezone-field";
-import { updateLead, updateLeadStatus, addLeadNote, convertLeadToStudent } from "@/lib/actions/leads";
+import { FollowUpBadge } from "@/components/leads/follow-up-badge";
+import { LogContactForm } from "@/components/leads/log-contact-form";
+import { updateLead, updateLeadStatus, logLeadContact, convertLeadToStudent } from "@/lib/actions/leads";
 import { notFound } from "next/navigation";
 import type { LeadStatus } from "@/lib/types/database";
 import { DateTime } from "luxon";
@@ -17,6 +19,16 @@ const STATUS_FLOW: LeadStatus[] = [
   "converted",
   "lost",
 ];
+
+const OUTCOME_LABELS: Record<string, string> = {
+  interested: "Interested",
+  not_interested: "Not interested",
+  no_answer: "No answer",
+  voicemail: "Left voicemail",
+  callback_requested: "Asked to call back",
+  converted: "Ready to convert",
+  other: "Other",
+};
 
 export default async function LeadDetailPage({
   params,
@@ -35,7 +47,7 @@ export default async function LeadDetailPage({
     .eq("lead_id", id)
     .order("created_at", { ascending: false });
 
-  const boundAddNote = addLeadNote.bind(null, id);
+  const boundLogContact = logLeadContact.bind(null, id);
   const boundConvert = convertLeadToStudent.bind(null, id);
   const boundUpdate = updateLead.bind(null, id);
 
@@ -58,6 +70,15 @@ export default async function LeadDetailPage({
             </form>
           )}
         </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <FollowUpBadge nextFollowUpAt={lead.next_follow_up_at} />
+        {lead.last_contacted_at && (
+          <span className="text-xs text-slate-400">
+            Last contacted {DateTime.fromISO(lead.last_contacted_at).toRelative()}
+          </span>
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -87,23 +108,28 @@ export default async function LeadDetailPage({
 
           <Card>
             <CardHeader>
-              <CardTitle>Activity</CardTitle>
+              <CardTitle>Log a call, message, or follow-up</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <form action={boundAddNote} className="space-y-2">
-                <Textarea name="content" rows={2} placeholder="Add a note or call summary..." />
-                <Button type="submit" size="sm">
-                  Add note
-                </Button>
-              </form>
+            <CardContent>
+              <LogContactForm action={boundLogContact} />
+            </CardContent>
+          </Card>
 
+          <Card>
+            <CardHeader>
+              <CardTitle>History</CardTitle>
+            </CardHeader>
+            <CardContent>
               <ul className="space-y-3">
                 {activities?.map((a) => (
                   <li key={a.id} className="rounded-lg bg-primary-50 px-3 py-2 text-sm">
-                    <p className="text-primary-900">{a.content}</p>
-                    <p className="text-xs text-slate-400">
-                      {a.profiles?.full_name ?? "System"} ·{" "}
-                      {DateTime.fromISO(a.created_at).toRelative()}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-medium capitalize text-primary-900">{a.activity_type}</span>
+                      {a.outcome && <Badge tone="accent">{OUTCOME_LABELS[a.outcome] ?? a.outcome}</Badge>}
+                    </div>
+                    {a.content && <p className="mt-1 text-primary-800">{a.content}</p>}
+                    <p className="mt-1 text-xs text-slate-400">
+                      {a.profiles?.full_name ?? "System"} · {DateTime.fromISO(a.created_at).toRelative()}
                     </p>
                   </li>
                 ))}
