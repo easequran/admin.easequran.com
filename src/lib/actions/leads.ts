@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/data/profile";
+import { logAudit } from "@/lib/actions/audit";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { LeadStatus } from "@/lib/types/database";
@@ -54,8 +55,13 @@ export async function updateLead(leadId: string, formData: FormData) {
 export async function deleteLead(leadId: string) {
   await requireAdmin();
   const supabase = await createClient();
+
+  const { data: lead } = await supabase.from("leads").select("full_name").eq("id", leadId).single();
+
   const { error } = await supabase.from("leads").delete().eq("id", leadId);
   if (error) throw new Error(error.message);
+
+  await logAudit({ action: "lead.deleted", entityType: "lead", entityId: leadId, entityLabel: lead?.full_name });
 
   revalidatePath("/leads");
   redirect("/leads");
@@ -69,6 +75,8 @@ export async function updateLeadStatus(leadId: string, status: LeadStatus) {
   } = await supabase.auth.getSession();
   const user = session?.user;
 
+  const { data: lead } = await supabase.from("leads").select("full_name, status").eq("id", leadId).single();
+
   const { error } = await supabase.from("leads").update({ status }).eq("id", leadId);
   if (error) throw new Error(error.message);
 
@@ -79,7 +87,49 @@ export async function updateLeadStatus(leadId: string, status: LeadStatus) {
     content: `Status changed to ${status}`,
   });
 
+  await logAudit({
+    action: "lead.status_changed",
+    entityType: "lead",
+    entityId: leadId,
+    entityLabel: lead?.full_name,
+    details: `${lead?.status ?? "?"} → ${status}`,
+  });
+
   revalidatePath(`/leads/${leadId}`);
+  revalidatePath("/leads");
+}
+
+export async function bulkUpdateLeadStatus(leadIds: string[], status: LeadStatus) {
+  await requireAdmin();
+  if (leadIds.length === 0) return;
+  const supabase = await createClient();
+
+  const { error } = await supabase.from("leads").update({ status }).in("id", leadIds);
+  if (error) throw new Error(error.message);
+
+  await logAudit({
+    action: "lead.bulk_status_changed",
+    entityType: "lead",
+    details: `${leadIds.length} lead(s) → ${status}`,
+  });
+
+  revalidatePath("/leads");
+}
+
+export async function bulkAssignLeads(leadIds: string[], assignedTo: string) {
+  await requireAdmin();
+  if (leadIds.length === 0) return;
+  const supabase = await createClient();
+
+  const { error } = await supabase.from("leads").update({ assigned_to: assignedTo || null }).in("id", leadIds);
+  if (error) throw new Error(error.message);
+
+  await logAudit({
+    action: "lead.bulk_assigned",
+    entityType: "lead",
+    details: `${leadIds.length} lead(s) assigned`,
+  });
+
   revalidatePath("/leads");
 }
 

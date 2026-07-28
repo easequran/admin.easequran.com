@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/data/profile";
+import { logAudit } from "@/lib/actions/audit";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { EnrollmentStatus } from "@/lib/types/database";
@@ -89,6 +90,14 @@ export async function updateStudent(studentId: string, formData: FormData) {
   await requireAdmin();
   const supabase = await createClient();
 
+  const { data: before } = await supabase
+    .from("students")
+    .select("full_name, enrollment_status")
+    .eq("id", studentId)
+    .single();
+
+  const newStatus = (formData.get("enrollment_status") as EnrollmentStatus) || "trial";
+
   const { error } = await supabase
     .from("students")
     .update({
@@ -98,22 +107,60 @@ export async function updateStudent(studentId: string, formData: FormData) {
       guardian_email: String(formData.get("guardian_email") || "") || null,
       guardian_phone: String(formData.get("guardian_phone") || "") || null,
       country: String(formData.get("country") || "") || null,
-      enrollment_status: (formData.get("enrollment_status") as EnrollmentStatus) || "trial",
+      enrollment_status: newStatus,
       notes: String(formData.get("notes") || "") || null,
     })
     .eq("id", studentId);
 
   if (error) throw new Error(error.message);
 
+  if (before && before.enrollment_status !== newStatus) {
+    await logAudit({
+      action: "student.status_changed",
+      entityType: "student",
+      entityId: studentId,
+      entityLabel: before.full_name,
+      details: `${before.enrollment_status} → ${newStatus}`,
+    });
+  }
+
   revalidatePath("/students");
   revalidatePath(`/students/${studentId}`);
+}
+
+export async function bulkUpdateStudentStatus(studentIds: string[], status: EnrollmentStatus) {
+  await requireAdmin();
+  if (studentIds.length === 0) return;
+  const supabase = await createClient();
+
+  const { error } = await supabase.from("students").update({ enrollment_status: status }).in("id", studentIds);
+  if (error) throw new Error(error.message);
+
+  await logAudit({
+    action: "student.bulk_status_changed",
+    entityType: "student",
+    details: `${studentIds.length} student(s) → ${status}`,
+  });
+
+  revalidatePath("/students");
 }
 
 export async function deleteStudent(studentId: string) {
   await requireAdmin();
   const supabase = await createClient();
+
+  const { data: student } = await supabase.from("students").select("full_name").eq("id", studentId).single();
+
   const { error } = await supabase.from("students").delete().eq("id", studentId);
   if (error) throw new Error(error.message);
+
+  await logAudit({
+    action: "student.deleted",
+    entityType: "student",
+    entityId: studentId,
+    entityLabel: student?.full_name,
+  });
+
   revalidatePath("/students");
   redirect("/students");
 }

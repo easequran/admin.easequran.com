@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getSiteUrl } from "@/lib/utils/site-url";
 import { requireAdmin } from "@/lib/data/profile";
 import { getCurrentProfile } from "@/lib/data/profile";
+import { logAudit } from "@/lib/actions/audit";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -117,11 +118,15 @@ export async function deleteTeacher(teacherId: string, profileId: string) {
   await requireAdmin();
   const admin = createAdminClient();
 
+  const { data: profile } = await admin.from("profiles").select("full_name").eq("id", profileId).single();
+
   // Deleting the auth user cascades: profiles -> teachers -> availability,
   // recurring_schedules, class_occurrences. This is a full, irreversible
   // removal of the teacher and everything scheduled with them.
   const { error } = await admin.auth.admin.deleteUser(profileId);
   if (error) throw new Error(error.message);
+
+  await logAudit({ action: "teacher.deleted", entityType: "teacher", entityId: teacherId, entityLabel: profile?.full_name });
 
   revalidatePath("/teachers");
   redirect("/teachers");

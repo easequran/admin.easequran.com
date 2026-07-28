@@ -10,7 +10,10 @@ import { DateTime } from "luxon";
 export default async function LeadsPage() {
   await requireAdmin();
   const supabase = await createClient();
-  const { data: leads } = await supabase.from("leads").select("*").order("created_at", { ascending: false });
+  const [{ data: leads }, { data: assignees }] = await Promise.all([
+    supabase.from("leads").select("*").order("created_at", { ascending: false }),
+    supabase.from("profiles").select("id, full_name").in("role", ["admin", "teacher"]).order("full_name"),
+  ]);
 
   const now = DateTime.now();
   const overdueCount = (leads ?? []).filter(
@@ -29,7 +32,7 @@ export default async function LeadsPage() {
           </>
         }
       />
-      <LeadsBoard leads={(leads as Lead[] | null) ?? []} />
+      <LeadsBoard leads={(leads as Lead[] | null) ?? []} assignees={assignees ?? []} />
     </div>
   );
 }

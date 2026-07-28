@@ -18,6 +18,7 @@ import {
   X,
   PanelLeftClose,
   PanelLeftOpen,
+  History,
 } from "lucide-react";
 
 const NAV: { href: string; label: string; icon: React.ComponentType<{ className?: string }>; roles: UserRole[] }[] = [
@@ -30,6 +31,7 @@ const NAV: { href: string; label: string; icon: React.ComponentType<{ className?
   { href: "/attendance", label: "Attendance", icon: ClipboardCheck, roles: ["admin", "teacher"] },
   { href: "/invoices", label: "Invoices & Fees", icon: Receipt, roles: ["admin", "student"] },
   { href: "/settings/integrations", label: "Integrations", icon: Settings, roles: ["admin"] },
+  { href: "/settings/audit-log", label: "Audit Log", icon: History, roles: ["admin"] },
 ];
 
 export function Sidebar({
