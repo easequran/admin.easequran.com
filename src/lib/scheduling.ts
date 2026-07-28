@@ -132,6 +132,65 @@ export async function generateOccurrencesForSchedule(
   }
 }
 
+/**
+ * Creates recurring weekly schedules (and their first batch of occurrences)
+ * for a student across one or more days, skipping any day/time slot that
+ * falls outside the teacher's declared availability or conflicts with an
+ * existing booking -- shared by student creation and lead-to-student
+ * conversion, which both offer the same "assign a teacher now" step.
+ */
+export async function createWeeklySchedulesForStudent(params: {
+  studentId: string;
+  teacherId: string;
+  timezone: string;
+  classDays: number[];
+  classTime: string;
+  classDuration: number;
+}) {
+  const { studentId, teacherId, timezone, classDays, classTime, classDuration } = params;
+  if (!teacherId || classDays.length === 0 || !classTime) return;
+
+  const supabase = await createClient();
+  const { data: availability } = await supabase.from("teacher_availability").select("*").eq("teacher_id", teacherId);
+
+  for (const dayOfWeek of classDays) {
+    const withinAvailability = isWithinAvailability(
+      { dayOfWeek, localStartTime: classTime, timezone, durationMinutes: classDuration },
+      availability ?? [],
+    );
+    if (!withinAvailability) continue; // skip slots outside availability rather than blocking the conversion
+
+    const { startAt, endAt } = nextOccurrenceUtc({
+      dayOfWeek,
+      localStartTime: classTime,
+      timezone,
+      durationMinutes: classDuration,
+    });
+
+    const conflict = await hasConflict({
+      teacherId,
+      startAt: startAt.toUTC().toISO()!,
+      endAt: endAt.toUTC().toISO()!,
+    });
+    if (conflict) continue;
+
+    const { data: schedule } = await supabase
+      .from("recurring_schedules")
+      .insert({
+        student_id: studentId,
+        teacher_id: teacherId,
+        day_of_week: dayOfWeek,
+        local_start_time: classTime,
+        timezone,
+        duration_minutes: classDuration,
+      })
+      .select("id")
+      .single();
+
+    if (schedule) await generateOccurrencesForSchedule(schedule.id);
+  }
+}
+
 export interface TimetableBlock {
   startMinutes: number; // minutes since midnight, in the teacher's timezone
   endMinutes: number;

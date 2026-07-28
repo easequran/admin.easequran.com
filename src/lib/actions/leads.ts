@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/data/profile";
 import { logAudit } from "@/lib/actions/audit";
+import { createWeeklySchedulesForStudent } from "@/lib/scheduling";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { LeadStatus } from "@/lib/types/database";
@@ -77,8 +78,16 @@ export async function updateLeadStatus(leadId: string, status: LeadStatus) {
 
   const { data: lead } = await supabase.from("leads").select("full_name, status").eq("id", leadId).single();
 
-  const { error } = await supabase.from("leads").update({ status }).eq("id", leadId);
-  if (error) throw new Error(error.message);
+  // Marking a lead "converted" from the pipeline-stage buttons must actually
+  // create the student record too -- previously this only flipped the
+  // status column, so the lead never showed up in Students unless the
+  // separate "Convert to student" button was used instead.
+  if (status === "converted") {
+    await convertLeadToStudentRecord(leadId, "active");
+  } else {
+    const { error } = await supabase.from("leads").update({ status }).eq("id", leadId);
+    if (error) throw new Error(error.message);
+  }
 
   await supabase.from("lead_activities").insert({
     lead_id: leadId,
@@ -97,6 +106,7 @@ export async function updateLeadStatus(leadId: string, status: LeadStatus) {
 
   revalidatePath(`/leads/${leadId}`);
   revalidatePath("/leads");
+  revalidatePath("/students");
 }
 
 export async function bulkUpdateLeadStatus(leadIds: string[], status: LeadStatus) {
@@ -220,5 +230,33 @@ export async function convertLeadToStudentRecord(
 export async function convertLeadToStudent(leadId: string) {
   await requireAdmin();
   const studentId = await convertLeadToStudentRecord(leadId, "active");
+  redirect(`/students/${studentId}`);
+}
+
+/** Convert a lead to a student, optionally assigning a teacher + weekly schedule in the same step. */
+export async function convertLeadWithAssignment(leadId: string, formData: FormData) {
+  await requireAdmin();
+  const supabase = await createClient();
+
+  const studentId = await convertLeadToStudentRecord(leadId, "active");
+
+  const { data: student } = await supabase.from("students").select("timezone").eq("id", studentId).single();
+
+  const teacherId = String(formData.get("teacher_id") || "");
+  const classDays = formData.getAll("class_days").map((d) => Number(d));
+  const classTime = String(formData.get("class_time") || "");
+  const classDuration = Number(formData.get("class_duration") || 30);
+
+  await createWeeklySchedulesForStudent({
+    studentId,
+    teacherId,
+    timezone: student?.timezone ?? "UTC",
+    classDays,
+    classTime,
+    classDuration,
+  });
+
+  revalidatePath("/students");
+  revalidatePath("/schedule");
   redirect(`/students/${studentId}`);
 }

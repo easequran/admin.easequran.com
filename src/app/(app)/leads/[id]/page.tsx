@@ -7,7 +7,7 @@ import { Input, Label, Textarea } from "@/components/ui/input";
 import { PhoneCountryTimezoneField } from "@/components/leads/phone-country-timezone-field";
 import { FollowUpBadge } from "@/components/leads/follow-up-badge";
 import { LogContactForm } from "@/components/leads/log-contact-form";
-import { updateLead, updateLeadStatus, logLeadContact, convertLeadToStudent, deleteLead } from "@/lib/actions/leads";
+import { updateLead, updateLeadStatus, logLeadContact, deleteLead } from "@/lib/actions/leads";
 import { PageHeader } from "@/components/ui/page-header";
 import { notFound } from "next/navigation";
 import type { LeadStatus } from "@/lib/types/database";
@@ -48,7 +48,6 @@ export default async function LeadDetailPage({
   if (!lead) notFound();
 
   const boundLogContact = logLeadContact.bind(null, id);
-  const boundConvert = convertLeadToStudent.bind(null, id);
   const boundUpdate = updateLead.bind(null, id);
   const boundDelete = deleteLead.bind(null, id);
 
@@ -64,12 +63,16 @@ export default async function LeadDetailPage({
             <LinkButton href={`/trials/new?lead=${lead.id}`} variant="accent">
               Book trial
             </LinkButton>
-            {lead.status !== "converted" && (
-              <form action={boundConvert}>
-                <Button type="submit" variant="primary">
-                  Convert to student
-                </Button>
-              </form>
+            {lead.status !== "converted" ? (
+              <LinkButton href={`/leads/${lead.id}/convert`} variant="primary">
+                Convert to student
+              </LinkButton>
+            ) : (
+              lead.converted_student_id && (
+                <LinkButton href={`/students/${lead.converted_student_id}`} variant="primary">
+                  View student
+                </LinkButton>
+              )
             )}
             <form action={boundDelete}>
               <Button type="submit" variant="danger">
@@ -98,6 +101,17 @@ export default async function LeadDetailPage({
             <CardContent>
               <div className="flex flex-wrap gap-2">
                 {STATUS_FLOW.map((s) => {
+                  if (s === "converted") {
+                    const href = lead.converted_student_id
+                      ? `/students/${lead.converted_student_id}`
+                      : `/leads/${id}/convert`;
+                    return (
+                      <a key={s} href={href}>
+                        <Badge tone={lead.status === s ? "accent" : "neutral"}>converted</Badge>
+                      </a>
+                    );
+                  }
+
                   const boundSet = async () => {
                     "use server";
                     await updateLeadStatus(id, s);

@@ -6,7 +6,7 @@ import { logAudit } from "@/lib/actions/audit";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { EnrollmentStatus } from "@/lib/types/database";
-import { generateOccurrencesForSchedule, hasConflict, isWithinAvailability } from "@/lib/scheduling";
+import { createWeeklySchedulesForStudent } from "@/lib/scheduling";
 
 export async function createStudent(formData: FormData) {
   await requireAdmin();
@@ -36,50 +36,14 @@ export async function createStudent(formData: FormData) {
   const classTime = String(formData.get("class_time") || "");
   const classDuration = Number(formData.get("class_duration") || 30);
 
-  if (teacherId && classDays.length > 0 && classTime) {
-    const { data: availability } = await supabase
-      .from("teacher_availability")
-      .select("*")
-      .eq("teacher_id", teacherId);
-
-    for (const dayOfWeek of classDays) {
-      const withinAvailability = isWithinAvailability(
-        { dayOfWeek, localStartTime: classTime, timezone, durationMinutes: classDuration },
-        availability ?? [],
-      );
-      if (!withinAvailability) continue; // skip slots outside availability rather than blocking student creation
-
-      const { nextOccurrenceUtc } = await import("@/lib/utils/timezone");
-      const { startAt, endAt } = nextOccurrenceUtc({
-        dayOfWeek,
-        localStartTime: classTime,
-        timezone,
-        durationMinutes: classDuration,
-      });
-
-      const conflict = await hasConflict({
-        teacherId,
-        startAt: startAt.toUTC().toISO()!,
-        endAt: endAt.toUTC().toISO()!,
-      });
-      if (conflict) continue;
-
-      const { data: schedule } = await supabase
-        .from("recurring_schedules")
-        .insert({
-          student_id: data.id,
-          teacher_id: teacherId,
-          day_of_week: dayOfWeek,
-          local_start_time: classTime,
-          timezone,
-          duration_minutes: classDuration,
-        })
-        .select("id")
-        .single();
-
-      if (schedule) await generateOccurrencesForSchedule(schedule.id);
-    }
-  }
+  await createWeeklySchedulesForStudent({
+    studentId: data.id,
+    teacherId,
+    timezone,
+    classDays,
+    classTime,
+    classDuration,
+  });
 
   revalidatePath("/students");
   revalidatePath("/schedule");
