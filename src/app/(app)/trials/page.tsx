@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentProfile } from "@/lib/data/profile";
+import { requireAdmin } from "@/lib/data/profile";
 import { LinkButton } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { OccurrenceList } from "@/components/schedule/occurrence-list";
@@ -11,7 +11,7 @@ export default async function TrialsPage({
   searchParams: Promise<{ error?: string }>;
 }) {
   const params = await searchParams;
-  const profile = await getCurrentProfile();
+  const profile = await requireAdmin();
   const supabase = await createClient();
 
   const { data: trials } = await supabase

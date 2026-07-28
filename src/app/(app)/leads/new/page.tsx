@@ -3,8 +3,10 @@ import { PhoneCountryTimezoneField } from "@/components/leads/phone-country-time
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { createLead } from "@/lib/actions/leads";
+import { requireAdmin } from "@/lib/data/profile";
 
-export default function NewLeadPage() {
+export default async function NewLeadPage() {
+  await requireAdmin();
   return (
     <div className="space-y-6">
       <PageHeader title="Add lead" backHref="/leads" backLabel="Back to Leads" />

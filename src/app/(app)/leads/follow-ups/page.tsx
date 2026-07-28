@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/data/profile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FollowUpBadge } from "@/components/leads/follow-up-badge";
 import { PageHeader } from "@/components/ui/page-header";
@@ -6,6 +7,7 @@ import Link from "next/link";
 import { DateTime } from "luxon";
 
 export default async function FollowUpsPage() {
+  await requireAdmin();
   const supabase = await createClient();
   const { data: leads } = await supabase
     .from("leads")

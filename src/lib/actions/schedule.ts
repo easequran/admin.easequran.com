@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/data/profile";
 import { generateOccurrencesForSchedule, hasConflict, isWithinAvailability } from "@/lib/scheduling";
 import { nextOccurrenceUtc } from "@/lib/utils/timezone";
 import { createCalendarEvent, deleteCalendarEvent, updateCalendarEvent } from "@/lib/google/calendar";
@@ -9,6 +10,7 @@ import { redirect } from "next/navigation";
 import type { OccurrenceStatus } from "@/lib/types/database";
 
 export async function createRecurringSchedule(formData: FormData) {
+  await requireAdmin();
   const supabase = await createClient();
 
   const studentId = String(formData.get("student_id"));
@@ -72,6 +74,7 @@ export async function createRecurringSchedule(formData: FormData) {
 }
 
 export async function cancelSchedule(scheduleId: string) {
+  await requireAdmin();
   const supabase = await createClient();
   await supabase.from("recurring_schedules").update({ active: false }).eq("id", scheduleId);
 
@@ -96,6 +99,7 @@ export async function cancelSchedule(scheduleId: string) {
 }
 
 export async function updateOccurrenceStatus(occurrenceId: string, status: OccurrenceStatus) {
+  await requireAdmin();
   const supabase = await createClient();
 
   if (status === "cancelled") {
@@ -118,6 +122,7 @@ export async function updateOccurrenceStatus(occurrenceId: string, status: Occur
 }
 
 export async function bookTrialClass(formData: FormData) {
+  await requireAdmin();
   const supabase = await createClient();
 
   const leadId = String(formData.get("lead_id") || "") || null;
@@ -184,6 +189,7 @@ export async function bookTrialClass(formData: FormData) {
 }
 
 export async function updateTrialClass(occurrenceId: string, formData: FormData) {
+  await requireAdmin();
   const supabase = await createClient();
 
   const teacherId = String(formData.get("teacher_id"));
@@ -245,6 +251,7 @@ export async function updateTrialClass(occurrenceId: string, formData: FormData)
 }
 
 export async function cancelTrialClass(occurrenceId: string) {
+  await requireAdmin();
   const supabase = await createClient();
 
   const { data: occurrence } = await supabase

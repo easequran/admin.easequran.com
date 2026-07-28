@@ -34,3 +34,15 @@ export const getCurrentProfile = cache(async (): Promise<Profile> => {
 
   return profile as Profile;
 });
+
+/**
+ * Students and Leads (CRM) hold contact details and pipeline data the
+ * academy doesn't want teachers browsing or editing — admin-only, enforced
+ * server-side here (not just hidden from the sidebar) since a teacher could
+ * otherwise reach these pages/actions directly by URL.
+ */
+export async function requireAdmin(): Promise<Profile> {
+  const profile = await getCurrentProfile();
+  if (profile.role !== "admin") redirect("/dashboard");
+  return profile;
+}

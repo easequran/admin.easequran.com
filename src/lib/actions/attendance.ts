@@ -2,15 +2,31 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { convertLeadToStudentRecord } from "@/lib/actions/leads";
+import { getCurrentProfile } from "@/lib/data/profile";
 import { revalidatePath } from "next/cache";
 import type { AttendanceStatus } from "@/lib/types/database";
 
 export async function markAttendance(occurrenceId: string, formData: FormData) {
   const supabase = await createClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  const user = session?.user;
+  const profile = await getCurrentProfile();
+  const user = { id: profile.id };
+
+  // A teacher may only mark attendance for their own classes -- without
+  // this check any teacher could mark any occurrence id, including other
+  // teachers' classes, since occurrence ids aren't otherwise secret.
+  if (profile.role === "teacher") {
+    const { data: occurrence } = await supabase
+      .from("class_occurrences")
+      .select("teachers!inner(profile_id)")
+      .eq("id", occurrenceId)
+      .single();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if ((occurrence as any)?.teachers?.profile_id !== profile.id) {
+      throw new Error("You can only mark attendance for your own classes.");
+    }
+  } else if (profile.role !== "admin") {
+    throw new Error("Not authorized.");
+  }
 
   const status = formData.get("status") as AttendanceStatus;
   const notes = String(formData.get("notes") || "") || null;

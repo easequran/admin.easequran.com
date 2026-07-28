@@ -21,10 +21,10 @@ import {
 const NAV: { href: string; label: string; icon: React.ComponentType<{ className?: string }>; roles: UserRole[] }[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "teacher", "student"] },
   { href: "/schedule", label: "Schedule", icon: CalendarClock, roles: ["admin", "teacher", "student"] },
-  { href: "/students", label: "Students", icon: Users, roles: ["admin", "teacher"] },
+  { href: "/students", label: "Students", icon: Users, roles: ["admin"] },
   { href: "/teachers", label: "Teachers", icon: GraduationCap, roles: ["admin"] },
-  { href: "/leads", label: "Leads (CRM)", icon: UserPlus, roles: ["admin", "teacher"] },
-  { href: "/trials", label: "Trial Classes", icon: Sparkles, roles: ["admin", "teacher"] },
+  { href: "/leads", label: "Leads (CRM)", icon: UserPlus, roles: ["admin"] },
+  { href: "/trials", label: "Trial Classes", icon: Sparkles, roles: ["admin"] },
   { href: "/attendance", label: "Attendance", icon: ClipboardCheck, roles: ["admin", "teacher"] },
   { href: "/invoices", label: "Invoices & Fees", icon: Receipt, roles: ["admin", "student"] },
   { href: "/settings/integrations", label: "Integrations", icon: Settings, roles: ["admin"] },

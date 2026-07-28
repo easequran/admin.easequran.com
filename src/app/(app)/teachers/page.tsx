@@ -1,9 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/data/profile";
 import { LinkButton } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { TeachersTable, type TeacherRow } from "@/components/teachers/teachers-table";
 
 export default async function TeachersPage() {
+  await requireAdmin();
   const supabase = await createClient();
   const { data: teachers } = await supabase
     .from("teachers")

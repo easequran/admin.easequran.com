@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentProfile } from "@/lib/data/profile";
+import { requireAdmin } from "@/lib/data/profile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, Label, Select } from "@/components/ui/input";
 import { TimezoneSelect } from "@/components/ui/timezone-select";
@@ -18,7 +18,7 @@ export default async function EditTrialPage({
 }) {
   const { id } = await params;
   const { error } = await searchParams;
-  const profile = await getCurrentProfile();
+  const profile = await requireAdmin();
   const supabase = await createClient();
 
   const [{ data: occurrence }, { data: teachers }] = await Promise.all([

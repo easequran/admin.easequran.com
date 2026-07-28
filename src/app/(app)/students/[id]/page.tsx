@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/data/profile";
 import { StudentForm } from "@/components/students/student-form";
 import { updateStudent, deleteStudent } from "@/lib/actions/students";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +15,7 @@ export default async function StudentDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  await requireAdmin();
   const supabase = await createClient();
 
   const [{ data: student }, { data: schedules }, { data: invoices }, { data: feePlan }] = await Promise.all([

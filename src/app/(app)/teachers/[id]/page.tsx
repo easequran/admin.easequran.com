@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/data/profile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { TimezoneSelect } from "@/components/ui/timezone-select";
@@ -15,6 +16,7 @@ export default async function TeacherDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  await requireAdmin();
   const supabase = await createClient();
 
   const [{ data: teacher }, { data: availability }] = await Promise.all([

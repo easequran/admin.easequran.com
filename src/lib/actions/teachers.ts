@@ -3,10 +3,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getSiteUrl } from "@/lib/utils/site-url";
+import { requireAdmin } from "@/lib/data/profile";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 export async function createTeacher(formData: FormData) {
+  await requireAdmin();
   const admin = createAdminClient();
 
   const email = String(formData.get("email"));
@@ -48,6 +50,7 @@ export async function createTeacher(formData: FormData) {
 }
 
 export async function updateTeacher(teacherId: string, profileId: string, formData: FormData) {
+  await requireAdmin();
   const supabase = await createClient();
 
   const fullName = String(formData.get("full_name") || "").trim();
@@ -92,6 +95,7 @@ export async function updateTeacher(teacherId: string, profileId: string, formDa
 }
 
 export async function deleteTeacher(teacherId: string, profileId: string) {
+  await requireAdmin();
   const admin = createAdminClient();
 
   // Deleting the auth user cascades: profiles -> teachers -> availability,
@@ -105,6 +109,7 @@ export async function deleteTeacher(teacherId: string, profileId: string) {
 }
 
 export async function addAvailability(teacherId: string, formData: FormData) {
+  await requireAdmin();
   const supabase = await createClient();
 
   const days = formData.getAll("day_of_week").map((d) => Number(d));
@@ -129,6 +134,7 @@ export async function addAvailability(teacherId: string, formData: FormData) {
 }
 
 export async function removeAvailability(teacherId: string, availabilityId: string) {
+  await requireAdmin();
   const supabase = await createClient();
   const { error } = await supabase.from("teacher_availability").delete().eq("id", availabilityId);
   if (error) throw new Error(error.message);

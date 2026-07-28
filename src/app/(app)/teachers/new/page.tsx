@@ -3,8 +3,10 @@ import { TimezoneSelect } from "@/components/ui/timezone-select";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { createTeacher } from "@/lib/actions/teachers";
+import { requireAdmin } from "@/lib/data/profile";
 
-export default function NewTeacherPage() {
+export default async function NewTeacherPage() {
+  await requireAdmin();
   return (
     <div className="space-y-6">
       <PageHeader title="Add teacher" backHref="/teachers" backLabel="Back to Teachers" />

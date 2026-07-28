@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/data/profile";
 import { Input, Label, Select } from "@/components/ui/input";
 import { TimezoneSelect } from "@/components/ui/timezone-select";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,7 @@ export default async function NewTrialPage({
   searchParams: Promise<{ lead?: string }>;
 }) {
   const { lead: leadId } = await searchParams;
+  await requireAdmin();
   const supabase = await createClient();
 
   const [{ data: leads }, { data: teachers }] = await Promise.all([

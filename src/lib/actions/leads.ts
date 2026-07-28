@@ -1,11 +1,13 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/data/profile";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { LeadStatus } from "@/lib/types/database";
 
 export async function createLead(formData: FormData) {
+  await requireAdmin();
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -28,6 +30,7 @@ export async function createLead(formData: FormData) {
 }
 
 export async function updateLead(leadId: string, formData: FormData) {
+  await requireAdmin();
   const supabase = await createClient();
 
   const { error } = await supabase
@@ -49,6 +52,7 @@ export async function updateLead(leadId: string, formData: FormData) {
 }
 
 export async function deleteLead(leadId: string) {
+  await requireAdmin();
   const supabase = await createClient();
   const { error } = await supabase.from("leads").delete().eq("id", leadId);
   if (error) throw new Error(error.message);
@@ -58,6 +62,7 @@ export async function deleteLead(leadId: string) {
 }
 
 export async function updateLeadStatus(leadId: string, status: LeadStatus) {
+  await requireAdmin();
   const supabase = await createClient();
   const {
     data: { session },
@@ -79,6 +84,7 @@ export async function updateLeadStatus(leadId: string, status: LeadStatus) {
 }
 
 export async function logLeadContact(leadId: string, formData: FormData) {
+  await requireAdmin();
   const supabase = await createClient();
   const {
     data: { session },
@@ -162,6 +168,7 @@ export async function convertLeadToStudentRecord(
 }
 
 export async function convertLeadToStudent(leadId: string) {
+  await requireAdmin();
   const studentId = await convertLeadToStudentRecord(leadId, "active");
   redirect(`/students/${studentId}`);
 }

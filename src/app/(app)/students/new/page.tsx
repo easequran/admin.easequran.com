@@ -2,9 +2,11 @@ import { StudentForm } from "@/components/students/student-form";
 import { WeeklyScheduleFields } from "@/components/students/weekly-schedule-fields";
 import { createStudent } from "@/lib/actions/students";
 import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/data/profile";
 import { PageHeader } from "@/components/ui/page-header";
 
 export default async function NewStudentPage() {
+  await requireAdmin();
   const supabase = await createClient();
   const { data: teachers } = await supabase
     .from("teachers")

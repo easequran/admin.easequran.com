@@ -1,12 +1,14 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/data/profile";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { EnrollmentStatus } from "@/lib/types/database";
 import { generateOccurrencesForSchedule, hasConflict, isWithinAvailability } from "@/lib/scheduling";
 
 export async function createStudent(formData: FormData) {
+  await requireAdmin();
   const supabase = await createClient();
 
   const timezone = String(formData.get("timezone") || "UTC");
@@ -84,6 +86,7 @@ export async function createStudent(formData: FormData) {
 }
 
 export async function updateStudent(studentId: string, formData: FormData) {
+  await requireAdmin();
   const supabase = await createClient();
 
   const { error } = await supabase
@@ -107,6 +110,7 @@ export async function updateStudent(studentId: string, formData: FormData) {
 }
 
 export async function deleteStudent(studentId: string) {
+  await requireAdmin();
   const supabase = await createClient();
   const { error } = await supabase.from("students").delete().eq("id", studentId);
   if (error) throw new Error(error.message);
