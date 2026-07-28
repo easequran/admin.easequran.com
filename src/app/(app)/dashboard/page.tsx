@@ -104,13 +104,34 @@ export default async function DashboardPage() {
   }
 
   if (profile.role === "teacher") {
-    const { data: upcoming } = await supabase
-      .from("class_occurrences")
-      .select("id, start_at, is_trial, students(full_name), teachers!inner(profile_id)")
-      .eq("teachers.profile_id", profile.id)
-      .gte("start_at", DateTime.utc().toISO()!)
-      .order("start_at")
-      .limit(10);
+    const [{ data: upcoming }, { data: teacherRow }] = await Promise.all([
+      supabase
+        .from("class_occurrences")
+        .select("id, start_at, is_trial, students(full_name), teachers!inner(profile_id)")
+        .eq("teachers.profile_id", profile.id)
+        .gte("start_at", DateTime.utc().toISO()!)
+        .order("start_at")
+        .limit(10),
+      supabase.from("teachers").select("id").eq("profile_id", profile.id).single(),
+    ]);
+
+    const { data: weeklySchedule } = teacherRow
+      ? await supabase
+          .from("recurring_schedules")
+          .select("id, day_of_week, local_start_time, duration_minutes, timezone, students(full_name)")
+          .eq("teacher_id", teacherRow.id)
+          .eq("active", true)
+          .order("day_of_week")
+      : { data: null };
+
+    const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const byDay = DAY_NAMES.map((name, dayIndex) => ({
+      name,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      items: ((weeklySchedule ?? []) as any[])
+        .filter((s) => s.day_of_week === dayIndex)
+        .sort((a, b) => a.local_start_time.localeCompare(b.local_start_time)),
+    }));
 
     return (
       <div className="space-y-6">
@@ -131,6 +152,35 @@ export default async function DashboardPage() {
                   </li>
                 ))}
               </ul>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Your weekly timetable</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {byDay.every((d) => d.items.length === 0) ? (
+              <p className="text-sm text-slate-500">No recurring classes assigned yet.</p>
+            ) : (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {byDay
+                  .filter((d) => d.items.length > 0)
+                  .map((d) => (
+                    <div key={d.name} className="rounded-lg border border-primary-100 p-3">
+                      <p className="mb-2 text-sm font-semibold text-primary-900">{d.name}</p>
+                      <ul className="space-y-1.5">
+                        {d.items.map((s) => (
+                          <li key={s.id} className="text-sm text-slate-600">
+                            <span className="font-medium text-primary-800">{s.local_start_time.slice(0, 5)}</span>{" "}
+                            ({s.timezone}) · {s.students?.full_name ?? "Student"} · {s.duration_minutes}m
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+              </div>
             )}
           </CardContent>
         </Card>

@@ -16,8 +16,8 @@ export default async function AttendancePage() {
     .from("class_occurrences")
     .select(
       profile.role === "teacher"
-        ? "id, start_at, is_trial, students(full_name), leads(full_name), attendance(status), teachers!inner(profile_id)"
-        : "id, start_at, is_trial, students(full_name), leads(full_name), attendance(status)",
+        ? "id, start_at, is_trial, students(full_name), leads(full_name), attendance(status, notes), teachers!inner(profile_id)"
+        : "id, start_at, is_trial, students(full_name), leads(full_name), attendance(status, notes)",
     )
     .lte("start_at", DateTime.utc().toISO()!)
     .order("start_at", { ascending: false })
@@ -51,6 +51,7 @@ export default async function AttendancePage() {
                 startAt={o.start_at}
                 viewerTimezone={profile.timezone}
                 currentStatus={o.attendance?.[0]?.status}
+                currentNotes={o.attendance?.[0]?.notes}
               />
             ))}
             {(!occurrences || occurrences.length === 0) && (
