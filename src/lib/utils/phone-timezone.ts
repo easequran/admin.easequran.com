@@ -1,55 +1,53 @@
 import { parsePhoneNumberFromString } from "libphonenumber-js";
+import { getCountry } from "countries-and-timezones";
 
 /**
- * Best-guess primary IANA timezone per country. For single-timezone (or
- * effectively single-timezone-for-our-audience) countries this is exact.
- * US/Canada are handled separately via NANP area codes since they span
- * multiple zones.
+ * A few well-populated cities per country, used to pick the most
+ * representative zone when a country spans multiple (e.g. US, Russia,
+ * Brazil) and the phone number itself doesn't narrow it down further
+ * (that's what the NANP area-code table below is for, for +1 numbers).
  */
-const COUNTRY_TIMEZONES: Record<string, string> = {
-  PK: "Asia/Karachi",
-  BD: "Asia/Dhaka",
-  IN: "Asia/Kolkata",
-  LK: "Asia/Colombo",
-  NP: "Asia/Kathmandu",
-  AE: "Asia/Dubai",
-  SA: "Asia/Riyadh",
-  QA: "Asia/Qatar",
-  KW: "Asia/Kuwait",
-  BH: "Asia/Bahrain",
-  OM: "Asia/Muscat",
-  EG: "Africa/Cairo",
-  TR: "Europe/Istanbul",
-  MY: "Asia/Kuala_Lumpur",
-  ID: "Asia/Jakarta",
-  SG: "Asia/Singapore",
-  PH: "Asia/Manila",
-  GB: "Europe/London",
-  IE: "Europe/Dublin",
-  FR: "Europe/Paris",
-  DE: "Europe/Berlin",
-  ES: "Europe/Madrid",
-  IT: "Europe/Rome",
-  NL: "Europe/Amsterdam",
-  BE: "Europe/Brussels",
-  SE: "Europe/Stockholm",
-  NO: "Europe/Oslo",
-  DK: "Europe/Copenhagen",
-  FI: "Europe/Helsinki",
-  PL: "Europe/Warsaw",
-  ZA: "Africa/Johannesburg",
-  NG: "Africa/Lagos",
-  KE: "Africa/Nairobi",
-  AU: "Australia/Sydney",
-  NZ: "Pacific/Auckland",
-  JP: "Asia/Tokyo",
-  KR: "Asia/Seoul",
-  CN: "Asia/Shanghai",
-  HK: "Asia/Hong_Kong",
+const PREFERRED_ZONE_BY_COUNTRY: Record<string, string> = {
+  US: "America/New_York",
+  RU: "Europe/Moscow",
   BR: "America/Sao_Paulo",
+  AU: "Australia/Sydney",
+  CA: "America/Toronto",
+  CD: "Africa/Kinshasa",
   MX: "America/Mexico_City",
-  AR: "America/Argentina/Buenos_Aires",
+  ID: "Asia/Jakarta",
+  MN: "Asia/Ulaanbaatar",
+  CL: "America/Santiago",
+  EC: "America/Guayaquil",
+  ES: "Europe/Madrid",
+  PT: "Europe/Lisbon",
+  KZ: "Asia/Almaty",
+  MY: "Asia/Kuala_Lumpur",
+  PF: "Pacific/Tahiti",
+  UA: "Europe/Kyiv",
+  UM: "Pacific/Wake",
+  NZ: "Pacific/Auckland",
+  PG: "Pacific/Port_Moresby",
+  GL: "America/Nuuk",
+  FM: "Pacific/Chuuk",
+  KI: "Pacific/Tarawa",
+  MH: "Pacific/Majuro",
+  CN: "Asia/Shanghai",
 };
+
+/**
+ * Every ISO country's primary IANA timezone, derived from the
+ * `countries-and-timezones` IANA dataset (covers all ~250 countries) rather
+ * than a small hand-maintained list — that's what previously limited
+ * detection to a handful of countries. `PREFERRED_ZONE_BY_COUNTRY` picks the
+ * most representative zone for the few countries with more than one.
+ */
+function primaryZoneForCountry(countryCode: string): string | null {
+  const country = getCountry(countryCode);
+  if (!country || country.timezones.length === 0) return null;
+  if (country.timezones.length === 1) return country.timezones[0];
+  return PREFERRED_ZONE_BY_COUNTRY[countryCode] ?? country.timezones[0];
+}
 
 /** NANP area code -> IANA timezone, for US + Canada numbers (country code +1). */
 const NANP_AREA_CODE_TIMEZONES: Record<string, string> = {
@@ -233,7 +231,7 @@ export function guessTimezoneFromPhone(rawPhone: string): PhoneTimezoneGuess | n
     };
   }
 
-  const zone = COUNTRY_TIMEZONES[countryCode];
+  const zone = primaryZoneForCountry(countryCode);
   if (!zone) return null;
 
   return {

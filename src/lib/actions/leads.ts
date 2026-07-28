@@ -118,11 +118,22 @@ export async function logLeadContact(leadId: string, formData: FormData) {
   revalidatePath("/dashboard");
 }
 
-export async function convertLeadToStudent(leadId: string) {
+/**
+ * Shared by the manual "Convert to student" button and the automatic
+ * conversion that fires when a trial class is marked attended — both need
+ * the same insert-student + mark-lead-converted logic, just with different
+ * post-conversion navigation.
+ */
+export async function convertLeadToStudentRecord(
+  leadId: string,
+  enrollmentStatus: "trial" | "active" = "active",
+): Promise<string> {
   const supabase = await createClient();
 
   const { data: lead } = await supabase.from("leads").select("*").eq("id", leadId).single();
   if (!lead) throw new Error("Lead not found");
+
+  if (lead.converted_student_id) return lead.converted_student_id;
 
   const { data: student, error } = await supabase
     .from("students")
@@ -130,7 +141,9 @@ export async function convertLeadToStudent(leadId: string) {
       full_name: lead.full_name,
       timezone: lead.timezone ?? "UTC",
       country: lead.country,
-      enrollment_status: "active",
+      guardian_phone: lead.phone,
+      guardian_email: lead.email,
+      enrollment_status: enrollmentStatus,
       lead_id: lead.id,
     })
     .select("id")
@@ -144,5 +157,11 @@ export async function convertLeadToStudent(leadId: string) {
 
   revalidatePath("/leads");
   revalidatePath("/students");
-  redirect(`/students/${student.id}`);
+
+  return student.id;
+}
+
+export async function convertLeadToStudent(leadId: string) {
+  const studentId = await convertLeadToStudentRecord(leadId, "active");
+  redirect(`/students/${studentId}`);
 }

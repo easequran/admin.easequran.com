@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getSiteUrl } from "@/lib/utils/site-url";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -12,7 +13,7 @@ export async function createTeacher(formData: FormData) {
   const fullName = String(formData.get("full_name"));
   const timezone = String(formData.get("timezone") || "UTC");
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3001";
+  const siteUrl = await getSiteUrl();
   const { data: invited, error: inviteError } = await admin.auth.admin.inviteUserByEmail(email, {
     data: { full_name: fullName },
     redirectTo: `${siteUrl}/auth/callback`,

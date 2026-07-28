@@ -13,6 +13,7 @@
     "@supabase/ssr": "^0.12.3",
     "@supabase/supabase-js": "^2.110.8",
     "clsx": "^2.1.1",
+    "countries-and-timezones": "^3.9.0",
     "date-fns": "^4.4.0",
     "googleapis": "^173.0.0",
     "libphonenumber-js": "^1.13.9",

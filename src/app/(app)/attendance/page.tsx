@@ -9,14 +9,16 @@ export default async function AttendancePage() {
   const profile = await getCurrentProfile();
   const supabase = await createClient();
 
+  // Trial classes only have a `lead_id` (no `student_id` yet — that gets
+  // created automatically once attendance confirms the trial happened), so
+  // they must be included here too, not just regular student classes.
   let query = supabase
     .from("class_occurrences")
     .select(
       profile.role === "teacher"
-        ? "id, start_at, students(full_name), attendance(status), teachers!inner(profile_id)"
-        : "id, start_at, students(full_name), attendance(status)",
+        ? "id, start_at, is_trial, students(full_name), leads(full_name), attendance(status), teachers!inner(profile_id)"
+        : "id, start_at, is_trial, students(full_name), leads(full_name), attendance(status)",
     )
-    .not("student_id", "is", null)
     .lte("start_at", DateTime.utc().toISO()!)
     .order("start_at", { ascending: false })
     .limit(30);
@@ -29,7 +31,10 @@ export default async function AttendancePage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Attendance" description="Mark and review attendance for recent classes." />
+      <PageHeader
+        title="Attendance"
+        description="Mark and review attendance for recent classes and trials."
+      />
       <Card>
         <CardHeader>
           <CardTitle>Recent classes</CardTitle>
@@ -41,7 +46,8 @@ export default async function AttendancePage() {
               <AttendanceRow
                 key={o.id}
                 occurrenceId={o.id}
-                studentName={o.students?.full_name ?? "Unknown"}
+                studentName={o.students?.full_name ?? o.leads?.full_name ?? "Unknown"}
+                isTrial={o.is_trial}
                 startAt={o.start_at}
                 viewerTimezone={profile.timezone}
                 currentStatus={o.attendance?.[0]?.status}

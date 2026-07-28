@@ -34,6 +34,9 @@ export default async function SchedulePage({
     occurrenceQuery = occurrenceQuery.eq("students.profile_id", profile.id);
   }
 
+  const todayStartLocal = DateTime.now().setZone(profile.timezone).startOf("day");
+  const todayEndLocal = todayStartLocal.endOf("day");
+
   const isAdmin = profile.role === "admin";
 
   const [{ data: occurrences }, adminLists] = await Promise.all([
@@ -56,6 +59,11 @@ export default async function SchedulePage({
     teacherName: o.teachers?.profiles?.full_name,
   }));
 
+  const todayClasses = mapped.filter((o) => {
+    const startLocal = DateTime.fromISO(o.start_at, { zone: "utc" }).setZone(profile.timezone);
+    return startLocal >= todayStartLocal && startLocal <= todayEndLocal;
+  });
+
   let studentsForForm: { id: string; full_name: string; timezone: string }[] = [];
   let teachersForForm: { id: string; name: string }[] = [];
 
@@ -76,6 +84,15 @@ export default async function SchedulePage({
       {params.error && (
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{params.error}</p>
       )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Today ({todayStartLocal.toFormat("EEEE, MMMM d")})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <OccurrenceList occurrences={todayClasses} viewerTimezone={profile.timezone} />
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">

@@ -13,12 +13,14 @@ const OPTIONS: { value: AttendanceStatus; label: string }[] = [
 export function AttendanceRow({
   occurrenceId,
   studentName,
+  isTrial,
   startAt,
   viewerTimezone,
   currentStatus,
 }: {
   occurrenceId: string;
   studentName: string;
+  isTrial?: boolean;
   startAt: string;
   viewerTimezone: string;
   currentStatus?: AttendanceStatus;
@@ -28,7 +30,14 @@ export function AttendanceRow({
   return (
     <li className="flex flex-col gap-2 py-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-4">
       <div className="min-w-0">
-        <p className="font-medium text-primary-900">{studentName}</p>
+        <p className="font-medium text-primary-900">
+          {studentName}
+          {isTrial && (
+            <Badge tone="accent" className="ml-2">
+              Trial
+            </Badge>
+          )}
+        </p>
         <p className="text-slate-500">{formatInZone(startAt, viewerTimezone)}</p>
       </div>
       {currentStatus ? (

@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { getSiteUrl } from "@/lib/utils/site-url";
 import { redirect } from "next/navigation";
 
 export async function signIn(formData: FormData) {
@@ -28,7 +29,7 @@ export async function requestPasswordReset(formData: FormData) {
   const email = String(formData.get("email") ?? "");
   const supabase = await createClient();
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3001";
+  const siteUrl = await getSiteUrl();
   await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${siteUrl}/auth/callback`,
   });
