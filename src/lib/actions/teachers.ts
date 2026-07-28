@@ -4,8 +4,27 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getSiteUrl } from "@/lib/utils/site-url";
 import { requireAdmin } from "@/lib/data/profile";
+import { getCurrentProfile } from "@/lib/data/profile";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+
+/**
+ * Availability is managed by admins for any teacher, or by a teacher for
+ * their own slots -- unlike the rest of this file, which stays admin-only.
+ */
+async function assertCanManageAvailability(teacherId: string) {
+  const supabase = await createClient();
+  const profile = await getCurrentProfile();
+
+  if (profile.role === "admin") return;
+
+  if (profile.role === "teacher") {
+    const { data: teacher } = await supabase.from("teachers").select("id").eq("profile_id", profile.id).single();
+    if (teacher?.id === teacherId) return;
+  }
+
+  throw new Error("Not authorized.");
+}
 
 export async function createTeacher(formData: FormData) {
   await requireAdmin();
@@ -109,7 +128,7 @@ export async function deleteTeacher(teacherId: string, profileId: string) {
 }
 
 export async function addAvailability(teacherId: string, formData: FormData) {
-  await requireAdmin();
+  await assertCanManageAvailability(teacherId);
   const supabase = await createClient();
 
   const days = formData.getAll("day_of_week").map((d) => Number(d));
@@ -131,12 +150,18 @@ export async function addAvailability(teacherId: string, formData: FormData) {
   if (error) throw new Error(error.message);
 
   revalidatePath(`/teachers/${teacherId}`);
+  revalidatePath("/dashboard");
 }
 
 export async function removeAvailability(teacherId: string, availabilityId: string) {
-  await requireAdmin();
+  await assertCanManageAvailability(teacherId);
   const supabase = await createClient();
-  const { error } = await supabase.from("teacher_availability").delete().eq("id", availabilityId);
+  const { error } = await supabase
+    .from("teacher_availability")
+    .delete()
+    .eq("id", availabilityId)
+    .eq("teacher_id", teacherId);
   if (error) throw new Error(error.message);
   revalidatePath(`/teachers/${teacherId}`);
+  revalidatePath("/dashboard");
 }

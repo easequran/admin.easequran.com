@@ -132,6 +132,73 @@ export async function generateOccurrencesForSchedule(
   }
 }
 
+export interface TimetableBlock {
+  startMinutes: number; // minutes since midnight, in the teacher's timezone
+  endMinutes: number;
+  label?: string;
+}
+
+export interface TimetableDay {
+  dayOfWeek: number; // 0 = Sunday .. 6 = Saturday
+  free: TimetableBlock[];
+  busy: TimetableBlock[];
+}
+
+/**
+ * Projects a teacher's declared availability and booked recurring classes
+ * onto a single common week, in the teacher's own timezone -- both
+ * availability rows and recurring schedules can be declared in whatever
+ * timezone they were created with, so this re-resolves each one through
+ * `nextOccurrenceUtc` (which is DST-safe) rather than comparing raw
+ * HH:mm strings across possibly-different zones.
+ */
+export function buildWeeklyTimetable(
+  availability: { day_of_week: number; local_start_time: string; local_end_time: string; timezone: string }[],
+  booked: { day_of_week: number; local_start_time: string; duration_minutes: number; timezone: string; label: string }[],
+  teacherTimezone: string,
+): TimetableDay[] {
+  const reference = DateTime.now().setZone(teacherTimezone).startOf("week");
+
+  function toTeacherLocal(dayOfWeek: number, localTime: string, timezone: string, durationMinutes: number) {
+    const { startAt, endAt } = nextOccurrenceUtc({
+      dayOfWeek,
+      localStartTime: localTime,
+      timezone,
+      durationMinutes,
+      fromDate: reference,
+    });
+    const startLocal = startAt.setZone(teacherTimezone);
+    const endLocal = endAt.setZone(teacherTimezone);
+    return {
+      dayOfWeek: startLocal.weekday === 7 ? 0 : startLocal.weekday,
+      startMinutes: startLocal.hour * 60 + startLocal.minute,
+      endMinutes: startLocal.hour * 60 + startLocal.minute + endAt.diff(startAt, "minutes").minutes,
+      spansMidnight: startLocal.hasSame(endLocal, "day") === false,
+    };
+  }
+
+  const days: TimetableDay[] = Array.from({ length: 7 }, (_, dayOfWeek) => ({ dayOfWeek, free: [], busy: [] }));
+
+  for (const a of availability) {
+    const [sh, sm] = a.local_start_time.split(":").map(Number);
+    const [eh, em] = a.local_end_time.split(":").map(Number);
+    const durationMinutes = eh * 60 + em - (sh * 60 + sm);
+    const resolved = toTeacherLocal(a.day_of_week, a.local_start_time, a.timezone, durationMinutes);
+    days[resolved.dayOfWeek].free.push({ startMinutes: resolved.startMinutes, endMinutes: resolved.endMinutes });
+  }
+
+  for (const b of booked) {
+    const resolved = toTeacherLocal(b.day_of_week, b.local_start_time, b.timezone, b.duration_minutes);
+    days[resolved.dayOfWeek].busy.push({
+      startMinutes: resolved.startMinutes,
+      endMinutes: resolved.endMinutes,
+      label: b.label,
+    });
+  }
+
+  return days;
+}
+
 /** Checks whether a teacher (or student) already has an occurrence overlapping the given window. */
 export async function hasConflict(
   params: {

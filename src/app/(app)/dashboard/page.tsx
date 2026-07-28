@@ -3,6 +3,10 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatInZone } from "@/lib/utils/timezone";
+import { buildWeeklyTimetable } from "@/lib/scheduling";
+import { AvailabilityEditor } from "@/components/teachers/availability-editor";
+import { WeeklyTimetableGrid } from "@/components/teachers/weekly-timetable-grid";
+import { addAvailability, removeAvailability } from "@/lib/actions/teachers";
 import { DateTime } from "luxon";
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
@@ -115,23 +119,38 @@ export default async function DashboardPage() {
       supabase.from("teachers").select("id").eq("profile_id", profile.id).single(),
     ]);
 
-    const { data: weeklySchedule } = teacherRow
-      ? await supabase
-          .from("recurring_schedules")
-          .select("id, day_of_week, local_start_time, duration_minutes, timezone, students(full_name)")
-          .eq("teacher_id", teacherRow.id)
-          .eq("active", true)
-          .order("day_of_week")
-      : { data: null };
+    const [{ data: weeklySchedule }, { data: availability }] = teacherRow
+      ? await Promise.all([
+          supabase
+            .from("recurring_schedules")
+            .select("id, day_of_week, local_start_time, duration_minutes, timezone, students(full_name)")
+            .eq("teacher_id", teacherRow.id)
+            .eq("active", true)
+            .order("day_of_week"),
+          supabase.from("teacher_availability").select("*").eq("teacher_id", teacherRow.id).order("day_of_week"),
+        ])
+      : [{ data: null }, { data: null }];
 
-    const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-    const byDay = DAY_NAMES.map((name, dayIndex) => ({
-      name,
+    const timetable = buildWeeklyTimetable(
+      availability ?? [],
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      items: ((weeklySchedule ?? []) as any[])
-        .filter((s) => s.day_of_week === dayIndex)
-        .sort((a, b) => a.local_start_time.localeCompare(b.local_start_time)),
-    }));
+      ((weeklySchedule ?? []) as any[]).map((s) => ({
+        day_of_week: s.day_of_week,
+        local_start_time: s.local_start_time,
+        duration_minutes: s.duration_minutes,
+        timezone: s.timezone,
+        label: s.students?.full_name ?? "Student",
+      })),
+      profile.timezone,
+    );
+
+    const boundAdd = teacherRow ? addAvailability.bind(null, teacherRow.id) : undefined;
+    const boundRemove = teacherRow
+      ? async (formData: FormData) => {
+          "use server";
+          await removeAvailability(teacherRow.id, String(formData.get("availability_id")));
+        }
+      : undefined;
 
     return (
       <div className="space-y-6">
@@ -161,29 +180,25 @@ export default async function DashboardPage() {
             <CardTitle>Your weekly timetable</CardTitle>
           </CardHeader>
           <CardContent>
-            {byDay.every((d) => d.items.length === 0) ? (
-              <p className="text-sm text-slate-500">No recurring classes assigned yet.</p>
-            ) : (
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {byDay
-                  .filter((d) => d.items.length > 0)
-                  .map((d) => (
-                    <div key={d.name} className="rounded-lg border border-primary-100 p-3">
-                      <p className="mb-2 text-sm font-semibold text-primary-900">{d.name}</p>
-                      <ul className="space-y-1.5">
-                        {d.items.map((s) => (
-                          <li key={s.id} className="text-sm text-slate-600">
-                            <span className="font-medium text-primary-800">{s.local_start_time.slice(0, 5)}</span>{" "}
-                            ({s.timezone}) · {s.students?.full_name ?? "Student"} · {s.duration_minutes}m
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-              </div>
-            )}
+            <WeeklyTimetableGrid days={timetable} timezone={profile.timezone} />
           </CardContent>
         </Card>
+
+        {boundAdd && boundRemove && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Your availability ({profile.timezone})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <AvailabilityEditor
+                teacherTimezone={profile.timezone}
+                availability={availability ?? []}
+                onAdd={boundAdd}
+                onRemove={boundRemove}
+              />
+            </CardContent>
+          </Card>
+        )}
       </div>
     );
   }
