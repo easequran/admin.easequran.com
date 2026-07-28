@@ -19,7 +19,9 @@ export function PhoneCountryTimezoneField({
   const [timezone, setTimezone] = useState(defaultTimezone ?? "UTC");
   const [manuallyEditedCountry, setManuallyEditedCountry] = useState(Boolean(defaultCountry));
   const [manuallyEditedTimezone, setManuallyEditedTimezone] = useState(Boolean(defaultTimezone));
-  const [guess, setGuess] = useState<PhoneTimezoneGuess | null>(null);
+  const [guess, setGuess] = useState<PhoneTimezoneGuess | null>(() =>
+    defaultPhone ? guessTimezoneFromPhone(defaultPhone) : null,
+  );
 
   const zones = listAllTimezones();
 

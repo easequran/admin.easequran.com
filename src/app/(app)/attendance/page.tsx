@@ -50,8 +50,8 @@ export default async function AttendancePage() {
                 isTrial={o.is_trial}
                 startAt={o.start_at}
                 viewerTimezone={profile.timezone}
-                currentStatus={o.attendance?.[0]?.status}
-                currentNotes={o.attendance?.[0]?.notes}
+                currentStatus={o.attendance?.status}
+                currentNotes={o.attendance?.notes}
               />
             ))}
             {(!occurrences || occurrences.length === 0) && (

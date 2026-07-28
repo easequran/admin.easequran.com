@@ -44,14 +44,17 @@ export default async function StudentDetailPage({
   ]);
   if (!student) notFound();
 
+  // `attendance.occurrence_id` is unique, so PostgREST embeds it as a
+  // single object rather than an array -- indexing with [0] here always
+  // silently returned undefined.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const classesThisMonth = (monthClasses ?? []) as any[];
-  const marked = classesThisMonth.filter((c) => c.attendance?.[0]?.status);
-  const presentCount = marked.filter((c) => ["present", "late"].includes(c.attendance[0].status)).length;
-  const absentCount = marked.filter((c) => c.attendance[0].status === "absent").length;
-  const excusedCount = marked.filter((c) => c.attendance[0].status === "excused").length;
+  const marked = classesThisMonth.filter((c) => c.attendance?.status);
+  const presentCount = marked.filter((c) => ["present", "late"].includes(c.attendance.status)).length;
+  const absentCount = marked.filter((c) => c.attendance.status === "absent").length;
+  const excusedCount = marked.filter((c) => c.attendance.status === "excused").length;
   const attendanceRate = marked.length > 0 ? Math.round((presentCount / marked.length) * 100) : null;
-  const comments = classesThisMonth.filter((c) => c.attendance?.[0]?.notes);
+  const comments = classesThisMonth.filter((c) => c.attendance?.notes);
 
   const prevMonth = selectedMonth.minus({ months: 1 }).toFormat("yyyy-LL");
   const nextMonth = selectedMonth.plus({ months: 1 }).toFormat("yyyy-LL");
@@ -145,11 +148,11 @@ export default async function StudentDetailPage({
                             <span>{DateTime.fromISO(c.start_at).toFormat("MMM d")}</span>
                             <span>·</span>
                             <span>{c.teachers?.profiles?.full_name ?? "Teacher"}</span>
-                            <Badge tone={c.attendance[0].status === "present" ? "success" : c.attendance[0].status === "absent" ? "danger" : "warning"}>
-                              {c.attendance[0].status}
+                            <Badge tone={c.attendance.status === "present" ? "success" : c.attendance.status === "absent" ? "danger" : "warning"}>
+                              {c.attendance.status}
                             </Badge>
                           </div>
-                          <p className="mt-1 text-primary-800">{c.attendance[0].notes}</p>
+                          <p className="mt-1 text-primary-800">{c.attendance.notes}</p>
                         </li>
                       ))}
                     </ul>
