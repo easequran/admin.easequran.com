@@ -258,5 +258,6 @@ export async function convertLeadWithAssignment(leadId: string, formData: FormDa
 
   revalidatePath("/students");
   revalidatePath("/schedule");
+  if (teacherId) revalidatePath(`/teachers/${teacherId}`);
   redirect(`/students/${studentId}`);
 }

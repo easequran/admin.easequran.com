@@ -47,7 +47,64 @@ export async function createStudent(formData: FormData) {
 
   revalidatePath("/students");
   revalidatePath("/schedule");
+  if (teacherId) revalidatePath(`/teachers/${teacherId}`);
   redirect(`/students/${data.id}`);
+}
+
+/** Adds one or more weekly recurring classes to an existing student, e.g. assigning their first teacher after conversion. */
+export async function addStudentSchedule(studentId: string, formData: FormData) {
+  await requireAdmin();
+  const supabase = await createClient();
+
+  const { data: student } = await supabase.from("students").select("timezone").eq("id", studentId).single();
+  if (!student) throw new Error("Student not found");
+
+  const teacherId = String(formData.get("teacher_id") || "");
+  const classDays = formData.getAll("class_days").map((d) => Number(d));
+  const classTime = String(formData.get("class_time") || "");
+  const classDuration = Number(formData.get("class_duration") || 30);
+
+  await createWeeklySchedulesForStudent({
+    studentId,
+    teacherId,
+    timezone: student.timezone,
+    classDays,
+    classTime,
+    classDuration,
+  });
+
+  revalidatePath(`/students/${studentId}`);
+  revalidatePath("/schedule");
+  if (teacherId) revalidatePath(`/teachers/${teacherId}`);
+}
+
+/** Deactivates a recurring schedule and cancels its not-yet-happened occurrences. */
+export async function removeStudentSchedule(scheduleId: string, studentId: string) {
+  await requireAdmin();
+  const supabase = await createClient();
+
+  const { data: schedule } = await supabase
+    .from("recurring_schedules")
+    .select("teacher_id")
+    .eq("id", scheduleId)
+    .single();
+
+  const { error } = await supabase
+    .from("recurring_schedules")
+    .update({ active: false, end_date: new Date().toISOString().slice(0, 10) })
+    .eq("id", scheduleId);
+  if (error) throw new Error(error.message);
+
+  await supabase
+    .from("class_occurrences")
+    .update({ status: "cancelled" })
+    .eq("recurring_schedule_id", scheduleId)
+    .eq("status", "scheduled")
+    .gte("start_at", new Date().toISOString());
+
+  revalidatePath(`/students/${studentId}`);
+  revalidatePath("/schedule");
+  if (schedule?.teacher_id) revalidatePath(`/teachers/${schedule.teacher_id}`);
 }
 
 export async function updateStudent(studentId: string, formData: FormData) {

@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { generateMonthlyInvoices, markInvoicePaid } from "@/lib/actions/invoices";
+import { InvoiceRowActions } from "@/components/invoices/invoice-row-actions";
 import { PageHeader } from "@/components/ui/page-header";
 
 const statusTone = {
@@ -55,7 +56,7 @@ export default async function InvoicesPage() {
               <th className="px-5 py-3">Amount</th>
               <th className="px-5 py-3">Due date</th>
               <th className="px-5 py-3">Status</th>
-              {profile.role === "admin" && <th className="px-5 py-3" />}
+              {profile.role === "admin" && <th className="px-5 py-3 text-right">Actions</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-primary-50">
@@ -76,13 +77,16 @@ export default async function InvoicesPage() {
                 </td>
                 {profile.role === "admin" && (
                   <td className="px-5 py-3">
-                    {inv.status !== "paid" && (
-                      <form action={markInvoicePaid.bind(null, inv.id)}>
-                        <Button type="submit" size="sm" variant="outline">
-                          Mark paid
-                        </Button>
-                      </form>
-                    )}
+                    <div className="flex justify-end gap-2">
+                      {inv.status !== "paid" && (
+                        <form action={markInvoicePaid.bind(null, inv.id)}>
+                          <Button type="submit" size="sm" variant="outline">
+                            Mark paid
+                          </Button>
+                        </form>
+                      )}
+                      <InvoiceRowActions invoice={inv} studentName={inv.students?.full_name} />
+                    </div>
                   </td>
                 )}
               </tr>

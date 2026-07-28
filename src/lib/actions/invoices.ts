@@ -1,8 +1,10 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/data/profile";
 import { revalidatePath } from "next/cache";
 import { DateTime } from "luxon";
+import type { InvoiceStatus } from "@/lib/types/database";
 
 export async function createFeePlan(studentId: string, formData: FormData) {
   const supabase = await createClient();
@@ -70,6 +72,39 @@ export async function markInvoicePaid(invoiceId: string, formData: FormData) {
   if (error) throw new Error(error.message);
 
   revalidatePath("/invoices");
+}
+
+export async function updateInvoice(invoiceId: string, formData: FormData) {
+  await requireAdmin();
+  const supabase = await createClient();
+
+  const status = String(formData.get("status") || "pending") as InvoiceStatus;
+
+  const { error } = await supabase
+    .from("invoices")
+    .update({
+      amount: Number(formData.get("amount")),
+      currency: String(formData.get("currency") || "USD"),
+      due_date: String(formData.get("due_date")),
+      status,
+      paid_at: status === "paid" ? new Date().toISOString() : null,
+    })
+    .eq("id", invoiceId);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/invoices");
+  revalidatePath("/students/[id]", "page");
+}
+
+export async function deleteInvoice(invoiceId: string) {
+  await requireAdmin();
+  const supabase = await createClient();
+
+  const { error } = await supabase.from("invoices").delete().eq("id", invoiceId);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/invoices");
+  revalidatePath("/students/[id]", "page");
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

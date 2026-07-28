@@ -1,11 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/data/profile";
 import { StudentForm } from "@/components/students/student-form";
-import { updateStudent, deleteStudent } from "@/lib/actions/students";
+import { updateStudent, deleteStudent, addStudentSchedule, removeStudentSchedule } from "@/lib/actions/students";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { WeeklyScheduleFields } from "@/components/students/weekly-schedule-fields";
 import { createFeePlan } from "@/lib/actions/invoices";
 import { PageHeader } from "@/components/ui/page-header";
 import { notFound } from "next/navigation";
@@ -29,7 +30,7 @@ export default async function StudentDetailPage({
   const monthStart = selectedMonth.startOf("month");
   const monthEnd = selectedMonth.endOf("month");
 
-  const [{ data: student }, { data: schedules }, { data: invoices }, { data: feePlan }, { data: monthClasses }] = await Promise.all([
+  const [{ data: student }, { data: schedules }, { data: invoices }, { data: feePlan }, { data: monthClasses }, { data: teachers }] = await Promise.all([
     supabase.from("students").select("*").eq("id", id).single(),
     supabase.from("recurring_schedules").select("*, teachers(profiles(full_name))").eq("student_id", id).eq("active", true),
     supabase.from("invoices").select("*").eq("student_id", id).order("due_date", { ascending: false }).limit(5),
@@ -41,8 +42,17 @@ export default async function StudentDetailPage({
       .gte("start_at", monthStart.toUTC().toISO()!)
       .lte("start_at", monthEnd.toUTC().toISO()!)
       .order("start_at"),
+    supabase.from("teachers").select("id, hourly_rate, currency, profiles(full_name)").eq("active", true),
   ]);
   if (!student) notFound();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const teacherOptions = ((teachers ?? []) as any[]).map((t) => ({
+    id: t.id,
+    name: t.profiles?.full_name ?? "Unnamed",
+    hourlyRate: t.hourly_rate,
+    currency: t.currency,
+  }));
 
   // `attendance.occurrence_id` is unique, so PostgREST embeds it as a
   // single object rather than an array -- indexing with [0] here always
@@ -62,6 +72,7 @@ export default async function StudentDetailPage({
   const boundUpdate = updateStudent.bind(null, id);
   const boundDelete = deleteStudent.bind(null, id);
   const boundCreatePlan = createFeePlan.bind(null, id);
+  const boundAddSchedule = addStudentSchedule.bind(null, id);
 
   return (
     <div className="space-y-6">
@@ -170,22 +181,44 @@ export default async function StudentDetailPage({
             </CardHeader>
             <CardContent>
               {!schedules || schedules.length === 0 ? (
-                <p className="text-sm text-slate-500">No recurring classes yet.</p>
+                <p className="mb-4 text-sm text-slate-500">No recurring classes yet.</p>
               ) : (
-                <ul className="space-y-2 text-sm">
-                  {schedules.map((s) => (
-                    <li key={s.id} className="rounded-lg bg-primary-50 px-3 py-2">
-                      <p className="font-medium text-primary-900">
-                        {s.teachers?.profiles?.full_name}
-                      </p>
-                      <p className="text-slate-500">
-                        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][s.day_of_week]}{" "}
-                        {s.local_start_time} ({s.timezone}) · {s.duration_minutes}m
-                      </p>
-                    </li>
-                  ))}
+                <ul className="mb-4 space-y-2 text-sm">
+                  {schedules.map((s) => {
+                    const boundRemove = removeStudentSchedule.bind(null, s.id, id);
+                    return (
+                      <li key={s.id} className="flex items-start justify-between gap-2 rounded-lg bg-primary-50 px-3 py-2">
+                        <div>
+                          <p className="font-medium text-primary-900">
+                            {s.teachers?.profiles?.full_name}
+                          </p>
+                          <p className="text-slate-500">
+                            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][s.day_of_week]}{" "}
+                            {s.local_start_time} ({s.timezone}) · {s.duration_minutes}m
+                          </p>
+                        </div>
+                        <form action={boundRemove}>
+                          <Button type="submit" variant="danger" size="sm">
+                            Remove
+                          </Button>
+                        </form>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
+
+              <details className="group">
+                <summary className="cursor-pointer text-sm font-medium text-primary-700 hover:text-primary-900">
+                  + Assign teacher / add a class
+                </summary>
+                <form action={boundAddSchedule} className="mt-3 space-y-3">
+                  <WeeklyScheduleFields teachers={teacherOptions} />
+                  <Button type="submit" size="sm">
+                    Add to schedule
+                  </Button>
+                </form>
+              </details>
             </CardContent>
           </Card>
 

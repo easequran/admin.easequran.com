@@ -134,10 +134,14 @@ export async function generateOccurrencesForSchedule(
 
 /**
  * Creates recurring weekly schedules (and their first batch of occurrences)
- * for a student across one or more days, skipping any day/time slot that
- * falls outside the teacher's declared availability or conflicts with an
- * existing booking -- shared by student creation and lead-to-student
- * conversion, which both offer the same "assign a teacher now" step.
+ * for a student across one or more days -- shared by student creation and
+ * lead-to-student conversion, which both offer the same "assign a teacher
+ * now" step. Only a real double-booking (an existing occurrence overlapping
+ * the same teacher) blocks a slot; the teacher's declared availability is
+ * advisory only here, since an admin manually choosing a specific day/time
+ * is a deliberate assignment, not a self-serve booking -- most teachers
+ * hadn't populated availability at all, which silently dropped every
+ * manual assignment before this changed.
  */
 export async function createWeeklySchedulesForStudent(params: {
   studentId: string;
@@ -146,20 +150,15 @@ export async function createWeeklySchedulesForStudent(params: {
   classDays: number[];
   classTime: string;
   classDuration: number;
-}) {
+}): Promise<{ created: number[]; skippedConflict: number[] }> {
   const { studentId, teacherId, timezone, classDays, classTime, classDuration } = params;
-  if (!teacherId || classDays.length === 0 || !classTime) return;
+  const created: number[] = [];
+  const skippedConflict: number[] = [];
+  if (!teacherId || classDays.length === 0 || !classTime) return { created, skippedConflict };
 
   const supabase = await createClient();
-  const { data: availability } = await supabase.from("teacher_availability").select("*").eq("teacher_id", teacherId);
 
   for (const dayOfWeek of classDays) {
-    const withinAvailability = isWithinAvailability(
-      { dayOfWeek, localStartTime: classTime, timezone, durationMinutes: classDuration },
-      availability ?? [],
-    );
-    if (!withinAvailability) continue; // skip slots outside availability rather than blocking the conversion
-
     const { startAt, endAt } = nextOccurrenceUtc({
       dayOfWeek,
       localStartTime: classTime,
@@ -172,7 +171,10 @@ export async function createWeeklySchedulesForStudent(params: {
       startAt: startAt.toUTC().toISO()!,
       endAt: endAt.toUTC().toISO()!,
     });
-    if (conflict) continue;
+    if (conflict) {
+      skippedConflict.push(dayOfWeek);
+      continue;
+    }
 
     const { data: schedule } = await supabase
       .from("recurring_schedules")
@@ -187,8 +189,13 @@ export async function createWeeklySchedulesForStudent(params: {
       .select("id")
       .single();
 
-    if (schedule) await generateOccurrencesForSchedule(schedule.id);
+    if (schedule) {
+      await generateOccurrencesForSchedule(schedule.id);
+      created.push(dayOfWeek);
+    }
   }
+
+  return { created, skippedConflict };
 }
 
 export interface TimetableBlock {
