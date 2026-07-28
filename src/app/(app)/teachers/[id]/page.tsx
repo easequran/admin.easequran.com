@@ -6,7 +6,7 @@ import { TimezoneSelect } from "@/components/ui/timezone-select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AvailabilityEditor } from "@/components/teachers/availability-editor";
-import { WeeklyTimetableGrid } from "@/components/teachers/weekly-timetable-grid";
+import { TimetableViewSwitcher } from "@/components/teachers/timetable-view-switcher";
 import { updateTeacher, deleteTeacher, addAvailability, removeAvailability } from "@/lib/actions/teachers";
 import { buildWeeklyTimetable } from "@/lib/scheduling";
 import { PageHeader } from "@/components/ui/page-header";
@@ -158,7 +158,7 @@ export default async function TeacherDetailPage({
           <CardTitle>Weekly timetable</CardTitle>
         </CardHeader>
         <CardContent>
-          <WeeklyTimetableGrid days={timetable} timezone={teacherTimezone} />
+          <TimetableViewSwitcher days={timetable} timezone={teacherTimezone} />
         </CardContent>
       </Card>
     </div>

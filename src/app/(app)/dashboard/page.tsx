@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatInZone } from "@/lib/utils/timezone";
 import { buildWeeklyTimetable } from "@/lib/scheduling";
 import { AvailabilityEditor } from "@/components/teachers/availability-editor";
-import { WeeklyTimetableGrid } from "@/components/teachers/weekly-timetable-grid";
+import { TimetableViewSwitcher } from "@/components/teachers/timetable-view-switcher";
 import { addAvailability, removeAvailability } from "@/lib/actions/teachers";
 import { DateTime } from "luxon";
 import Link from "next/link";
@@ -180,7 +180,7 @@ export default async function DashboardPage() {
             <CardTitle>Your weekly timetable</CardTitle>
           </CardHeader>
           <CardContent>
-            <WeeklyTimetableGrid days={timetable} timezone={profile.timezone} />
+            <TimetableViewSwitcher days={timetable} timezone={profile.timezone} />
           </CardContent>
         </Card>
 

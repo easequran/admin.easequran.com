@@ -116,6 +116,7 @@ export async function createCalendarEvent(input: CalendarEventInput): Promise<st
       start: { dateTime: input.startAtUtcIso, timeZone: "UTC" },
       end: { dateTime: input.endAtUtcIso, timeZone: "UTC" },
       attendees: input.attendeeEmails.filter(Boolean).map((email) => ({ email })),
+      reminders: { useDefault: false, overrides: [{ method: "popup", minutes: 5 }] },
     },
   });
 
@@ -141,6 +142,7 @@ export async function updateCalendarEvent(
       ...(updates.attendeeEmails && {
         attendees: updates.attendeeEmails.filter(Boolean).map((email) => ({ email })),
       }),
+      reminders: { useDefault: false, overrides: [{ method: "popup", minutes: 5 }] },
     },
   });
 }

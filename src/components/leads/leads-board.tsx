@@ -11,13 +11,13 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { LinkButton } from "@/components/ui/button";
 import type { Lead, LeadStatus } from "@/lib/types/database";
 
-const STAGES: { key: LeadStatus; label: string; tone: "neutral" | "info" | "warning" | "success" | "danger" | "accent" }[] = [
-  { key: "new", label: "New", tone: "info" },
-  { key: "contacted", label: "Contacted", tone: "warning" },
-  { key: "trial_scheduled", label: "Trial scheduled", tone: "accent" },
-  { key: "trial_completed", label: "Trial completed", tone: "accent" },
-  { key: "converted", label: "Converted", tone: "success" },
-  { key: "lost", label: "Lost", tone: "danger" },
+const STAGES: { key: LeadStatus; label: string; tone: "neutral" | "info" | "warning" | "success" | "danger" | "accent"; stripe: string }[] = [
+  { key: "new", label: "New", tone: "info", stripe: "border-t-blue-400" },
+  { key: "contacted", label: "Contacted", tone: "warning", stripe: "border-t-amber-400" },
+  { key: "trial_scheduled", label: "Trial scheduled", tone: "accent", stripe: "border-t-accent-500" },
+  { key: "trial_completed", label: "Trial completed", tone: "accent", stripe: "border-t-accent-500" },
+  { key: "converted", label: "Converted", tone: "success", stripe: "border-t-emerald-500" },
+  { key: "lost", label: "Lost", tone: "danger", stripe: "border-t-red-400" },
 ];
 
 export function LeadsBoard({ leads }: { leads: Lead[] }) {
@@ -49,16 +49,16 @@ export function LeadsBoard({ leads }: { leads: Lead[] }) {
     <div className="space-y-4">
       <SearchInput value={query} onChange={setQuery} placeholder="Search leads..." />
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3 xl:grid-cols-6">
+      <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3">
         {STAGES.map((stage) => {
           const items = filtered.filter((l) => l.status === stage.key);
           return (
-            <Card key={stage.key} className="flex flex-col">
-              <div className="flex items-center justify-between border-b border-primary-100 px-3 py-2">
+            <Card key={stage.key} className={`flex w-[280px] shrink-0 snap-start flex-col border-t-4 ${stage.stripe}`}>
+              <div className="sticky top-0 z-10 flex items-center justify-between border-b border-primary-100 bg-white px-3 py-2.5 rounded-t-[11px]">
                 <Badge tone={stage.tone}>{stage.label}</Badge>
-                <span className="text-xs text-slate-400">{items.length}</span>
+                <span className="text-xs font-medium text-slate-400">{items.length}</span>
               </div>
-              <div className="flex-1 space-y-2 p-2">
+              <div className="max-h-[70vh] flex-1 space-y-2 overflow-y-auto p-3">
                 {items.map((l) => {
                   const overdue = l.next_follow_up_at && DateTime.fromISO(l.next_follow_up_at) < now;
                   return (
@@ -66,7 +66,7 @@ export function LeadsBoard({ leads }: { leads: Lead[] }) {
                       key={l.id}
                       href={`/leads/${l.id}`}
                       prefetch={false}
-                      className={`block rounded-lg border p-2 text-sm shadow-sm hover:border-primary-200 ${
+                      className={`block rounded-lg border p-3 text-sm shadow-sm transition-shadow hover:shadow-md hover:border-primary-200 ${
                         overdue ? "border-red-200 bg-red-50" : "border-primary-50 bg-white"
                       }`}
                     >
@@ -81,8 +81,10 @@ export function LeadsBoard({ leads }: { leads: Lead[] }) {
                     </Link>
                   );
                 })}
-                {items.length === 0 && query && (
-                  <p className="px-1 py-4 text-center text-xs text-slate-400">No matches</p>
+                {items.length === 0 && (
+                  <p className="px-1 py-6 text-center text-xs text-slate-400">
+                    {query ? "No matches" : "No leads at this stage"}
+                  </p>
                 )}
               </div>
             </Card>
