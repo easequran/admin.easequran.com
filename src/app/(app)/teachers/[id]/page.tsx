@@ -3,7 +3,7 @@ import { requireAdmin } from "@/lib/data/profile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { TimezoneSelect } from "@/components/ui/timezone-select";
-import { Button } from "@/components/ui/button";
+import { Button, LinkButton } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AvailabilityEditor } from "@/components/teachers/availability-editor";
 import { TimetableViewSwitcher } from "@/components/teachers/timetable-view-switcher";
@@ -68,6 +68,9 @@ export default async function TeacherDetailPage({
             <Badge tone={teacher.active ? "success" : "neutral"}>
               {teacher.active ? "Active" : "Inactive"}
             </Badge>
+            <LinkButton href={`/teachers/${id}/dashboard`} variant="outline" size="sm">
+              View dashboard
+            </LinkButton>
             <form action={boundDelete}>
               <Button type="submit" variant="danger" size="sm">
                 Delete teacher

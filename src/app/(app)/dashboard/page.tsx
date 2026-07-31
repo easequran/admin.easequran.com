@@ -3,10 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatInZone } from "@/lib/utils/timezone";
-import { buildWeeklyTimetable } from "@/lib/scheduling";
-import { AvailabilityEditor } from "@/components/teachers/availability-editor";
-import { TimetableViewSwitcher } from "@/components/teachers/timetable-view-switcher";
-import { addAvailability, removeAvailability } from "@/lib/actions/teachers";
+import { TeacherDashboardView } from "@/components/teachers/teacher-dashboard-view";
 import { DateTime } from "luxon";
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
@@ -108,94 +105,22 @@ export default async function DashboardPage() {
   }
 
   if (profile.role === "teacher") {
-    const [{ data: upcoming }, { data: teacherRow }] = await Promise.all([
-      supabase
-        .from("class_occurrences")
-        .select("id, start_at, is_trial, students(full_name), teachers!inner(profile_id)")
-        .eq("teachers.profile_id", profile.id)
-        .gte("start_at", DateTime.utc().toISO()!)
-        .order("start_at")
-        .limit(10),
-      supabase.from("teachers").select("id").eq("profile_id", profile.id).single(),
-    ]);
-
-    const [{ data: weeklySchedule }, { data: availability }] = teacherRow
-      ? await Promise.all([
-          supabase
-            .from("recurring_schedules")
-            .select("id, day_of_week, local_start_time, duration_minutes, timezone, students(full_name)")
-            .eq("teacher_id", teacherRow.id)
-            .eq("active", true)
-            .order("day_of_week"),
-          supabase.from("teacher_availability").select("*").eq("teacher_id", teacherRow.id).order("day_of_week"),
-        ])
-      : [{ data: null }, { data: null }];
-
-    const timetable = buildWeeklyTimetable(
-      availability ?? [],
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ((weeklySchedule ?? []) as any[]).map((s) => ({
-        day_of_week: s.day_of_week,
-        local_start_time: s.local_start_time,
-        duration_minutes: s.duration_minutes,
-        timezone: s.timezone,
-        label: s.students?.full_name ?? "Student",
-      })),
-      profile.timezone,
-    );
-
-    const boundAdd = teacherRow ? addAvailability.bind(null, teacherRow.id, "/dashboard") : undefined;
-    const boundRemove = teacherRow
-      ? async (formData: FormData) => {
-          "use server";
-          await removeAvailability(teacherRow.id, String(formData.get("availability_id")), "/dashboard");
-        }
-      : undefined;
+    const { data: teacherRow } = await supabase.from("teachers").select("id").eq("profile_id", profile.id).single();
 
     return (
       <div className="space-y-6">
         <PageHeader title="Your upcoming classes" />
-        <Card>
-          <CardContent>
-            {!upcoming || upcoming.length === 0 ? (
-              <p className="text-sm text-slate-500">No upcoming classes.</p>
-            ) : (
-              <ul className="divide-y divide-primary-50">
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                {(upcoming as any[]).map((c) => (
-                  <li key={c.id} className="flex items-center justify-between py-3 text-sm">
-                    <span className="font-medium text-primary-900">
-                      {c.students?.full_name ?? "Trial student"}
-                    </span>
-                    <span className="text-slate-500">{formatInZone(c.start_at, profile.timezone)}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Your weekly timetable</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <TimetableViewSwitcher days={timetable} timezone={profile.timezone} />
-          </CardContent>
-        </Card>
-
-        {boundAdd && boundRemove && (
+        {teacherRow ? (
+          <TeacherDashboardView
+            teacherId={teacherRow.id}
+            profileId={profile.id}
+            timezone={profile.timezone}
+            returnPath="/dashboard"
+          />
+        ) : (
           <Card>
-            <CardHeader>
-              <CardTitle>Your availability ({profile.timezone})</CardTitle>
-            </CardHeader>
             <CardContent>
-              <AvailabilityEditor
-                teacherTimezone={profile.timezone}
-                availability={availability ?? []}
-                onAdd={boundAdd}
-                onRemove={boundRemove}
-              />
+              <p className="text-sm text-slate-500">Your teacher profile isn&apos;t set up yet.</p>
             </CardContent>
           </Card>
         )}
