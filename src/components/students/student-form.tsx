@@ -1,6 +1,6 @@
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { PhoneTimezoneField } from "@/components/students/phone-timezone-field";
-import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
 import type { Student } from "@/lib/types/database";
 
 export function StudentForm({
@@ -65,7 +65,9 @@ export function StudentForm({
 
       {children}
 
-      <Button type="submit">{student ? "Save changes" : "Add student"}</Button>
+      <SubmitButton pendingText={student ? "Saving..." : "Adding..."}>
+        {student ? "Save changes" : "Add student"}
+      </SubmitButton>
     </form>
   );
 }

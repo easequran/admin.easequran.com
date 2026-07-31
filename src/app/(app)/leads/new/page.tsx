@@ -1,6 +1,6 @@
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { PhoneCountryTimezoneField } from "@/components/leads/phone-country-timezone-field";
-import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { PageHeader } from "@/components/ui/page-header";
 import { createLead } from "@/lib/actions/leads";
 import { requireAdmin } from "@/lib/data/profile";
@@ -28,7 +28,7 @@ export default async function NewLeadPage() {
           <Label htmlFor="notes">Notes</Label>
           <Textarea id="notes" name="notes" rows={3} />
         </div>
-        <Button type="submit">Add lead</Button>
+        <SubmitButton pendingText="Adding...">Add lead</SubmitButton>
       </form>
     </div>
   );

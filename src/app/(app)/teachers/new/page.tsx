@@ -1,6 +1,6 @@
 import { Input, Label } from "@/components/ui/input";
 import { TimezoneSelect } from "@/components/ui/timezone-select";
-import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { PageHeader } from "@/components/ui/page-header";
 import { createTeacher } from "@/lib/actions/teachers";
 import { requireAdmin } from "@/lib/data/profile";
@@ -36,7 +36,7 @@ export default async function NewTeacherPage() {
             <Input id="currency" name="currency" defaultValue="PKR" />
           </div>
         </div>
-        <Button type="submit">Send invite</Button>
+        <SubmitButton pendingText="Sending invite...">Send invite</SubmitButton>
       </form>
     </div>
   );

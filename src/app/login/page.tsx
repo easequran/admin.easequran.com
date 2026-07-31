@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { signIn } from "@/lib/actions/auth";
 import { Input, Label } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 export default async function LoginPage({
   searchParams,
@@ -40,9 +40,9 @@ export default async function LoginPage({
             </div>
             <Input id="password" name="password" type="password" required placeholder="••••••••" />
           </div>
-          <Button type="submit" className="w-full">
+          <SubmitButton className="w-full" pendingText="Signing in...">
             Sign in
-          </Button>
+          </SubmitButton>
         </form>
       </div>
     </div>
