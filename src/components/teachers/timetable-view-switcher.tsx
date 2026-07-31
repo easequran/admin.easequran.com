@@ -64,16 +64,16 @@ function DayView({ day, timezone, isToday }: { day: TimetableDay; timezone: stri
           {day.busy.map((block, i) => (
             <div
               key={`busy-${i}`}
-              className="absolute left-1 right-1 flex flex-col justify-center overflow-hidden rounded-md bg-primary-600 px-2 py-1 text-xs font-medium text-white shadow-sm"
+              className="absolute left-1 right-1 flex flex-col justify-center gap-0.5 overflow-hidden rounded-md bg-primary-600 px-2 py-1.5 text-xs font-medium leading-none text-white shadow-sm"
               style={{
                 top: `${pct(block.startMinutes)}%`,
                 height: `${Math.max(pct(block.endMinutes) - pct(block.startMinutes), 3)}%`,
-                minHeight: "28px",
+                minHeight: "38px",
               }}
               title={`${block.label ?? "Booked"} ${formatMinutes(block.startMinutes)}–${formatMinutes(block.endMinutes)}`}
             >
-              <span className="truncate">{block.label}</span>
-              <span className="truncate text-[10px] font-normal text-white/80">
+              <span className="truncate leading-none">{block.label}</span>
+              <span className="truncate text-[10px] font-normal leading-none text-white/80">
                 {formatMinutes(block.startMinutes)}–{formatMinutes(block.endMinutes)}
               </span>
             </div>
