@@ -1,6 +1,8 @@
 // Shared positioning math for the teacher timetable grid (day/week/month
 // views all render the same free/busy blocks against this same timeline).
 
+import { DateTime } from "luxon";
+
 export const GRID_START_MIN = 6 * 60;
 export const GRID_END_MIN = 23 * 60;
 export const GRID_SPAN = GRID_END_MIN - GRID_START_MIN;
@@ -19,3 +21,13 @@ export function formatMinutes(minutes: number) {
 }
 
 export const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+export function currentDayOfWeek(timezone: string) {
+  const weekday = DateTime.now().setZone(timezone).weekday;
+  return weekday === 7 ? 0 : weekday;
+}
+
+export function currentMinutesOfDay(timezone: string) {
+  const now = DateTime.now().setZone(timezone);
+  return now.hour * 60 + now.minute;
+}

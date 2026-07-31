@@ -5,12 +5,22 @@ import { DateTime } from "luxon";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { TimetableDay } from "@/lib/scheduling";
 import { WeeklyTimetableGrid } from "@/components/teachers/weekly-timetable-grid";
-import { GRID_START_MIN, GRID_END_MIN, pct, formatMinutes, DAY_NAMES } from "@/lib/utils/timetable-grid";
+import {
+  GRID_START_MIN,
+  GRID_END_MIN,
+  pct,
+  formatMinutes,
+  DAY_NAMES,
+  currentDayOfWeek,
+  currentMinutesOfDay,
+} from "@/lib/utils/timetable-grid";
 
 type View = "day" | "week" | "month";
 
-function DayView({ day, timezone }: { day: TimetableDay; timezone: string }) {
+function DayView({ day, timezone, isToday }: { day: TimetableDay; timezone: string; isToday: boolean }) {
   const hourMarks = Array.from({ length: (GRID_END_MIN - GRID_START_MIN) / 60 + 1 }, (_, i) => GRID_START_MIN + i * 60);
+  const nowMin = currentMinutesOfDay(timezone);
+  const showNowLine = isToday && nowMin >= GRID_START_MIN && nowMin <= GRID_END_MIN;
 
   return (
     <div>
@@ -20,6 +30,9 @@ function DayView({ day, timezone }: { day: TimetableDay; timezone: string }) {
         </span>
         <span className="flex items-center gap-1.5">
           <span className="h-3 w-3 rounded-sm bg-primary-600" /> Booked
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="h-1.5 w-1.5 rounded-full bg-accent-500" /> Now
         </span>
         <span className="ml-auto">Times shown in {timezone}</span>
       </div>
@@ -58,6 +71,12 @@ function DayView({ day, timezone }: { day: TimetableDay; timezone: string }) {
               {block.label} · {formatMinutes(block.startMinutes)}–{formatMinutes(block.endMinutes)}
             </div>
           ))}
+          {showNowLine && (
+            <div className="absolute left-0 right-0 z-10 flex items-center gap-1" style={{ top: `${pct(nowMin)}%` }}>
+              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent-500" />
+              <span className="h-px flex-1 bg-accent-500" />
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -125,10 +144,7 @@ function MonthView({
 
 export function TimetableViewSwitcher({ days, timezone }: { days: TimetableDay[]; timezone: string }) {
   const [view, setView] = useState<View>("week");
-  const todayDow = (() => {
-    const w = DateTime.now().setZone(timezone).weekday;
-    return w === 7 ? 0 : w;
-  })();
+  const todayDow = currentDayOfWeek(timezone);
   const [selectedDay, setSelectedDay] = useState(todayDow);
   const [monthAnchor, setMonthAnchor] = useState(() => DateTime.now().setZone(timezone));
 
@@ -196,7 +212,7 @@ export function TimetableViewSwitcher({ days, timezone }: { days: TimetableDay[]
       </div>
 
       {view === "week" && <WeeklyTimetableGrid days={days} timezone={timezone} />}
-      {view === "day" && <DayView day={days[selectedDay]} timezone={timezone} />}
+      {view === "day" && <DayView day={days[selectedDay]} timezone={timezone} isToday={selectedDay === todayDow} />}
       {view === "month" && (
         <MonthView
           days={days}

@@ -109,14 +109,14 @@ export async function createCalendarEvent(input: CalendarEventInput): Promise<st
 
   const { data } = await calendar.events.insert({
     calendarId: "primary",
-    sendUpdates: "all",
+    sendUpdates: "none",
     requestBody: {
       summary: input.summary,
       description: input.description,
       start: { dateTime: input.startAtUtcIso, timeZone: "UTC" },
       end: { dateTime: input.endAtUtcIso, timeZone: "UTC" },
       attendees: input.attendeeEmails.filter(Boolean).map((email) => ({ email })),
-      reminders: { useDefault: false, overrides: [{ method: "popup", minutes: 5 }] },
+      reminders: { useDefault: false, overrides: [{ method: "email", minutes: 5 }] },
     },
   });
 
@@ -133,7 +133,7 @@ export async function updateCalendarEvent(
   await calendar.events.patch({
     calendarId: "primary",
     eventId,
-    sendUpdates: "all",
+    sendUpdates: "none",
     requestBody: {
       ...(updates.summary && { summary: updates.summary }),
       ...(updates.description !== undefined && { description: updates.description }),
@@ -142,7 +142,7 @@ export async function updateCalendarEvent(
       ...(updates.attendeeEmails && {
         attendees: updates.attendeeEmails.filter(Boolean).map((email) => ({ email })),
       }),
-      reminders: { useDefault: false, overrides: [{ method: "popup", minutes: 5 }] },
+      reminders: { useDefault: false, overrides: [{ method: "email", minutes: 5 }] },
     },
   });
 }
@@ -152,7 +152,7 @@ export async function deleteCalendarEvent(eventId: string): Promise<void> {
   if (!calendar) return;
 
   try {
-    await calendar.events.delete({ calendarId: "primary", eventId, sendUpdates: "all" });
+    await calendar.events.delete({ calendarId: "primary", eventId, sendUpdates: "none" });
   } catch {
     // Event may already be deleted on Google's side — nothing more to do.
   }
