@@ -7,28 +7,25 @@ import { createWeeklySchedulesForStudent } from "@/lib/scheduling";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { LeadStatus } from "@/lib/types/database";
+import { withToast } from "@/lib/toast";
 
 export async function createLead(formData: FormData) {
   await requireAdmin();
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("leads")
-    .insert({
-      full_name: String(formData.get("full_name")),
-      email: String(formData.get("email") || "") || null,
-      phone: String(formData.get("phone") || "") || null,
-      country: String(formData.get("country") || "") || null,
-      timezone: String(formData.get("timezone") || "UTC"),
-      source: String(formData.get("source") || "") || null,
-      notes: String(formData.get("notes") || "") || null,
-    })
-    .select("id")
-    .single();
+  const { error } = await supabase.from("leads").insert({
+    full_name: String(formData.get("full_name")),
+    email: String(formData.get("email") || "") || null,
+    phone: String(formData.get("phone") || "") || null,
+    country: String(formData.get("country") || "") || null,
+    timezone: String(formData.get("timezone") || "UTC"),
+    source: String(formData.get("source") || "") || null,
+    notes: String(formData.get("notes") || "") || null,
+  });
   if (error) throw new Error(error.message);
 
   revalidatePath("/leads");
-  redirect(`/leads/${data.id}`);
+  redirect(withToast("/leads", `${String(formData.get("full_name"))} added successfully`));
 }
 
 export async function updateLead(leadId: string, formData: FormData) {
@@ -51,6 +48,7 @@ export async function updateLead(leadId: string, formData: FormData) {
 
   revalidatePath("/leads");
   revalidatePath(`/leads/${leadId}`);
+  redirect(withToast(`/leads/${leadId}`, "Lead updated"));
 }
 
 export async function deleteLead(leadId: string) {
@@ -65,7 +63,7 @@ export async function deleteLead(leadId: string) {
   await logAudit({ action: "lead.deleted", entityType: "lead", entityId: leadId, entityLabel: lead?.full_name });
 
   revalidatePath("/leads");
-  redirect("/leads");
+  redirect(withToast("/leads", `${lead?.full_name ?? "Lead"} deleted`));
 }
 
 export async function updateLeadStatus(leadId: string, status: LeadStatus) {
@@ -107,6 +105,7 @@ export async function updateLeadStatus(leadId: string, status: LeadStatus) {
   revalidatePath(`/leads/${leadId}`);
   revalidatePath("/leads");
   revalidatePath("/students");
+  redirect(withToast(`/leads/${leadId}`, `Status changed to ${status.replace("_", " ")}`));
 }
 
 export async function bulkUpdateLeadStatus(leadIds: string[], status: LeadStatus) {
@@ -182,6 +181,7 @@ export async function logLeadContact(leadId: string, formData: FormData) {
   revalidatePath(`/leads/${leadId}`);
   revalidatePath("/leads");
   revalidatePath("/dashboard");
+  redirect(withToast(`/leads/${leadId}`, "Activity logged"));
 }
 
 /**
@@ -230,7 +230,7 @@ export async function convertLeadToStudentRecord(
 export async function convertLeadToStudent(leadId: string) {
   await requireAdmin();
   const studentId = await convertLeadToStudentRecord(leadId, "active");
-  redirect(`/students/${studentId}`);
+  redirect(withToast(`/students/${studentId}`, "Lead converted to student"));
 }
 
 /** Convert a lead to a student, optionally assigning a teacher + weekly schedule in the same step. */
@@ -259,5 +259,5 @@ export async function convertLeadWithAssignment(leadId: string, formData: FormDa
   revalidatePath("/students");
   revalidatePath("/schedule");
   if (teacherId) revalidatePath(`/teachers/${teacherId}`);
-  redirect(`/students/${studentId}`);
+  redirect(withToast(`/students/${studentId}`, "Lead converted to student"));
 }

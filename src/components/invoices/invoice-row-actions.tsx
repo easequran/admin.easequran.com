@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
 import { updateInvoice, deleteInvoice } from "@/lib/actions/invoices";
+import { toast } from "@/lib/toast";
 
 interface InvoiceRowActionsProps {
   invoice: {
@@ -40,6 +41,7 @@ export function InvoiceRowActions({ invoice, studentName }: InvoiceRowActionsPro
             <form
               action={async (formData) => {
                 await boundUpdate(formData);
+                toast.success("Invoice updated");
                 setMode("idle");
               }}
               className="mt-4 space-y-4"
@@ -108,6 +110,7 @@ export function InvoiceRowActions({ invoice, studentName }: InvoiceRowActionsPro
               <form
                 action={async () => {
                   await boundDelete();
+                  toast.success("Invoice deleted");
                   setMode("idle");
                 }}
               >

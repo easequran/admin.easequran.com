@@ -50,10 +50,10 @@ export default async function TeacherDetailPage({
 
   const boundUpdate = updateTeacher.bind(null, id, teacher.profile_id);
   const boundDelete = deleteTeacher.bind(null, id, teacher.profile_id);
-  const boundAdd = addAvailability.bind(null, id);
+  const boundAdd = addAvailability.bind(null, id, `/teachers/${id}`);
   const boundRemove = async (formData: FormData) => {
     "use server";
-    await removeAvailability(id, String(formData.get("availability_id")));
+    await removeAvailability(id, String(formData.get("availability_id")), `/teachers/${id}`);
   };
 
   return (

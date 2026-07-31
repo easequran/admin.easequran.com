@@ -8,6 +8,7 @@ import { createCalendarEvent, deleteCalendarEvent, updateCalendarEvent } from "@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { OccurrenceStatus } from "@/lib/types/database";
+import { withToast } from "@/lib/toast";
 
 export async function createRecurringSchedule(formData: FormData) {
   await requireAdmin();
@@ -70,7 +71,7 @@ export async function createRecurringSchedule(formData: FormData) {
   await generateOccurrencesForSchedule(schedule.id);
 
   revalidatePath("/schedule");
-  redirect("/schedule");
+  redirect(withToast("/schedule", "Class scheduled"));
 }
 
 export async function cancelSchedule(scheduleId: string) {
@@ -185,7 +186,7 @@ export async function bookTrialClass(formData: FormData) {
 
   revalidatePath("/trials");
   revalidatePath("/leads");
-  redirect("/trials");
+  redirect(withToast("/trials", "Trial class booked"));
 }
 
 export async function updateTrialClass(occurrenceId: string, formData: FormData) {
@@ -247,7 +248,7 @@ export async function updateTrialClass(occurrenceId: string, formData: FormData)
 
   revalidatePath("/trials");
   revalidatePath(`/trials/${occurrenceId}`);
-  redirect("/trials");
+  redirect(withToast("/trials", "Trial class updated"));
 }
 
 export async function cancelTrialClass(occurrenceId: string) {
@@ -270,5 +271,5 @@ export async function cancelTrialClass(occurrenceId: string) {
   if (error) throw new Error(error.message);
 
   revalidatePath("/trials");
-  redirect("/trials");
+  redirect(withToast("/trials", "Trial class cancelled"));
 }

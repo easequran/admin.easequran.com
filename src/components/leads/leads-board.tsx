@@ -13,6 +13,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { LinkButton } from "@/components/ui/button";
 import { downloadCsv } from "@/lib/utils/csv";
 import { bulkUpdateLeadStatus, bulkAssignLeads } from "@/lib/actions/leads";
+import { toast } from "@/lib/toast";
 import type { Lead, LeadStatus } from "@/lib/types/database";
 
 const STAGES: { key: LeadStatus; label: string; tone: "neutral" | "info" | "warning" | "success" | "danger" | "accent"; stripe: string }[] = [
@@ -77,6 +78,7 @@ export function LeadsBoard({ leads, assignees }: { leads: Lead[]; assignees: { i
     const ids = Array.from(selected);
     startTransition(async () => {
       await bulkUpdateLeadStatus(ids, bulkStatus);
+      toast.success(`Updated ${ids.length} lead${ids.length === 1 ? "" : "s"} to ${bulkStatus.replace("_", " ")}`);
       exitSelectMode();
     });
   }
@@ -86,6 +88,7 @@ export function LeadsBoard({ leads, assignees }: { leads: Lead[]; assignees: { i
     const ids = Array.from(selected);
     startTransition(async () => {
       await bulkAssignLeads(ids, bulkAssignee);
+      toast.success(`Assigned ${ids.length} lead${ids.length === 1 ? "" : "s"}`);
       exitSelectMode();
     });
   }

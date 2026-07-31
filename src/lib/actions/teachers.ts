@@ -8,6 +8,7 @@ import { getCurrentProfile } from "@/lib/data/profile";
 import { logAudit } from "@/lib/actions/audit";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { withToast } from "@/lib/toast";
 
 /**
  * Availability is managed by admins for any teacher, or by a teacher for
@@ -53,20 +54,16 @@ export async function createTeacher(formData: FormData) {
   });
   if (profileError) throw new Error(profileError.message);
 
-  const { data: teacher, error: teacherError } = await admin
-    .from("teachers")
-    .insert({
-      profile_id: userId,
-      bio: String(formData.get("bio") || "") || null,
-      hourly_rate: formData.get("hourly_rate") ? Number(formData.get("hourly_rate")) : 450,
-      currency: String(formData.get("currency") || "PKR"),
-    })
-    .select("id")
-    .single();
+  const { error: teacherError } = await admin.from("teachers").insert({
+    profile_id: userId,
+    bio: String(formData.get("bio") || "") || null,
+    hourly_rate: formData.get("hourly_rate") ? Number(formData.get("hourly_rate")) : 450,
+    currency: String(formData.get("currency") || "PKR"),
+  });
   if (teacherError) throw new Error(teacherError.message);
 
   revalidatePath("/teachers");
-  redirect(`/teachers/${teacher.id}`);
+  redirect(withToast("/teachers", `${fullName} added successfully`));
 }
 
 export async function updateTeacher(teacherId: string, profileId: string, formData: FormData) {
@@ -112,6 +109,7 @@ export async function updateTeacher(teacherId: string, profileId: string, formDa
 
   revalidatePath(`/teachers/${teacherId}`);
   revalidatePath("/teachers");
+  redirect(withToast(`/teachers/${teacherId}`, "Teacher updated"));
 }
 
 export async function deleteTeacher(teacherId: string, profileId: string) {
@@ -129,10 +127,10 @@ export async function deleteTeacher(teacherId: string, profileId: string) {
   await logAudit({ action: "teacher.deleted", entityType: "teacher", entityId: teacherId, entityLabel: profile?.full_name });
 
   revalidatePath("/teachers");
-  redirect("/teachers");
+  redirect(withToast("/teachers", `${profile?.full_name ?? "Teacher"} deleted`));
 }
 
-export async function addAvailability(teacherId: string, formData: FormData) {
+export async function addAvailability(teacherId: string, returnPath: string, formData: FormData) {
   await assertCanManageAvailability(teacherId);
   const supabase = await createClient();
 
@@ -156,9 +154,10 @@ export async function addAvailability(teacherId: string, formData: FormData) {
 
   revalidatePath(`/teachers/${teacherId}`);
   revalidatePath("/dashboard");
+  redirect(withToast(returnPath, "Availability added"));
 }
 
-export async function removeAvailability(teacherId: string, availabilityId: string) {
+export async function removeAvailability(teacherId: string, availabilityId: string, returnPath: string) {
   await assertCanManageAvailability(teacherId);
   const supabase = await createClient();
   const { error } = await supabase
@@ -169,4 +168,5 @@ export async function removeAvailability(teacherId: string, availabilityId: stri
   if (error) throw new Error(error.message);
   revalidatePath(`/teachers/${teacherId}`);
   revalidatePath("/dashboard");
+  redirect(withToast(returnPath, "Availability removed"));
 }

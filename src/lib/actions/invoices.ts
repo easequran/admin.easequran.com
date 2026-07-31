@@ -3,8 +3,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/data/profile";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { DateTime } from "luxon";
 import type { InvoiceStatus } from "@/lib/types/database";
+import { withToast } from "@/lib/toast";
 
 export async function createFeePlan(studentId: string, formData: FormData) {
   const supabase = await createClient();
@@ -20,6 +22,7 @@ export async function createFeePlan(studentId: string, formData: FormData) {
 
   revalidatePath(`/students/${studentId}`);
   revalidatePath("/invoices");
+  redirect(withToast(`/students/${studentId}`, "Fee plan set"));
 }
 
 /** Generates this month's invoice for every active fee plan that doesn't already have one for the current period. */
@@ -72,6 +75,7 @@ export async function markInvoicePaid(invoiceId: string, formData: FormData) {
   if (error) throw new Error(error.message);
 
   revalidatePath("/invoices");
+  redirect(withToast("/invoices", "Invoice marked as paid"));
 }
 
 export async function updateInvoice(invoiceId: string, formData: FormData) {

@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
+import { ToastListener } from "@/components/layout/toast-listener";
 import { CommandPalette } from "@/components/search/command-palette";
+import { Toaster } from "@/components/ui/toaster";
 import type { Profile } from "@/lib/types/database";
 
 const COLLAPSE_STORAGE_KEY = "eq-sidebar-collapsed";
@@ -53,6 +55,10 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
         <main className="flex-1 overflow-y-auto p-4 sm:p-6">{children}</main>
       </div>
       <CommandPalette open={searchOpen} onClose={() => setSearchOpen(false)} role={profile.role} />
+      <Toaster />
+      <Suspense fallback={null}>
+        <ToastListener />
+      </Suspense>
     </div>
   );
 }

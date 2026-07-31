@@ -6,6 +6,7 @@ import { markAttendance, updateAttendanceNote } from "@/lib/actions/attendance";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/lib/toast";
 import type { AttendanceStatus } from "@/lib/types/database";
 
 const OPTIONS: { value: AttendanceStatus; label: string }[] = [
@@ -58,7 +59,13 @@ export function AttendanceRow({
             {currentStatus}
           </Badge>
         ) : (
-          <form action={boundMark} className="flex flex-wrap items-start gap-2">
+          <form
+            action={async (formData) => {
+              await boundMark(formData);
+              toast.success(`Attendance marked for ${studentName}`);
+            }}
+            className="flex flex-wrap items-start gap-2"
+          >
             <Textarea
               name="notes"
               rows={1}
@@ -87,6 +94,7 @@ export function AttendanceRow({
           <form
             action={async (formData) => {
               await boundUpdateNote(formData);
+              toast.success("Comment saved");
               setEditingNote(false);
             }}
             className="flex flex-wrap items-start gap-2 pl-1"

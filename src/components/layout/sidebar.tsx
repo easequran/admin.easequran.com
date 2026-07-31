@@ -104,7 +104,6 @@ export function Sidebar({
               <Link
                 key={href}
                 href={href}
-                prefetch={false}
                 onClick={onClose}
                 title={collapsed ? label : undefined}
                 className={cn(

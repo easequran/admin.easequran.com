@@ -144,11 +144,11 @@ export default async function DashboardPage() {
       profile.timezone,
     );
 
-    const boundAdd = teacherRow ? addAvailability.bind(null, teacherRow.id) : undefined;
+    const boundAdd = teacherRow ? addAvailability.bind(null, teacherRow.id, "/dashboard") : undefined;
     const boundRemove = teacherRow
       ? async (formData: FormData) => {
           "use server";
-          await removeAvailability(teacherRow.id, String(formData.get("availability_id")));
+          await removeAvailability(teacherRow.id, String(formData.get("availability_id")), "/dashboard");
         }
       : undefined;
 

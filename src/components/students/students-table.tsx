@@ -13,6 +13,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { LinkButton } from "@/components/ui/button";
 import { downloadCsv } from "@/lib/utils/csv";
 import { bulkUpdateStudentStatus } from "@/lib/actions/students";
+import { toast } from "@/lib/toast";
 import type { EnrollmentStatus, Student } from "@/lib/types/database";
 
 const statusTone = {
@@ -63,6 +64,7 @@ export function StudentsTable({ students }: { students: Student[] }) {
     const ids = Array.from(selected);
     startTransition(async () => {
       await bulkUpdateStudentStatus(ids, bulkStatus);
+      toast.success(`Updated ${ids.length} student${ids.length === 1 ? "" : "s"} to ${bulkStatus}`);
       exitSelectMode();
     });
   }

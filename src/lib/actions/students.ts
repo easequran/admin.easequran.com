@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { EnrollmentStatus } from "@/lib/types/database";
 import { createWeeklySchedulesForStudent } from "@/lib/scheduling";
+import { withToast } from "@/lib/toast";
 
 export async function createStudent(formData: FormData) {
   await requireAdmin();
@@ -48,7 +49,7 @@ export async function createStudent(formData: FormData) {
   revalidatePath("/students");
   revalidatePath("/schedule");
   if (teacherId) revalidatePath(`/teachers/${teacherId}`);
-  redirect(`/students/${data.id}`);
+  redirect(withToast("/students", `${String(formData.get("full_name"))} added successfully`));
 }
 
 /** Adds one or more weekly recurring classes to an existing student, e.g. assigning their first teacher after conversion. */
@@ -76,6 +77,7 @@ export async function addStudentSchedule(studentId: string, formData: FormData) 
   revalidatePath(`/students/${studentId}`);
   revalidatePath("/schedule");
   if (teacherId) revalidatePath(`/teachers/${teacherId}`);
+  redirect(withToast(`/students/${studentId}`, "Class added to schedule"));
 }
 
 /** Deactivates a recurring schedule and cancels its not-yet-happened occurrences. */
@@ -105,6 +107,7 @@ export async function removeStudentSchedule(scheduleId: string, studentId: strin
   revalidatePath(`/students/${studentId}`);
   revalidatePath("/schedule");
   if (schedule?.teacher_id) revalidatePath(`/teachers/${schedule.teacher_id}`);
+  redirect(withToast(`/students/${studentId}`, "Class removed from schedule"));
 }
 
 export async function updateStudent(studentId: string, formData: FormData) {
@@ -147,6 +150,7 @@ export async function updateStudent(studentId: string, formData: FormData) {
 
   revalidatePath("/students");
   revalidatePath(`/students/${studentId}`);
+  redirect(withToast(`/students/${studentId}`, "Student updated"));
 }
 
 export async function bulkUpdateStudentStatus(studentIds: string[], status: EnrollmentStatus) {
@@ -183,5 +187,5 @@ export async function deleteStudent(studentId: string) {
   });
 
   revalidatePath("/students");
-  redirect("/students");
+  redirect(withToast("/students", `${student?.full_name ?? "Student"} deleted`));
 }
