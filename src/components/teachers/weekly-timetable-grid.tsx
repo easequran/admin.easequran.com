@@ -69,14 +69,15 @@ export function WeeklyTimetableGrid({ days, timezone }: { days: TimetableDay[]; 
                     {day.busy.map((block, i) => (
                       <div
                         key={`busy-${i}`}
-                        className="absolute left-0.5 right-0.5 overflow-hidden rounded-md bg-primary-600 px-1 py-0.5 text-[10px] font-medium leading-tight text-white shadow-sm"
+                        className="absolute left-0.5 right-0.5 flex items-center overflow-hidden rounded-md bg-primary-600 px-1.5 text-[11px] font-medium leading-tight text-white shadow-sm"
                         style={{
                           top: `${pct(block.startMinutes)}%`,
                           height: `${Math.max(pct(block.endMinutes) - pct(block.startMinutes), 3)}%`,
+                          minHeight: "18px",
                         }}
                         title={`${block.label ?? "Booked"} ${formatMinutes(block.startMinutes)}–${formatMinutes(block.endMinutes)}`}
                       >
-                        {block.label}
+                        <span className="truncate">{block.label}</span>
                       </div>
                     ))}
                     {isToday && showNowLine && (
