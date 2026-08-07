@@ -2,11 +2,17 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/data/profile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AttendanceRow } from "@/components/attendance/attendance-row";
+import { AttendanceTeacherFilter } from "@/components/attendance/attendance-teacher-filter";
 import { PageHeader } from "@/components/ui/page-header";
 import { DateTime } from "luxon";
 
-export default async function AttendancePage() {
+export default async function AttendancePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ teacherId?: string }>;
+}) {
   const profile = await getCurrentProfile();
+  const { teacherId } = await searchParams;
   const supabase = await createClient();
 
   // Trial classes only have a `lead_id` (no `student_id` yet — that gets
@@ -17,7 +23,7 @@ export default async function AttendancePage() {
     .select(
       profile.role === "teacher"
         ? "id, start_at, is_trial, students(full_name), leads(full_name), attendance(status, notes), teachers!inner(profile_id)"
-        : "id, start_at, is_trial, students(full_name), leads(full_name), attendance(status, notes)",
+        : "id, start_at, is_trial, students(full_name), leads(full_name), attendance(status, notes), teachers(id, profiles(full_name))",
     )
     .lte("start_at", DateTime.utc().toISO()!)
     .order("start_at", { ascending: false })
@@ -25,15 +31,32 @@ export default async function AttendancePage() {
 
   if (profile.role === "teacher") {
     query = query.eq("teachers.profile_id", profile.id);
+  } else if (profile.role === "admin" && teacherId) {
+    query = query.eq("teacher_id", teacherId);
   }
 
-  const { data: occurrences } = await query;
+  const [{ data: occurrences }, { data: teachers }] = await Promise.all([
+    query,
+    profile.role === "admin"
+      ? supabase.from("teachers").select("id, profiles(full_name)").eq("active", true)
+      : Promise.resolve({ data: null }),
+  ]);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const teacherOptions = ((teachers ?? []) as any[])
+    .map((t) => ({ id: t.id as string, fullName: t.profiles?.full_name ?? "Teacher" }))
+    .sort((a, b) => a.fullName.localeCompare(b.fullName));
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Attendance"
         description="Mark and review attendance for recent classes and trials."
+        actions={
+          profile.role === "admin" ? (
+            <AttendanceTeacherFilter teachers={teacherOptions} selectedTeacherId={teacherId ?? ""} />
+          ) : undefined
+        }
       />
       <Card>
         <CardHeader>

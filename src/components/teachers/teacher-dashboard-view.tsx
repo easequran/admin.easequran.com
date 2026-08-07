@@ -13,12 +13,14 @@ export async function TeacherDashboardView({
   timezone,
   returnPath,
   timetablePath,
+  attendancePath = "/attendance",
 }: {
   teacherId: string;
   profileId: string;
   timezone: string;
   returnPath: string;
   timetablePath: string;
+  attendancePath?: string;
 }) {
   const supabase = await createClient();
 
@@ -67,7 +69,7 @@ export async function TeacherDashboardView({
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Timetable</CardTitle>
           <div className="flex gap-2">
-            <LinkButton href="/attendance" variant="outline" size="sm">
+            <LinkButton href={attendancePath} variant="outline" size="sm">
               Attendance
             </LinkButton>
             <LinkButton href={timetablePath} size="sm">

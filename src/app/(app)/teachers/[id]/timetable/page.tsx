@@ -35,7 +35,7 @@ export default async function TeacherTimetablePage({
         backHref={`/teachers/${id}`}
         backLabel="Back to teacher"
         actions={
-          <LinkButton href="/attendance" variant="outline" size="sm">
+          <LinkButton href={`/attendance?teacherId=${id}`} variant="outline" size="sm">
             Attendance
           </LinkButton>
         }

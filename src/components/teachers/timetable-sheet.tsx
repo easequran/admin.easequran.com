@@ -13,17 +13,32 @@ export const SLOT_STARTS = Array.from(
   (_, i) => GRID_START_MIN + i * SLOT_MIN,
 );
 
-export function buildDayColumn(day: TimetableDay | undefined): SheetCell[] {
+/**
+ * Builds one sheet column for a weekday. The grid runs 9 PM through 6 AM the
+ * next calendar day, so besides `day`'s own (already-midnight-extended)
+ * blocks, we also pull `nextDay`'s early-morning blocks (before the 6 AM
+ * cutoff) and remap them onto the same extended timeline (+1440 minutes) so
+ * they land in this column instead of tomorrow's.
+ */
+export function buildDayColumn(day: TimetableDay | undefined, nextDay: TimetableDay | undefined): SheetCell[] {
+  const cutoff = GRID_END_MIN - 1440; // minutes past midnight still shown in this column
+  const blocks = [
+    ...(day?.busy ?? []),
+    ...(nextDay?.busy ?? [])
+      .filter((b) => b.startMinutes < cutoff)
+      .map((b) => ({ ...b, startMinutes: b.startMinutes + 1440, endMinutes: b.endMinutes + 1440 })),
+  ];
+
   const slots: SheetCell[] = [];
   for (let m = GRID_START_MIN; m < GRID_END_MIN; m += SLOT_MIN) {
-    const busy = day?.busy.find((b) => b.startMinutes === m);
+    const busy = blocks.find((b) => b.startMinutes === m);
     if (busy) {
       const span = Math.max(1, Math.round((busy.endMinutes - busy.startMinutes) / SLOT_MIN));
       slots.push({ kind: "busy", label: busy.label ?? "Booked", span, isTrial: Boolean(busy.isTrial) });
       for (let i = 1; i < span; i++) slots.push({ kind: "skip" });
       continue;
     }
-    const withinBusy = day?.busy.some((b) => m > b.startMinutes && m < b.endMinutes);
+    const withinBusy = blocks.some((b) => m > b.startMinutes && m < b.endMinutes);
     if (withinBusy) continue; // already covered by a rowSpan above
     slots.push({ kind: "empty" });
   }

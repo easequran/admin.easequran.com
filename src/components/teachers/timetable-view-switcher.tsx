@@ -10,9 +10,11 @@ import { DAY_NAMES, currentDayOfWeek } from "@/lib/utils/timetable-grid";
 
 type View = "day" | "week" | "month";
 
-function DayView({ day, timezone }: { day: TimetableDay; timezone: string }) {
+function DayView({ day, nextDay, timezone }: { day: TimetableDay; nextDay: TimetableDay; timezone: string }) {
   const hasContent = day.free.length > 0 || day.busy.length > 0;
-  const columns = [{ key: day.dayOfWeek, label: DAY_NAMES[day.dayOfWeek], highlighted: true, cells: buildDayColumn(day) }];
+  const columns = [
+    { key: day.dayOfWeek, label: DAY_NAMES[day.dayOfWeek], highlighted: true, cells: buildDayColumn(day, nextDay) },
+  ];
 
   return (
     <div>
@@ -157,7 +159,9 @@ export function TimetableViewSwitcher({ days, timezone }: { days: TimetableDay[]
       </div>
 
       {view === "week" && <WeeklyTimetableGrid days={days} timezone={timezone} />}
-      {view === "day" && <DayView day={days[selectedDay]} timezone={timezone} />}
+      {view === "day" && (
+        <DayView day={days[selectedDay]} nextDay={days[(selectedDay + 1) % 7]} timezone={timezone} />
+      )}
       {view === "month" && (
         <MonthView
           days={days}

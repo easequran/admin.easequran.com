@@ -13,7 +13,10 @@ export function WeeklyTimetableGrid({ days, timezone }: { days: TimetableDay[]; 
     key: dow,
     label: DAY_NAMES[dow],
     highlighted: dow === todayDow,
-    cells: buildDayColumn(days.find((d) => d.dayOfWeek === dow)),
+    cells: buildDayColumn(
+      days.find((d) => d.dayOfWeek === dow),
+      days.find((d) => d.dayOfWeek === (dow + 1) % 7),
+    ),
   }));
 
   return (
