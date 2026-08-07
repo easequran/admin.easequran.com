@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { formatInZone } from "@/lib/utils/timezone";
+import { updateOccurrenceStatus } from "@/lib/actions/schedule";
 import type { OccurrenceStatus } from "@/lib/types/database";
 
 const statusTone: Record<OccurrenceStatus, "neutral" | "success" | "warning" | "danger" | "info"> = {
@@ -15,6 +17,7 @@ export function OccurrenceList({
   occurrences,
   viewerTimezone,
   editBasePath,
+  showStatusActions = false,
 }: {
   occurrences: {
     id: string;
@@ -27,6 +30,8 @@ export function OccurrenceList({
   viewerTimezone: string;
   /** When provided, each row's name links to `${editBasePath}/${id}` for editing. */
   editBasePath?: string;
+  /** Show Completed / Didn't show / Cancel quick actions on scheduled rows (trials only). */
+  showStatusActions?: boolean;
 }) {
   if (occurrences.length === 0) {
     return <p className="text-sm text-slate-500">No classes scheduled.</p>;
@@ -60,7 +65,27 @@ export function OccurrenceList({
             </div>
             <div className="flex shrink-0 items-center gap-3">
               <span className="text-slate-500">{formatInZone(o.start_at, viewerTimezone)}</span>
-              <Badge tone={statusTone[o.status]}>{o.status.replace("_", " ")}</Badge>
+              {showStatusActions && o.status === "scheduled" ? (
+                <div className="flex items-center gap-1.5">
+                  <form action={updateOccurrenceStatus.bind(null, o.id, "completed")}>
+                    <Button type="submit" size="sm" variant="outline">
+                      Completed
+                    </Button>
+                  </form>
+                  <form action={updateOccurrenceStatus.bind(null, o.id, "no_show")}>
+                    <Button type="submit" size="sm" variant="outline">
+                      Didn&apos;t show
+                    </Button>
+                  </form>
+                  <form action={updateOccurrenceStatus.bind(null, o.id, "cancelled")}>
+                    <Button type="submit" size="sm" variant="danger">
+                      Cancel
+                    </Button>
+                  </form>
+                </div>
+              ) : (
+                <Badge tone={statusTone[o.status]}>{o.status.replace("_", " ")}</Badge>
+              )}
             </div>
           </li>
         );

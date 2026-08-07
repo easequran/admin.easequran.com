@@ -45,7 +45,7 @@ export default async function TrialsPage({
 
       <Card>
         <CardContent>
-          <OccurrenceList occurrences={mapped} viewerTimezone={profile.timezone} editBasePath="/trials" />
+          <OccurrenceList occurrences={mapped} viewerTimezone={profile.timezone} editBasePath="/trials" showStatusActions />
         </CardContent>
       </Card>
     </div>

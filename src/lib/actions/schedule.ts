@@ -5,6 +5,7 @@ import { requireAdmin } from "@/lib/data/profile";
 import { generateOccurrencesForSchedule, hasConflict, isWithinAvailability } from "@/lib/scheduling";
 import { nextOccurrenceUtc } from "@/lib/utils/timezone";
 import { createCalendarEvent, deleteCalendarEvent, updateCalendarEvent } from "@/lib/google/calendar";
+import { convertLeadToStudentRecord } from "@/lib/actions/leads";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { OccurrenceStatus } from "@/lib/types/database";
@@ -99,19 +100,26 @@ export async function cancelSchedule(scheduleId: string) {
   revalidatePath("/schedule");
 }
 
+/**
+ * Sets an occurrence's status -- used both for regular classes and, when the
+ * occurrence is a trial, keeps the linked lead's pipeline stage in sync so
+ * admin doesn't have to update the trial and the lead separately. A trial
+ * that completes converts the lead to a real student (mirroring what
+ * marking attendance "present" already does); a trial that's cancelled or
+ * a no-show marks the lead lost, unless it was already converted.
+ */
 export async function updateOccurrenceStatus(occurrenceId: string, status: OccurrenceStatus) {
   await requireAdmin();
   const supabase = await createClient();
 
-  if (status === "cancelled") {
-    const { data: occurrence } = await supabase
-      .from("class_occurrences")
-      .select("calendar_event_id")
-      .eq("id", occurrenceId)
-      .single();
-    if (occurrence?.calendar_event_id) {
-      await deleteCalendarEvent(occurrence.calendar_event_id).catch(() => {});
-    }
+  const { data: occurrence } = await supabase
+    .from("class_occurrences")
+    .select("calendar_event_id, is_trial, lead_id, student_id")
+    .eq("id", occurrenceId)
+    .single();
+
+  if (status === "cancelled" && occurrence?.calendar_event_id) {
+    await deleteCalendarEvent(occurrence.calendar_event_id).catch(() => {});
   }
 
   const { error } = await supabase
@@ -119,7 +127,29 @@ export async function updateOccurrenceStatus(occurrenceId: string, status: Occur
     .update({ status })
     .eq("id", occurrenceId);
   if (error) throw new Error(error.message);
+
+  if (occurrence?.is_trial && occurrence.lead_id) {
+    const { data: lead } = await supabase
+      .from("leads")
+      .select("status")
+      .eq("id", occurrence.lead_id)
+      .single();
+
+    if (lead?.status !== "converted") {
+      if (status === "completed" && !occurrence.student_id) {
+        const studentId = await convertLeadToStudentRecord(occurrence.lead_id, "trial");
+        await supabase.from("class_occurrences").update({ student_id: studentId }).eq("id", occurrenceId);
+        revalidatePath("/students");
+      } else if (status === "cancelled" || status === "no_show") {
+        await supabase.from("leads").update({ status: "lost" }).eq("id", occurrence.lead_id);
+      }
+      revalidatePath("/leads");
+    }
+  }
+
   revalidatePath("/schedule");
+  revalidatePath("/trials");
+  revalidatePath("/attendance");
 }
 
 export async function bookTrialClass(formData: FormData) {
@@ -257,7 +287,7 @@ export async function cancelTrialClass(occurrenceId: string) {
 
   const { data: occurrence } = await supabase
     .from("class_occurrences")
-    .select("calendar_event_id")
+    .select("calendar_event_id, lead_id")
     .eq("id", occurrenceId)
     .single();
   if (occurrence?.calendar_event_id) {
@@ -269,6 +299,14 @@ export async function cancelTrialClass(occurrenceId: string) {
     .update({ status: "cancelled" })
     .eq("id", occurrenceId);
   if (error) throw new Error(error.message);
+
+  if (occurrence?.lead_id) {
+    const { data: lead } = await supabase.from("leads").select("status").eq("id", occurrence.lead_id).single();
+    if (lead?.status !== "converted") {
+      await supabase.from("leads").update({ status: "lost" }).eq("id", occurrence.lead_id);
+      revalidatePath("/leads");
+    }
+  }
 
   revalidatePath("/trials");
   redirect(withToast("/trials", "Trial class cancelled"));

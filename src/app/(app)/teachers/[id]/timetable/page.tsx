@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/data/profile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LinkButton } from "@/components/ui/button";
 import { TimetableViewSwitcher } from "@/components/teachers/timetable-view-switcher";
+import { TeacherReminders } from "@/components/teachers/teacher-reminders";
 import { loadTeacherTimetable } from "@/lib/scheduling";
 import { PageHeader } from "@/components/ui/page-header";
 import { notFound } from "next/navigation";
@@ -40,6 +41,7 @@ export default async function TeacherTimetablePage({
           </LinkButton>
         }
       />
+      <TeacherReminders teacherId={id} timezone={teacherTimezone} attendancePath={`/attendance?teacherId=${id}`} />
       <Card>
         <CardHeader>
           <CardTitle>Timetable ({teacherTimezone})</CardTitle>

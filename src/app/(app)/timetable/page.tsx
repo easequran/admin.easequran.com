@@ -3,6 +3,7 @@ import { getCurrentProfile } from "@/lib/data/profile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LinkButton } from "@/components/ui/button";
 import { TimetableViewSwitcher } from "@/components/teachers/timetable-view-switcher";
+import { TeacherReminders } from "@/components/teachers/teacher-reminders";
 import { loadTeacherTimetable } from "@/lib/scheduling";
 import { PageHeader } from "@/components/ui/page-header";
 import { redirect } from "next/navigation";
@@ -25,6 +26,8 @@ export default async function MyTimetablePage() {
           </LinkButton>
         }
       />
+      {teacherRow && <TeacherReminders teacherId={teacherRow.id} timezone={profile.timezone} />}
+
       <Card>
         <CardHeader>
           <CardTitle>Timetable ({profile.timezone})</CardTitle>

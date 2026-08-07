@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LinkButton } from "@/components/ui/button";
 import { formatInZone } from "@/lib/utils/timezone";
 import { AvailabilityEditor } from "@/components/teachers/availability-editor";
+import { TeacherReminders } from "@/components/teachers/teacher-reminders";
 import { addAvailability, removeAvailability } from "@/lib/actions/teachers";
 import { DateTime } from "luxon";
 
@@ -45,6 +46,8 @@ export async function TeacherDashboardView({
 
   return (
     <div className="space-y-6">
+      <TeacherReminders teacherId={teacherId} timezone={timezone} attendancePath={attendancePath} />
+
       <Card>
         <CardContent>
           {!upcoming || upcoming.length === 0 ? (

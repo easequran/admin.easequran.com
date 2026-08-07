@@ -59,23 +59,32 @@ export async function markAttendance(occurrenceId: string, formData: FormData) {
 
   // A trial the student showed up for is a confirmed lead — turn it into a
   // real student record automatically instead of requiring a separate
-  // manual "Convert to student" click.
-  if (status !== "absent") {
-    const { data: occurrence } = await supabase
-      .from("class_occurrences")
-      .select("is_trial, lead_id, student_id")
-      .eq("id", occurrenceId)
-      .single();
+  // manual "Convert to student" click. A trial they missed marks the lead
+  // lost, mirroring the same sync `updateOccurrenceStatus` does when admin
+  // marks a trial's outcome directly from the Trials page.
+  const { data: occurrence } = await supabase
+    .from("class_occurrences")
+    .select("is_trial, lead_id, student_id")
+    .eq("id", occurrenceId)
+    .single();
 
-    if (occurrence?.is_trial && occurrence.lead_id && !occurrence.student_id) {
-      const studentId = await convertLeadToStudentRecord(occurrence.lead_id, "trial");
-      await supabase.from("class_occurrences").update({ student_id: studentId }).eq("id", occurrenceId);
-      revalidatePath("/students");
+  if (occurrence?.is_trial && occurrence.lead_id) {
+    const { data: lead } = await supabase.from("leads").select("status").eq("id", occurrence.lead_id).single();
+
+    if (lead?.status !== "converted") {
+      if (status !== "absent" && !occurrence.student_id) {
+        const studentId = await convertLeadToStudentRecord(occurrence.lead_id, "trial");
+        await supabase.from("class_occurrences").update({ student_id: studentId }).eq("id", occurrenceId);
+        revalidatePath("/students");
+      } else if (status === "absent") {
+        await supabase.from("leads").update({ status: "lost" }).eq("id", occurrence.lead_id);
+      }
       revalidatePath("/leads");
     }
   }
 
   revalidatePath("/attendance");
+  revalidatePath("/trials");
 }
 
 export async function updateAttendanceNote(occurrenceId: string, formData: FormData) {

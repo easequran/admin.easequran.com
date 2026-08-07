@@ -275,26 +275,56 @@ export async function loadTeacherTimetable(
 ): Promise<TimetableDay[]> {
   const supabase = client ?? (await createClient());
 
-  const [{ data: availability }, { data: bookedSchedules }] = await Promise.all([
+  const [{ data: availability }, { data: bookedSchedules }, { data: trialOccurrences }] = await Promise.all([
     supabase.from("teacher_availability").select("*").eq("teacher_id", teacherId).order("day_of_week"),
     supabase
       .from("recurring_schedules")
       .select("day_of_week, local_start_time, duration_minutes, timezone, students(full_name, enrollment_status)")
       .eq("teacher_id", teacherId)
       .eq("active", true),
+    // One-off trial bookings aren't recurring_schedules rows, so they need
+    // to be pulled in separately -- only upcoming/undecided ones (status
+    // still "scheduled") show, so a completed/cancelled/no-show trial drops
+    // off the grid on its own once its outcome is set.
+    supabase
+      .from("class_occurrences")
+      .select("start_at, end_at, leads(full_name)")
+      .eq("teacher_id", teacherId)
+      .eq("is_trial", true)
+      .eq("status", "scheduled")
+      .gte("start_at", DateTime.utc().toISO()!)
+      .lte("start_at", DateTime.utc().plus({ days: 7 }).toISO()!),
   ]);
+
+  const trialBlocks = ((trialOccurrences ?? []) as { start_at: string; end_at: string; leads: { full_name: string } | null }[]).map(
+    (o) => {
+      const startLocal = DateTime.fromISO(o.start_at, { zone: "utc" }).setZone(teacherTimezone);
+      const endLocal = DateTime.fromISO(o.end_at, { zone: "utc" }).setZone(teacherTimezone);
+      return {
+        day_of_week: startLocal.weekday === 7 ? 0 : startLocal.weekday,
+        local_start_time: startLocal.toFormat("HH:mm"),
+        duration_minutes: endLocal.diff(startLocal, "minutes").minutes,
+        timezone: teacherTimezone,
+        label: o.leads?.full_name ?? "Trial",
+        isTrial: true,
+      };
+    },
+  );
 
   return buildWeeklyTimetable(
     availability ?? [],
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ((bookedSchedules ?? []) as any[]).map((s) => ({
-      day_of_week: s.day_of_week,
-      local_start_time: s.local_start_time,
-      duration_minutes: s.duration_minutes,
-      timezone: s.timezone,
-      label: s.students?.full_name ?? "Student",
-      isTrial: s.students?.enrollment_status === "trial",
-    })),
+    [
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ...((bookedSchedules ?? []) as any[]).map((s) => ({
+        day_of_week: s.day_of_week,
+        local_start_time: s.local_start_time,
+        duration_minutes: s.duration_minutes,
+        timezone: s.timezone,
+        label: s.students?.full_name ?? "Student",
+        isTrial: s.students?.enrollment_status === "trial",
+      })),
+      ...trialBlocks,
+    ],
     teacherTimezone,
   );
 }
