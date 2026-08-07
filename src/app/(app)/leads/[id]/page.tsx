@@ -112,6 +112,18 @@ export default async function LeadDetailPage({
                     );
                   }
 
+                  // These two only ever move via an actual trial (booked in
+                  // Trials, completed from the Trials list) -- letting admin
+                  // click straight to "trial completed" here let leads sit
+                  // in that stage with no trial ever having happened.
+                  if (s === "trial_scheduled" || s === "trial_completed") {
+                    return (
+                      <span key={s} title="Set automatically by booking/completing a trial in Trial classes">
+                        <Badge tone={lead.status === s ? "accent" : "neutral"}>{s.replace("_", " ")}</Badge>
+                      </span>
+                    );
+                  }
+
                   const boundSet = async () => {
                     "use server";
                     await updateLeadStatus(id, s);

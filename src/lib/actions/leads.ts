@@ -68,6 +68,12 @@ export async function deleteLead(leadId: string) {
 
 export async function updateLeadStatus(leadId: string, status: LeadStatus) {
   await requireAdmin();
+  // These two only ever move by actually booking/completing a trial in
+  // Trial classes -- allowing a direct set here is what let leads sit at
+  // "trial completed" with no trial ever having happened.
+  if (status === "trial_scheduled" || status === "trial_completed") {
+    throw new Error("Trial stages are set automatically by booking or completing a trial, not set directly.");
+  }
   const supabase = await createClient();
   const {
     data: { session },
@@ -110,6 +116,9 @@ export async function updateLeadStatus(leadId: string, status: LeadStatus) {
 
 export async function bulkUpdateLeadStatus(leadIds: string[], status: LeadStatus) {
   await requireAdmin();
+  if (status === "trial_scheduled" || status === "trial_completed") {
+    throw new Error("Trial stages are set automatically by booking or completing a trial, not set directly.");
+  }
   if (leadIds.length === 0) return;
   const supabase = await createClient();
 

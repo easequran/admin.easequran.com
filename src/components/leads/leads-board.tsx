@@ -27,6 +27,12 @@ const STAGES: { key: LeadStatus; label: string; tone: "neutral" | "info" | "warn
   { key: "lost", label: "Lost", tone: "danger", stripe: "border-t-red-400" },
 ];
 
+// "trial_scheduled" / "trial_completed" are excluded from manual status
+// pickers -- they should only move by actually booking/completing a trial
+// in Trial classes, otherwise a lead can sit at "trial completed" with no
+// trial having ever happened (which is exactly what set-by-hand was doing).
+const MANUAL_STAGES = STAGES.filter((s) => s.key !== "trial_scheduled" && s.key !== "trial_completed");
+
 export function LeadsBoard({ leads, assignees }: { leads: Lead[]; assignees: { id: string; full_name: string }[] }) {
   const [view, setView] = useState<View>("table");
   const [query, setQuery] = useState("");
@@ -158,7 +164,7 @@ export function LeadsBoard({ leads, assignees }: { leads: Lead[]; assignees: { i
 
           <div className="flex items-center gap-2">
             <Select value={bulkStatus} onChange={(e) => setBulkStatus(e.target.value as LeadStatus)} className="w-auto">
-              {STAGES.map((s) => (
+              {MANUAL_STAGES.map((s) => (
                 <option key={s.key} value={s.key}>
                   {s.label}
                 </option>
@@ -335,17 +341,23 @@ function LeadsTable({
                   <td className="px-5 py-3 text-slate-600">{l.country ?? "—"}</td>
                   <td className="px-5 py-3 text-slate-600">{l.source ?? "—"}</td>
                   <td className="px-5 py-3">
-                    <Select
-                      value={l.status}
-                      onChange={(e) => onStatusChange(l.id, e.target.value as LeadStatus)}
-                      className="w-auto py-1 text-xs"
-                    >
-                      {STAGES.map((s) => (
-                        <option key={s.key} value={s.key}>
-                          {s.label}
-                        </option>
-                      ))}
-                    </Select>
+                    {l.status === "trial_scheduled" || l.status === "trial_completed" ? (
+                      <span title="Set automatically by booking/completing a trial in Trial classes">
+                        <Badge tone="accent">{l.status.replace("_", " ")}</Badge>
+                      </span>
+                    ) : (
+                      <Select
+                        value={l.status}
+                        onChange={(e) => onStatusChange(l.id, e.target.value as LeadStatus)}
+                        className="w-auto py-1 text-xs"
+                      >
+                        {MANUAL_STAGES.map((s) => (
+                          <option key={s.key} value={s.key}>
+                            {s.label}
+                          </option>
+                        ))}
+                      </Select>
+                    )}
                   </td>
                   <td className="px-5 py-3 text-slate-600">{assigneeById.get(l.assigned_to ?? "") ?? "—"}</td>
                   <td className="px-5 py-3">
