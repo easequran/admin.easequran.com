@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, LinkButton } from "@/components/ui/button";
 import { formatInZone } from "@/lib/utils/timezone";
 import { updateOccurrenceStatus } from "@/lib/actions/schedule";
 import type { OccurrenceStatus } from "@/lib/types/database";
@@ -26,6 +26,8 @@ export function OccurrenceList({
     is_trial: boolean;
     studentName?: string;
     teacherName?: string;
+    leadId?: string;
+    leadConverted?: boolean;
   }[];
   viewerTimezone: string;
   /** When provided, each row's name links to `${editBasePath}/${id}` for editing. */
@@ -82,6 +84,13 @@ export function OccurrenceList({
                       Cancel
                     </Button>
                   </form>
+                </div>
+              ) : o.status === "completed" && o.leadId && !o.leadConverted ? (
+                <div className="flex items-center gap-2">
+                  <Badge tone={statusTone[o.status]}>{o.status.replace("_", " ")}</Badge>
+                  <LinkButton href={`/leads/${o.leadId}/convert`} size="sm">
+                    Convert to student
+                  </LinkButton>
                 </div>
               ) : (
                 <Badge tone={statusTone[o.status]}>{o.status.replace("_", " ")}</Badge>

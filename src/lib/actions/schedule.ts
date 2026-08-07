@@ -5,7 +5,6 @@ import { requireAdmin } from "@/lib/data/profile";
 import { generateOccurrencesForSchedule, hasConflict, isWithinAvailability } from "@/lib/scheduling";
 import { nextOccurrenceUtc } from "@/lib/utils/timezone";
 import { createCalendarEvent, deleteCalendarEvent, updateCalendarEvent } from "@/lib/google/calendar";
-import { convertLeadToStudentRecord } from "@/lib/actions/leads";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { OccurrenceStatus } from "@/lib/types/database";
@@ -104,9 +103,11 @@ export async function cancelSchedule(scheduleId: string) {
  * Sets an occurrence's status -- used both for regular classes and, when the
  * occurrence is a trial, keeps the linked lead's pipeline stage in sync so
  * admin doesn't have to update the trial and the lead separately. A trial
- * that completes converts the lead to a real student (mirroring what
- * marking attendance "present" already does); a trial that's cancelled or
- * a no-show marks the lead lost, unless it was already converted.
+ * that completes marks the lead "trial completed" (it stays a lead, visible
+ * only in Trials/Leads, not the Students page) -- becoming a real student is
+ * a deliberate separate step via the "Convert to student" action, same as
+ * any other lead. A trial that's cancelled or a no-show marks the lead lost,
+ * unless it was already converted.
  */
 export async function updateOccurrenceStatus(occurrenceId: string, status: OccurrenceStatus) {
   await requireAdmin();
@@ -136,10 +137,8 @@ export async function updateOccurrenceStatus(occurrenceId: string, status: Occur
       .single();
 
     if (lead?.status !== "converted") {
-      if (status === "completed" && !occurrence.student_id) {
-        const studentId = await convertLeadToStudentRecord(occurrence.lead_id, "trial");
-        await supabase.from("class_occurrences").update({ student_id: studentId }).eq("id", occurrenceId);
-        revalidatePath("/students");
+      if (status === "completed") {
+        await supabase.from("leads").update({ status: "trial_completed" }).eq("id", occurrence.lead_id);
       } else if (status === "cancelled" || status === "no_show") {
         await supabase.from("leads").update({ status: "lost" }).eq("id", occurrence.lead_id);
       }

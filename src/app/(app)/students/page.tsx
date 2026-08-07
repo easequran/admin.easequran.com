@@ -8,8 +8,10 @@ import type { Student } from "@/lib/types/database";
 export default async function StudentsPage() {
   await requireAdmin();
   const supabase = await createClient();
+  // Trial students live in the Trials/Leads pipeline, not here -- a lead
+  // only becomes a Students row once admin explicitly converts it.
   const [{ data: students }, { data: schedules }] = await Promise.all([
-    supabase.from("students").select("*").order("created_at", { ascending: false }),
+    supabase.from("students").select("*").neq("enrollment_status", "trial").order("created_at", { ascending: false }),
     supabase
       .from("recurring_schedules")
       .select("student_id, teachers(profiles(full_name))")
@@ -30,7 +32,7 @@ export default async function StudentsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Students"
-        description="Everyone currently enrolled, on trial, or paused."
+        description="Everyone currently enrolled or paused. Trial students live in the Trials/Leads pipeline until converted."
         actions={<LinkButton href="/students/new">Add student</LinkButton>}
       />
       <StudentsTable

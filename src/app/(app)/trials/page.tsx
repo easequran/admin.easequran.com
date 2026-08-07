@@ -16,7 +16,7 @@ export default async function TrialsPage({
 
   const { data: trials } = await supabase
     .from("class_occurrences")
-    .select("id, start_at, status, is_trial, leads(full_name), teachers(profiles(full_name))")
+    .select("id, start_at, status, is_trial, leads(id, full_name, status), teachers(profiles(full_name))")
     .eq("is_trial", true)
     .order("start_at", { ascending: false })
     .limit(50);
@@ -29,6 +29,8 @@ export default async function TrialsPage({
     is_trial: t.is_trial,
     studentName: t.leads?.full_name,
     teacherName: t.teachers?.profiles?.full_name,
+    leadId: t.leads?.id,
+    leadConverted: t.leads?.status === "converted",
   }));
 
   return (

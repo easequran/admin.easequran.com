@@ -23,7 +23,10 @@ const statusTone = {
   inactive: "neutral",
 } as const;
 
-const STATUSES: EnrollmentStatus[] = ["trial", "active", "paused", "inactive"];
+// "trial" is intentionally excluded -- trial students live in the
+// Trials/Leads pipeline, not the Students list, so offering it here would
+// just make a bulk-selected student disappear from view.
+const STATUSES: EnrollmentStatus[] = ["active", "paused", "inactive"];
 
 export function StudentsTable({
   students,

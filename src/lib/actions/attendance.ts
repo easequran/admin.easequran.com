@@ -1,7 +1,6 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { convertLeadToStudentRecord } from "@/lib/actions/leads";
 import { getCurrentProfile } from "@/lib/data/profile";
 import { revalidatePath } from "next/cache";
 import type { AttendanceStatus } from "@/lib/types/database";
@@ -57,14 +56,15 @@ export async function markAttendance(occurrenceId: string, formData: FormData) {
     .update({ status: status === "absent" ? "no_show" : "completed" })
     .eq("id", occurrenceId);
 
-  // A trial the student showed up for is a confirmed lead — turn it into a
-  // real student record automatically instead of requiring a separate
-  // manual "Convert to student" click. A trial they missed marks the lead
-  // lost, mirroring the same sync `updateOccurrenceStatus` does when admin
-  // marks a trial's outcome directly from the Trials page.
+  // A trial the student showed up for marks the lead "trial completed" --
+  // it stays a lead (visible in Trials/Leads, not Students) until admin
+  // explicitly clicks "Convert to student", same as any other lead. A trial
+  // they missed marks the lead lost, mirroring the same sync
+  // `updateOccurrenceStatus` does when admin sets a trial's outcome
+  // directly from the Trials page.
   const { data: occurrence } = await supabase
     .from("class_occurrences")
-    .select("is_trial, lead_id, student_id")
+    .select("is_trial, lead_id")
     .eq("id", occurrenceId)
     .single();
 
@@ -72,13 +72,10 @@ export async function markAttendance(occurrenceId: string, formData: FormData) {
     const { data: lead } = await supabase.from("leads").select("status").eq("id", occurrence.lead_id).single();
 
     if (lead?.status !== "converted") {
-      if (status !== "absent" && !occurrence.student_id) {
-        const studentId = await convertLeadToStudentRecord(occurrence.lead_id, "trial");
-        await supabase.from("class_occurrences").update({ student_id: studentId }).eq("id", occurrenceId);
-        revalidatePath("/students");
-      } else if (status === "absent") {
-        await supabase.from("leads").update({ status: "lost" }).eq("id", occurrence.lead_id);
-      }
+      await supabase
+        .from("leads")
+        .update({ status: status === "absent" ? "lost" : "trial_completed" })
+        .eq("id", occurrence.lead_id);
       revalidatePath("/leads");
     }
   }
