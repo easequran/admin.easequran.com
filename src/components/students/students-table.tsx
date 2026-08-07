@@ -25,7 +25,13 @@ const statusTone = {
 
 const STATUSES: EnrollmentStatus[] = ["trial", "active", "paused", "inactive"];
 
-export function StudentsTable({ students }: { students: Student[] }) {
+export function StudentsTable({
+  students,
+  teacherByStudent = {},
+}: {
+  students: Student[];
+  teacherByStudent?: Record<string, string>;
+}) {
   const [query, setQuery] = useState("");
   const [selectMode, setSelectMode] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -36,11 +42,11 @@ export function StudentsTable({ students }: { students: Student[] }) {
     const q = query.trim().toLowerCase();
     if (!q) return students;
     return students.filter((s) =>
-      [s.full_name, s.country, s.guardian_name, s.guardian_email, s.timezone]
+      [s.full_name, s.country, s.guardian_name, s.guardian_email, s.timezone, teacherByStudent[s.id]]
         .filter(Boolean)
         .some((field) => field!.toLowerCase().includes(q)),
     );
-  }, [students, query]);
+  }, [students, query, teacherByStudent]);
 
   function toggleSelected(id: string) {
     setSelected((prev) => {
@@ -147,6 +153,7 @@ export function StudentsTable({ students }: { students: Student[] }) {
               <tr>
                 {selectMode && <th className="w-10 px-5 py-3" />}
                 <th className="px-5 py-3">Name</th>
+                <th className="px-5 py-3">Teacher</th>
                 <th className="px-5 py-3">Timezone</th>
                 <th className="px-5 py-3">Country</th>
                 <th className="px-5 py-3">Status</th>
@@ -177,6 +184,7 @@ export function StudentsTable({ students }: { students: Student[] }) {
                       </Link>
                     )}
                   </td>
+                  <td className="px-5 py-3 text-slate-600">{teacherByStudent[s.id] ?? "—"}</td>
                   <td className="px-5 py-3 text-slate-600">{s.timezone}</td>
                   <td className="px-5 py-3 text-slate-600">{s.country ?? "—"}</td>
                   <td className="px-5 py-3">
@@ -187,7 +195,7 @@ export function StudentsTable({ students }: { students: Student[] }) {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={selectMode ? 6 : 5} className="px-5 py-8 text-center text-slate-400">
+                  <td colSpan={selectMode ? 7 : 6} className="px-5 py-8 text-center text-slate-400">
                     No students match &quot;{query}&quot;.
                   </td>
                 </tr>
