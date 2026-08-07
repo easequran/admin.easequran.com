@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { LinkButton } from "@/components/ui/button";
 import { formatInZone } from "@/lib/utils/timezone";
 import { buildWeeklyTimetable } from "@/lib/scheduling";
 import { AvailabilityEditor } from "@/components/teachers/availability-editor";
@@ -31,7 +32,7 @@ export async function TeacherDashboardView({
       .limit(10),
     supabase
       .from("recurring_schedules")
-      .select("id, day_of_week, local_start_time, duration_minutes, timezone, students(full_name)")
+      .select("id, day_of_week, local_start_time, duration_minutes, timezone, students(full_name, enrollment_status)")
       .eq("teacher_id", teacherId)
       .eq("active", true)
       .order("day_of_week"),
@@ -47,6 +48,7 @@ export async function TeacherDashboardView({
       duration_minutes: s.duration_minutes,
       timezone: s.timezone,
       label: s.students?.full_name ?? "Student",
+      isTrial: s.students?.enrollment_status === "trial",
     })),
     timezone,
   );
@@ -80,8 +82,11 @@ export async function TeacherDashboardView({
       </Card>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Weekly timetable</CardTitle>
+          <LinkButton href="/attendance" variant="outline" size="sm">
+            Attendance
+          </LinkButton>
         </CardHeader>
         <CardContent>
           <TimetableViewSwitcher days={timetable} timezone={timezone} />

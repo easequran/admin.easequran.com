@@ -202,6 +202,7 @@ export interface TimetableBlock {
   startMinutes: number; // minutes since midnight, in the teacher's timezone
   endMinutes: number;
   label?: string;
+  isTrial?: boolean;
 }
 
 export interface TimetableDay {
@@ -220,7 +221,7 @@ export interface TimetableDay {
  */
 export function buildWeeklyTimetable(
   availability: { day_of_week: number; local_start_time: string; local_end_time: string; timezone: string }[],
-  booked: { day_of_week: number; local_start_time: string; duration_minutes: number; timezone: string; label: string }[],
+  booked: { day_of_week: number; local_start_time: string; duration_minutes: number; timezone: string; label: string; isTrial?: boolean }[],
   teacherTimezone: string,
 ): TimetableDay[] {
   const reference = DateTime.now().setZone(teacherTimezone).startOf("week");
@@ -259,6 +260,7 @@ export function buildWeeklyTimetable(
       startMinutes: resolved.startMinutes,
       endMinutes: resolved.endMinutes,
       label: b.label,
+      isTrial: b.isTrial,
     });
   }
 

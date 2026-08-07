@@ -26,7 +26,7 @@ export default async function TeacherDetailPage({
     supabase.from("teacher_availability").select("*").eq("teacher_id", id).order("day_of_week"),
     supabase
       .from("recurring_schedules")
-      .select("day_of_week, local_start_time, duration_minutes, timezone, students(full_name)")
+      .select("day_of_week, local_start_time, duration_minutes, timezone, students(full_name, enrollment_status)")
       .eq("teacher_id", id)
       .eq("active", true),
   ]);
@@ -44,6 +44,7 @@ export default async function TeacherDetailPage({
       duration_minutes: s.duration_minutes,
       timezone: s.timezone,
       label: s.students?.full_name ?? "Student",
+      isTrial: s.students?.enrollment_status === "trial",
     })),
     teacherTimezone,
   );
@@ -157,8 +158,11 @@ export default async function TeacherDetailPage({
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Weekly timetable</CardTitle>
+          <LinkButton href="/attendance" variant="outline" size="sm">
+            Attendance
+          </LinkButton>
         </CardHeader>
         <CardContent>
           <TimetableViewSwitcher days={timetable} timezone={teacherTimezone} />
