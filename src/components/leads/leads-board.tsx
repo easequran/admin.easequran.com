@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
-import { UserPlus, Download, X } from "lucide-react";
+import { UserPlus, Download, X, LayoutGrid, List } from "lucide-react";
 import { DateTime } from "luxon";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,8 @@ import { bulkUpdateLeadStatus, bulkAssignLeads } from "@/lib/actions/leads";
 import { toast } from "@/lib/toast";
 import type { Lead, LeadStatus } from "@/lib/types/database";
 
+type View = "table" | "board";
+
 const STAGES: { key: LeadStatus; label: string; tone: "neutral" | "info" | "warning" | "success" | "danger" | "accent"; stripe: string }[] = [
   { key: "new", label: "New", tone: "info", stripe: "border-t-blue-400" },
   { key: "contacted", label: "Contacted", tone: "warning", stripe: "border-t-amber-400" },
@@ -26,6 +28,7 @@ const STAGES: { key: LeadStatus; label: string; tone: "neutral" | "info" | "warn
 ];
 
 export function LeadsBoard({ leads, assignees }: { leads: Lead[]; assignees: { id: string; full_name: string }[] }) {
+  const [view, setView] = useState<View>("table");
   const [query, setQuery] = useState("");
   const [selectMode, setSelectMode] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -33,14 +36,24 @@ export function LeadsBoard({ leads, assignees }: { leads: Lead[]; assignees: { i
   const [bulkAssignee, setBulkAssignee] = useState("");
   const [isPending, startTransition] = useTransition();
   const now = DateTime.now();
+  const assigneeById = useMemo(() => new Map(assignees.map((a) => [a.id, a.full_name])), [assignees]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return leads;
     return leads.filter((l) =>
-      [l.full_name, l.email, l.phone, l.country, l.source].filter(Boolean).some((field) => field!.toLowerCase().includes(q)),
+      [l.full_name, l.email, l.phone, l.country, l.source, assigneeById.get(l.assigned_to ?? "")]
+        .filter(Boolean)
+        .some((field) => field!.toLowerCase().includes(q)),
     );
-  }, [leads, query]);
+  }, [leads, query, assigneeById]);
+
+  function handleRowStatusChange(leadId: string, status: LeadStatus) {
+    startTransition(async () => {
+      await bulkUpdateLeadStatus([leadId], status);
+      toast.success(`Status changed to ${status.replace("_", " ")}`);
+    });
+  }
 
   function toggleSelected(id: string) {
     setSelected((prev) => {
@@ -112,6 +125,28 @@ export function LeadsBoard({ leads, assignees }: { leads: Lead[]; assignees: { i
         <div className="min-w-0 flex-1">
           <SearchInput value={query} onChange={setQuery} placeholder="Search leads..." />
         </div>
+        <div className="inline-flex rounded-lg border border-primary-100 p-0.5">
+          <button
+            type="button"
+            onClick={() => setView("table")}
+            title="Table view"
+            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+              view === "table" ? "bg-accent-500 text-primary-900" : "text-primary-700 hover:bg-primary-50"
+            }`}
+          >
+            <List className="h-3.5 w-3.5" /> Table
+          </button>
+          <button
+            type="button"
+            onClick={() => setView("board")}
+            title="Board view"
+            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+              view === "board" ? "bg-accent-500 text-primary-900" : "text-primary-700 hover:bg-primary-50"
+            }`}
+          >
+            <LayoutGrid className="h-3.5 w-3.5" /> Board
+          </button>
+        </div>
         <Button variant={selectMode ? "outline" : "ghost"} size="sm" onClick={() => (selectMode ? exitSelectMode() : setSelectMode(true))}>
           {selectMode ? "Cancel selection" : "Select"}
         </Button>
@@ -158,6 +193,18 @@ export function LeadsBoard({ leads, assignees }: { leads: Lead[]; assignees: { i
         </Card>
       )}
 
+      {view === "table" ? (
+        <LeadsTable
+          leads={filtered}
+          assigneeById={assigneeById}
+          selectMode={selectMode}
+          selected={selected}
+          toggleSelected={toggleSelected}
+          onStatusChange={handleRowStatusChange}
+          now={now}
+          query={query}
+        />
+      ) : (
       <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3">
         {STAGES.map((stage) => {
           const items = filtered.filter((l) => l.status === stage.key);
@@ -218,6 +265,112 @@ export function LeadsBoard({ leads, assignees }: { leads: Lead[]; assignees: { i
           );
         })}
       </div>
+      )}
     </div>
+  );
+}
+
+function LeadsTable({
+  leads,
+  assigneeById,
+  selectMode,
+  selected,
+  toggleSelected,
+  onStatusChange,
+  now,
+  query,
+}: {
+  leads: Lead[];
+  assigneeById: Map<string, string>;
+  selectMode: boolean;
+  selected: Set<string>;
+  toggleSelected: (id: string) => void;
+  onStatusChange: (leadId: string, status: LeadStatus) => void;
+  now: DateTime;
+  query: string;
+}) {
+  return (
+    <Card className="overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[880px] text-sm">
+          <thead className="bg-primary-50 text-left text-xs uppercase text-primary-500">
+            <tr>
+              {selectMode && <th className="w-10 px-5 py-3" />}
+              <th className="px-5 py-3">Name</th>
+              <th className="px-5 py-3">Contact</th>
+              <th className="px-5 py-3">Country</th>
+              <th className="px-5 py-3">Source</th>
+              <th className="px-5 py-3">Status</th>
+              <th className="px-5 py-3">Assigned to</th>
+              <th className="px-5 py-3">Follow up</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-primary-50">
+            {leads.map((l) => {
+              const overdue = l.next_follow_up_at && DateTime.fromISO(l.next_follow_up_at) < now;
+              return (
+                <tr key={l.id} className={`hover:bg-slate-50 ${overdue ? "bg-red-50/60" : ""}`}>
+                  {selectMode && (
+                    <td className="px-5 py-3">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 rounded border-primary-300"
+                        checked={selected.has(l.id)}
+                        onChange={() => toggleSelected(l.id)}
+                      />
+                    </td>
+                  )}
+                  <td className="px-5 py-3">
+                    {selectMode ? (
+                      <button type="button" className="font-medium text-primary-900 hover:underline" onClick={() => toggleSelected(l.id)}>
+                        {l.full_name}
+                      </button>
+                    ) : (
+                      <Link href={`/leads/${l.id}`} prefetch={false} className="font-medium text-primary-900 hover:underline">
+                        {l.full_name}
+                      </Link>
+                    )}
+                  </td>
+                  <td className="px-5 py-3 text-slate-600">{l.email ?? l.phone ?? "—"}</td>
+                  <td className="px-5 py-3 text-slate-600">{l.country ?? "—"}</td>
+                  <td className="px-5 py-3 text-slate-600">{l.source ?? "—"}</td>
+                  <td className="px-5 py-3">
+                    <Select
+                      value={l.status}
+                      onChange={(e) => onStatusChange(l.id, e.target.value as LeadStatus)}
+                      className="w-auto py-1 text-xs"
+                    >
+                      {STAGES.map((s) => (
+                        <option key={s.key} value={s.key}>
+                          {s.label}
+                        </option>
+                      ))}
+                    </Select>
+                  </td>
+                  <td className="px-5 py-3 text-slate-600">{assigneeById.get(l.assigned_to ?? "") ?? "—"}</td>
+                  <td className="px-5 py-3">
+                    {l.next_follow_up_at ? (
+                      <span className={overdue ? "font-medium text-red-600" : "text-slate-500"}>
+                        {overdue ? "Overdue: " : ""}
+                        {DateTime.fromISO(l.next_follow_up_at).toRelative()}
+                      </span>
+                    ) : (
+                      <span className="text-slate-400">—</span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+            {leads.length === 0 && (
+              <tr>
+                <td colSpan={selectMode ? 8 : 7} className="px-5 py-8 text-center text-slate-400">
+                  No leads match &quot;{query}&quot;.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </Card>
   );
 }
