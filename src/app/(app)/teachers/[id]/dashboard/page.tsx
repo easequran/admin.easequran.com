@@ -35,6 +35,7 @@ export default async function TeacherDashboardPage({
         profileId={teacher.profile_id}
         timezone={profile?.timezone ?? "UTC"}
         returnPath={`/teachers/${id}/dashboard`}
+        timetablePath={`/teachers/${id}/timetable`}
       />
     </div>
   );

@@ -6,9 +6,7 @@ import { TimezoneSelect } from "@/components/ui/timezone-select";
 import { Button, LinkButton } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AvailabilityEditor } from "@/components/teachers/availability-editor";
-import { TimetableViewSwitcher } from "@/components/teachers/timetable-view-switcher";
 import { updateTeacher, deleteTeacher, addAvailability, removeAvailability } from "@/lib/actions/teachers";
-import { buildWeeklyTimetable } from "@/lib/scheduling";
 import { PageHeader } from "@/components/ui/page-header";
 import { notFound } from "next/navigation";
 
@@ -21,33 +19,15 @@ export default async function TeacherDetailPage({
   await requireAdmin();
   const supabase = await createClient();
 
-  const [{ data: teacher }, { data: availability }, { data: bookedSchedules }] = await Promise.all([
+  const [{ data: teacher }, { data: availability }] = await Promise.all([
     supabase.from("teachers").select("*, profiles(full_name, email, timezone)").eq("id", id).single(),
     supabase.from("teacher_availability").select("*").eq("teacher_id", id).order("day_of_week"),
-    supabase
-      .from("recurring_schedules")
-      .select("day_of_week, local_start_time, duration_minutes, timezone, students(full_name, enrollment_status)")
-      .eq("teacher_id", id)
-      .eq("active", true),
   ]);
   if (!teacher) notFound();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const profile = (teacher as any).profiles;
   const teacherTimezone = profile?.timezone ?? "UTC";
-  const timetable = buildWeeklyTimetable(
-    availability ?? [],
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ((bookedSchedules ?? []) as any[]).map((s) => ({
-      day_of_week: s.day_of_week,
-      local_start_time: s.local_start_time,
-      duration_minutes: s.duration_minutes,
-      timezone: s.timezone,
-      label: s.students?.full_name ?? "Student",
-      isTrial: s.students?.enrollment_status === "trial",
-    })),
-    teacherTimezone,
-  );
 
   const boundUpdate = updateTeacher.bind(null, id, teacher.profile_id);
   const boundDelete = deleteTeacher.bind(null, id, teacher.profile_id);
@@ -71,6 +51,9 @@ export default async function TeacherDetailPage({
             </Badge>
             <LinkButton href={`/teachers/${id}/dashboard`} variant="outline" size="sm">
               View dashboard
+            </LinkButton>
+            <LinkButton href={`/teachers/${id}/timetable`} variant="outline" size="sm">
+              View timetable
             </LinkButton>
             <form action={boundDelete}>
               <Button type="submit" variant="danger" size="sm">
@@ -156,18 +139,6 @@ export default async function TeacherDetailPage({
           </CardContent>
         </Card>
       </div>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Weekly timetable</CardTitle>
-          <LinkButton href="/attendance" variant="outline" size="sm">
-            Attendance
-          </LinkButton>
-        </CardHeader>
-        <CardContent>
-          <TimetableViewSwitcher days={timetable} timezone={teacherTimezone} />
-        </CardContent>
-      </Card>
     </div>
   );
 }

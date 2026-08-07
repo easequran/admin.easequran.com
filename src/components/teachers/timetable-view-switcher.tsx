@@ -5,87 +5,23 @@ import { DateTime } from "luxon";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { TimetableDay } from "@/lib/scheduling";
 import { WeeklyTimetableGrid } from "@/components/teachers/weekly-timetable-grid";
-import {
-  GRID_START_MIN,
-  GRID_END_MIN,
-  pct,
-  formatMinutes,
-  DAY_NAMES,
-  currentDayOfWeek,
-  currentMinutesOfDay,
-} from "@/lib/utils/timetable-grid";
+import { TimetableSheetTable, TimetableLegend, buildDayColumn } from "@/components/teachers/timetable-sheet";
+import { DAY_NAMES, currentDayOfWeek } from "@/lib/utils/timetable-grid";
 
 type View = "day" | "week" | "month";
 
-function DayView({ day, timezone, isToday }: { day: TimetableDay; timezone: string; isToday: boolean }) {
-  const hourMarks = Array.from({ length: (GRID_END_MIN - GRID_START_MIN) / 60 + 1 }, (_, i) => GRID_START_MIN + i * 60);
-  const nowMin = currentMinutesOfDay(timezone);
-  const showNowLine = isToday && nowMin >= GRID_START_MIN && nowMin <= GRID_END_MIN;
+function DayView({ day, timezone }: { day: TimetableDay; timezone: string }) {
+  const hasContent = day.free.length > 0 || day.busy.length > 0;
+  const columns = [{ key: day.dayOfWeek, label: DAY_NAMES[day.dayOfWeek], highlighted: true, cells: buildDayColumn(day) }];
 
   return (
     <div>
-      <div className="mb-3 flex flex-wrap items-center gap-4 text-xs text-slate-500">
-        <span className="flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded-sm bg-accent-100 border border-accent-300" /> Free
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded-sm bg-primary-600" /> Booked
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="h-1.5 w-1.5 rounded-full bg-accent-500" /> Now
-        </span>
-        <span className="ml-auto">Times shown in {timezone}</span>
-      </div>
-      <div className="flex gap-3">
-        <div className="w-14 shrink-0 text-right text-[10px] text-slate-400">
-          <div className="relative h-96">
-            {hourMarks.map((m) => (
-              <span key={m} className="absolute right-0 -translate-y-1/2" style={{ top: `${pct(m)}%` }}>
-                {formatMinutes(m)}
-              </span>
-            ))}
-          </div>
-        </div>
-        <div className="relative h-96 flex-1 rounded-lg border border-slate-100 bg-slate-50">
-          {hourMarks.map((m) => (
-            <div key={m} className="absolute left-0 right-0 border-t border-dashed border-slate-200" style={{ top: `${pct(m)}%` }} />
-          ))}
-          {day.free.length === 0 && day.busy.length === 0 && (
-            <p className="absolute inset-0 flex items-center justify-center text-sm text-slate-400">No availability set for this day.</p>
-          )}
-          {day.free.map((block, i) => (
-            <div
-              key={`free-${i}`}
-              className="absolute left-1 right-1 rounded-md bg-accent-100 border border-accent-300"
-              style={{ top: `${pct(block.startMinutes)}%`, height: `${pct(block.endMinutes) - pct(block.startMinutes)}%` }}
-              title={`Free ${formatMinutes(block.startMinutes)}–${formatMinutes(block.endMinutes)}`}
-            />
-          ))}
-          {day.busy.map((block, i) => (
-            <div
-              key={`busy-${i}`}
-              className="absolute left-1 right-1 flex flex-col justify-center gap-0.5 overflow-hidden rounded-md bg-primary-600 px-2 py-1.5 text-xs font-medium leading-none text-white shadow-sm"
-              style={{
-                top: `${pct(block.startMinutes)}%`,
-                height: `${Math.max(pct(block.endMinutes) - pct(block.startMinutes), 3)}%`,
-                minHeight: "38px",
-              }}
-              title={`${block.label ?? "Booked"} ${formatMinutes(block.startMinutes)}–${formatMinutes(block.endMinutes)}`}
-            >
-              <span className="truncate leading-none">{block.label}</span>
-              <span className="truncate text-[10px] font-normal leading-none text-white/80">
-                {formatMinutes(block.startMinutes)}–{formatMinutes(block.endMinutes)}
-              </span>
-            </div>
-          ))}
-          {showNowLine && (
-            <div className="absolute left-0 right-0 z-10 flex items-center gap-1" style={{ top: `${pct(nowMin)}%` }}>
-              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent-500" />
-              <span className="h-px flex-1 bg-accent-500" />
-            </div>
-          )}
-        </div>
-      </div>
+      <TimetableLegend timezone={timezone} />
+      {!hasContent ? (
+        <p className="text-sm text-slate-500">No availability set for this day.</p>
+      ) : (
+        <TimetableSheetTable columns={columns} />
+      )}
     </div>
   );
 }
@@ -109,39 +45,41 @@ function MonthView({
   const today = DateTime.now();
 
   return (
-    <div>
-      <div className="mb-2 grid grid-cols-7 gap-1 text-center text-[11px] font-semibold text-primary-900">
+    <div className="overflow-hidden rounded-lg border border-slate-200">
+      <div className="grid grid-cols-7 gap-px bg-slate-200 text-center text-[11px] font-semibold text-white">
         {DAY_NAMES.map((d) => (
-          <span key={d}>{d.slice(0, 3)}</span>
+          <span key={d} className="bg-primary-900 py-2">
+            {d.slice(0, 3)}
+          </span>
         ))}
       </div>
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-px bg-slate-200">
         {cells.map((date) => {
           const inMonth = date.month === anchor.month;
           const dayOfWeek = date.weekday === 7 ? 0 : date.weekday;
           const dayData = days[dayOfWeek];
+          const bookedCount = dayData?.busy.length ?? 0;
           const isToday = date.hasSame(today, "day");
           return (
             <button
               key={date.toISODate()}
               type="button"
               onClick={() => onSelectDay(dayOfWeek)}
-              className={`flex h-16 flex-col items-start rounded-lg border p-1.5 text-left text-xs transition-colors ${
-                inMonth ? "border-slate-100 bg-white hover:border-primary-200" : "border-transparent bg-slate-50 text-slate-300"
-              } ${isToday ? "ring-2 ring-accent-400" : ""}`}
+              className={`flex h-16 flex-col items-start p-1.5 text-left text-xs transition-colors ${
+                inMonth ? "bg-white hover:bg-accent-200/40" : "bg-slate-50 text-slate-300"
+              } ${isToday ? "ring-2 ring-inset ring-accent-400" : ""}`}
             >
               <span className={inMonth ? "font-medium text-primary-900" : ""}>{date.day}</span>
-              {inMonth && (
-                <div className="mt-auto flex gap-1">
-                  {dayData?.free.length > 0 && <span className="h-1.5 w-1.5 rounded-full bg-accent-400" title="Has availability" />}
-                  {dayData?.busy.length > 0 && <span className="h-1.5 w-1.5 rounded-full bg-primary-600" title="Has booked classes" />}
-                </div>
+              {inMonth && bookedCount > 0 && (
+                <span className="mt-auto rounded bg-primary-50 px-1.5 py-0.5 text-[10px] font-semibold text-primary-800">
+                  {bookedCount} booked
+                </span>
               )}
             </button>
           );
         })}
       </div>
-      <p className="mt-2 text-[11px] text-slate-400">
+      <p className="border-t border-slate-200 bg-slate-50 px-2 py-1.5 text-[11px] text-slate-500">
         Click a date to see that weekday&apos;s schedule. Shows the recurring weekly pattern — one-off cancellations on a
         specific date aren&apos;t reflected here.
       </p>
@@ -219,7 +157,7 @@ export function TimetableViewSwitcher({ days, timezone }: { days: TimetableDay[]
       </div>
 
       {view === "week" && <WeeklyTimetableGrid days={days} timezone={timezone} />}
-      {view === "day" && <DayView day={days[selectedDay]} timezone={timezone} isToday={selectedDay === todayDow} />}
+      {view === "day" && <DayView day={days[selectedDay]} timezone={timezone} />}
       {view === "month" && (
         <MonthView
           days={days}

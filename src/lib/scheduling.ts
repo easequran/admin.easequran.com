@@ -267,6 +267,38 @@ export function buildWeeklyTimetable(
   return days;
 }
 
+/** Fetches a teacher's availability + active recurring schedules and projects them into a TimetableDay[]. */
+export async function loadTeacherTimetable(
+  teacherId: string,
+  teacherTimezone: string,
+  client?: SupabaseLike,
+): Promise<TimetableDay[]> {
+  const supabase = client ?? (await createClient());
+
+  const [{ data: availability }, { data: bookedSchedules }] = await Promise.all([
+    supabase.from("teacher_availability").select("*").eq("teacher_id", teacherId).order("day_of_week"),
+    supabase
+      .from("recurring_schedules")
+      .select("day_of_week, local_start_time, duration_minutes, timezone, students(full_name, enrollment_status)")
+      .eq("teacher_id", teacherId)
+      .eq("active", true),
+  ]);
+
+  return buildWeeklyTimetable(
+    availability ?? [],
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ((bookedSchedules ?? []) as any[]).map((s) => ({
+      day_of_week: s.day_of_week,
+      local_start_time: s.local_start_time,
+      duration_minutes: s.duration_minutes,
+      timezone: s.timezone,
+      label: s.students?.full_name ?? "Student",
+      isTrial: s.students?.enrollment_status === "trial",
+    })),
+    teacherTimezone,
+  );
+}
+
 /** Checks whether a teacher (or student) already has an occurrence overlapping the given window. */
 export async function hasConflict(
   params: {

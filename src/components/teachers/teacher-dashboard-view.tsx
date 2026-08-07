@@ -2,56 +2,38 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LinkButton } from "@/components/ui/button";
 import { formatInZone } from "@/lib/utils/timezone";
-import { buildWeeklyTimetable } from "@/lib/scheduling";
 import { AvailabilityEditor } from "@/components/teachers/availability-editor";
-import { TimetableViewSwitcher } from "@/components/teachers/timetable-view-switcher";
 import { addAvailability, removeAvailability } from "@/lib/actions/teachers";
 import { DateTime } from "luxon";
 
-/** Renders a teacher's own dashboard (upcoming classes, timetable, availability) -- shared by the teacher's own /dashboard and the admin's read-through "view dashboard" page, so both stay in sync automatically. */
+/** Renders a teacher's own dashboard (upcoming classes, availability) -- shared by the teacher's own /dashboard and the admin's read-through "view dashboard" page, so both stay in sync automatically. Full timetable lives on its own page, linked below. */
 export async function TeacherDashboardView({
   teacherId,
   profileId,
   timezone,
   returnPath,
+  timetablePath,
 }: {
   teacherId: string;
   profileId: string;
   timezone: string;
   returnPath: string;
+  timetablePath: string;
 }) {
   const supabase = await createClient();
 
-  const [{ data: upcoming }, { data: weeklySchedule }, { data: availability }] = await Promise.all([
-    supabase
-      .from("class_occurrences")
-      .select("id, start_at, is_trial, students(full_name), teachers!inner(profile_id)")
-      .eq("teachers.profile_id", profileId)
-      .gte("start_at", DateTime.utc().toISO()!)
-      .order("start_at")
-      .limit(10),
-    supabase
-      .from("recurring_schedules")
-      .select("id, day_of_week, local_start_time, duration_minutes, timezone, students(full_name, enrollment_status)")
-      .eq("teacher_id", teacherId)
-      .eq("active", true)
-      .order("day_of_week"),
-    supabase.from("teacher_availability").select("*").eq("teacher_id", teacherId).order("day_of_week"),
-  ]);
-
-  const timetable = buildWeeklyTimetable(
-    availability ?? [],
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ((weeklySchedule ?? []) as any[]).map((s) => ({
-      day_of_week: s.day_of_week,
-      local_start_time: s.local_start_time,
-      duration_minutes: s.duration_minutes,
-      timezone: s.timezone,
-      label: s.students?.full_name ?? "Student",
-      isTrial: s.students?.enrollment_status === "trial",
-    })),
-    timezone,
-  );
+  const { data: upcoming } = await supabase
+    .from("class_occurrences")
+    .select("id, start_at, is_trial, students(full_name), teachers!inner(profile_id)")
+    .eq("teachers.profile_id", profileId)
+    .gte("start_at", DateTime.utc().toISO()!)
+    .order("start_at")
+    .limit(10);
+  const { data: availability } = await supabase
+    .from("teacher_availability")
+    .select("*")
+    .eq("teacher_id", teacherId)
+    .order("day_of_week");
 
   const boundAdd = addAvailability.bind(null, teacherId, returnPath);
   const boundRemove = async (formData: FormData) => {
@@ -83,13 +65,18 @@ export async function TeacherDashboardView({
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Weekly timetable</CardTitle>
-          <LinkButton href="/attendance" variant="outline" size="sm">
-            Attendance
-          </LinkButton>
+          <CardTitle>Timetable</CardTitle>
+          <div className="flex gap-2">
+            <LinkButton href="/attendance" variant="outline" size="sm">
+              Attendance
+            </LinkButton>
+            <LinkButton href={timetablePath} size="sm">
+              View full timetable
+            </LinkButton>
+          </div>
         </CardHeader>
         <CardContent>
-          <TimetableViewSwitcher days={timetable} timezone={timezone} />
+          <p className="text-sm text-slate-500">See the full weekly, daily, and monthly schedule on its own page.</p>
         </CardContent>
       </Card>
 

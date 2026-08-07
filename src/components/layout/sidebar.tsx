@@ -24,6 +24,7 @@ import {
 const NAV: { href: string; label: string; icon: React.ComponentType<{ className?: string }>; roles: UserRole[] }[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "teacher", "student"] },
   { href: "/schedule", label: "Schedule", icon: CalendarClock, roles: ["admin", "teacher", "student"] },
+  { href: "/timetable", label: "Timetable", icon: CalendarClock, roles: ["teacher"] },
   { href: "/students", label: "Students", icon: Users, roles: ["admin"] },
   { href: "/teachers", label: "Teachers", icon: GraduationCap, roles: ["admin"] },
   { href: "/leads", label: "Leads (CRM)", icon: UserPlus, roles: ["admin"] },

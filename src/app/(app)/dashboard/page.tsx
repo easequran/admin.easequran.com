@@ -116,6 +116,7 @@ export default async function DashboardPage() {
             profileId={profile.id}
             timezone={profile.timezone}
             returnPath="/dashboard"
+            timetablePath="/timetable"
           />
         ) : (
           <Card>
