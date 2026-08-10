@@ -3,15 +3,14 @@
 
 import { DateTime } from "luxon";
 
-// The grid covers a full 24 hours, anchored to start at 6 AM rather than
-// midnight -- expressed as 6:00 (360) through 30:00 (1800) on an extended
-// minutes-since-midnight scale. Anchoring away from midnight means a class
-// that spans midnight (e.g. starts at 11 PM) still renders as one
-// continuous block in a single day's column, since buildWeeklyTimetable in
-// lib/scheduling.ts lets such a block's endMinutes extend past 1440 rather
-// than splitting it across two days.
-export const GRID_START_MIN = 6 * 60;
-export const GRID_END_MIN = 30 * 60;
+// The grid covers a full calendar day, midnight through midnight (0-1440),
+// matching the day each block is assigned to by buildWeeklyTimetable in
+// lib/scheduling.ts (a block lives entirely in the day it starts on, even
+// if its endMinutes extends past 1440 for a class spanning midnight --
+// buildDayColumn clamps that tail to the end of this same column rather
+// than rendering it in the next day's column or a duplicate row range).
+export const GRID_START_MIN = 0;
+export const GRID_END_MIN = 24 * 60;
 export const GRID_SPAN = GRID_END_MIN - GRID_START_MIN;
 
 export function pct(minutes: number) {

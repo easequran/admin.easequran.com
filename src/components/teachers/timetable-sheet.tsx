@@ -30,7 +30,8 @@ export function buildDayColumn(day: TimetableDay | undefined): SheetCell[] {
   for (let m = GRID_START_MIN; m < GRID_END_MIN; m += SLOT_MIN) {
     const busy = blocks.find((b) => b.startMinutes === m);
     if (busy) {
-      const span = Math.max(1, Math.round((busy.endMinutes - busy.startMinutes) / SLOT_MIN));
+      const clampedEnd = Math.min(busy.endMinutes, GRID_END_MIN);
+      const span = Math.max(1, Math.round((clampedEnd - busy.startMinutes) / SLOT_MIN));
       slots.push({ kind: "busy", label: busy.label ?? "Booked", span, isTrial: Boolean(busy.isTrial) });
       for (let i = 1; i < span; i++) slots.push({ kind: "skip" });
       continue;
