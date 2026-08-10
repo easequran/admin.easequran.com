@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { Input, Label, Select } from "@/components/ui/input";
 import { TimezoneSelect } from "@/components/ui/timezone-select";
 import { Button } from "@/components/ui/button";
@@ -12,11 +15,20 @@ export function NewScheduleForm({
   students: { id: string; full_name: string; timezone: string }[];
   teachers: { id: string; name: string }[];
 }) {
+  const [timezone, setTimezone] = useState(students[0]?.timezone || "UTC");
+  const [manuallyEditedTimezone, setManuallyEditedTimezone] = useState(false);
+
+  function handleStudentChange(studentId: string) {
+    if (manuallyEditedTimezone) return;
+    const student = students.find((s) => s.id === studentId);
+    if (student?.timezone) setTimezone(student.timezone);
+  }
+
   return (
     <form action={createRecurringSchedule} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div>
         <Label htmlFor="student_id">Student</Label>
-        <Select id="student_id" name="student_id" required>
+        <Select id="student_id" name="student_id" required onChange={(e) => handleStudentChange(e.target.value)}>
           {students.map((s) => (
             <option key={s.id} value={s.id}>
               {s.full_name}
@@ -50,7 +62,18 @@ export function NewScheduleForm({
       </div>
       <div>
         <Label htmlFor="timezone">Time is in timezone</Label>
-        <TimezoneSelect name="timezone" required />
+        <TimezoneSelect
+          name="timezone"
+          required
+          value={timezone}
+          onChange={(tz) => {
+            setTimezone(tz);
+            setManuallyEditedTimezone(true);
+          }}
+        />
+        <p className="mt-1 text-xs text-slate-400">
+          Pre-filled from the student&apos;s saved timezone — edit if it&apos;s wrong.
+        </p>
       </div>
       <div>
         <Label htmlFor="duration_minutes">Duration</Label>

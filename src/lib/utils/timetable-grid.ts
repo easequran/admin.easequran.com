@@ -3,12 +3,14 @@
 
 import { DateTime } from "luxon";
 
-// Teaching hours run overnight (evening into early morning), so the grid
-// starts at 9 PM and runs past midnight to 6 AM the next day -- expressed
-// as 21:00 (1260) through 30:00 (1800) on an extended minutes-since-midnight
-// scale, since blocks that cross midnight are already resolved onto this
-// same extended scale by buildWeeklyTimetable in lib/scheduling.ts.
-export const GRID_START_MIN = 21 * 60;
+// The grid covers a full 24 hours, anchored to start at 6 AM rather than
+// midnight -- expressed as 6:00 (360) through 30:00 (1800) on an extended
+// minutes-since-midnight scale. Anchoring away from midnight means a class
+// that spans midnight (e.g. starts at 11 PM) still renders as one
+// continuous block in a single day's column, since buildWeeklyTimetable in
+// lib/scheduling.ts lets such a block's endMinutes extend past 1440 rather
+// than splitting it across two days.
+export const GRID_START_MIN = 6 * 60;
 export const GRID_END_MIN = 30 * 60;
 export const GRID_SPAN = GRID_END_MIN - GRID_START_MIN;
 

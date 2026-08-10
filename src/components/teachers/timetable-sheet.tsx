@@ -14,20 +14,17 @@ export const SLOT_STARTS = Array.from(
 );
 
 /**
- * Builds one sheet column for a weekday. The grid runs 9 PM through 6 AM the
- * next calendar day, so besides `day`'s own (already-midnight-extended)
- * blocks, we also pull `nextDay`'s early-morning blocks (before the 6 AM
- * cutoff) and remap them onto the same extended timeline (+1440 minutes) so
- * they land in this column instead of tomorrow's.
+ * Builds one sheet column for a weekday, from that day's own busy blocks
+ * only. A block only ever needs to render inside the day it starts on --
+ * buildWeeklyTimetable (lib/scheduling.ts) already lets a block's
+ * endMinutes extend past 1440 when it spans midnight, so a class starting
+ * on this day never needs data pulled from the next day's bucket. Pulling
+ * from the next day used to mislabel classes that genuinely start on the
+ * next calendar day (in the teacher's own timezone) as belonging to this
+ * one.
  */
-export function buildDayColumn(day: TimetableDay | undefined, nextDay: TimetableDay | undefined): SheetCell[] {
-  const cutoff = GRID_END_MIN - 1440; // minutes past midnight still shown in this column
-  const blocks = [
-    ...(day?.busy ?? []),
-    ...(nextDay?.busy ?? [])
-      .filter((b) => b.startMinutes < cutoff)
-      .map((b) => ({ ...b, startMinutes: b.startMinutes + 1440, endMinutes: b.endMinutes + 1440 })),
-  ];
+export function buildDayColumn(day: TimetableDay | undefined): SheetCell[] {
+  const blocks = day?.busy ?? [];
 
   const slots: SheetCell[] = [];
   for (let m = GRID_START_MIN; m < GRID_END_MIN; m += SLOT_MIN) {
