@@ -8,23 +8,6 @@ import { DateTime } from "luxon";
 import type { InvoiceStatus } from "@/lib/types/database";
 import { withToast } from "@/lib/toast";
 
-export async function createFeePlan(studentId: string, formData: FormData) {
-  const supabase = await createClient();
-
-  const { error } = await supabase.from("fee_plans").insert({
-    student_id: studentId,
-    monthly_amount: Number(formData.get("monthly_amount")),
-    currency: String(formData.get("currency") || "USD"),
-    billing_day: Number(formData.get("billing_day") || 1),
-    classes_per_week: Number(formData.get("classes_per_week") || 2),
-  });
-  if (error) throw new Error(error.message);
-
-  revalidatePath(`/students/${studentId}`);
-  revalidatePath("/invoices");
-  redirect(withToast(`/students/${studentId}`, "Fee plan set"));
-}
-
 /** Generates this month's invoice for every active fee plan that doesn't already have one for the current period. */
 export async function generateMonthlyInvoices() {
   const supabase = await createClient();

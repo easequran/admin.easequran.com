@@ -4,11 +4,10 @@ import { StudentForm } from "@/components/students/student-form";
 import { updateStudent, deleteStudent, addStudentSchedule, removeStudentSchedule } from "@/lib/actions/students";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input, Label, Select } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { WeeklyScheduleFields } from "@/components/students/weekly-schedule-fields";
-import { createFeePlan } from "@/lib/actions/invoices";
 import { PageHeader } from "@/components/ui/page-header";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DateTime } from "luxon";
 
@@ -71,7 +70,6 @@ export default async function StudentDetailPage({
 
   const boundUpdate = updateStudent.bind(null, id);
   const boundDelete = deleteStudent.bind(null, id);
-  const boundCreatePlan = createFeePlan.bind(null, id);
   const boundAddSchedule = addStudentSchedule.bind(null, id);
 
   return (
@@ -228,40 +226,19 @@ export default async function StudentDetailPage({
             </CardHeader>
             <CardContent>
               {feePlan ? (
-                <p className="text-sm text-primary-900">
+                <p className="mb-3 text-sm text-primary-900">
                   {feePlan.currency} {Number(feePlan.monthly_amount).toFixed(2)} / month · billed on day{" "}
                   {feePlan.billing_day} · {feePlan.classes_per_week} classes/week
                 </p>
               ) : (
-                <form action={boundCreatePlan} className="space-y-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <Label htmlFor="monthly_amount">Monthly amount</Label>
-                      <Input id="monthly_amount" name="monthly_amount" type="number" step="0.01" required />
-                    </div>
-                    <div>
-                      <Label htmlFor="currency">Currency</Label>
-                      <Input id="currency" name="currency" defaultValue="USD" />
-                    </div>
-                    <div>
-                      <Label htmlFor="billing_day">Billing day</Label>
-                      <Input id="billing_day" name="billing_day" type="number" min={1} max={28} defaultValue={1} />
-                    </div>
-                    <div>
-                      <Label htmlFor="classes_per_week">Classes/week</Label>
-                      <Select id="classes_per_week" name="classes_per_week" defaultValue="2">
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                        <option value="3">3</option>
-                        <option value="5">5</option>
-                      </Select>
-                    </div>
-                  </div>
-                  <Button type="submit" size="sm">
-                    Set fee plan
-                  </Button>
-                </form>
+                <p className="mb-3 text-sm text-slate-500">No fee plan set yet.</p>
               )}
+              <Link
+                href={`/fees?student=${id}`}
+                className="text-sm font-medium text-primary-700 hover:text-primary-900"
+              >
+                {feePlan ? "Manage fee plan →" : "Add a fee plan →"}
+              </Link>
             </CardContent>
           </Card>
 
