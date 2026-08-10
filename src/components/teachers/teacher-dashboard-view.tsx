@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { LinkButton } from "@/components/ui/button";
 import { formatInZone } from "@/lib/utils/timezone";
 import { AvailabilityEditor } from "@/components/teachers/availability-editor";
@@ -25,13 +26,28 @@ export async function TeacherDashboardView({
 }) {
   const supabase = await createClient();
 
-  const { data: upcoming } = await supabase
-    .from("class_occurrences")
-    .select("id, start_at, is_trial, students(full_name), teachers!inner(profile_id)")
-    .eq("teachers.profile_id", profileId)
-    .gte("start_at", DateTime.utc().toISO()!)
-    .order("start_at")
-    .limit(10);
+  // Today's window in the teacher's own timezone, not UTC or the viewer's --
+  // a class stored in a student's timezone can resolve to a different
+  // calendar day here than it does anywhere else (see lib/scheduling.ts).
+  const todayStart = DateTime.now().setZone(timezone).startOf("day");
+  const todayEnd = todayStart.endOf("day");
+
+  const [{ data: todayClasses }, { data: upcoming }] = await Promise.all([
+    supabase
+      .from("class_occurrences")
+      .select("id, start_at, is_trial, students(full_name), teachers!inner(profile_id)")
+      .eq("teachers.profile_id", profileId)
+      .gte("start_at", todayStart.toUTC().toISO()!)
+      .lte("start_at", todayEnd.toUTC().toISO()!)
+      .order("start_at"),
+    supabase
+      .from("class_occurrences")
+      .select("id, start_at, is_trial, students(full_name), teachers!inner(profile_id)")
+      .eq("teachers.profile_id", profileId)
+      .gte("start_at", DateTime.utc().toISO()!)
+      .order("start_at")
+      .limit(10),
+  ]);
   const { data: availability } = await supabase
     .from("teacher_availability")
     .select("*")
@@ -49,6 +65,37 @@ export async function TeacherDashboardView({
       <TeacherReminders teacherId={teacherId} timezone={timezone} attendancePath={attendancePath} />
 
       <Card>
+        <CardHeader>
+          <CardTitle>Today&apos;s classes ({timezone})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {!todayClasses || todayClasses.length === 0 ? (
+            <p className="text-sm text-slate-500">No classes scheduled for today.</p>
+          ) : (
+            <ul className="divide-y divide-primary-50">
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+              {(todayClasses as any[]).map((c) => (
+                <li key={c.id} className="flex items-center justify-between py-3 text-sm">
+                  <span className="font-medium text-primary-900">
+                    {c.students?.full_name ?? "Trial student"}
+                    {c.is_trial && (
+                      <Badge tone="accent" className="ml-2">
+                        Trial
+                      </Badge>
+                    )}
+                  </span>
+                  <span className="text-slate-500">{formatInZone(c.start_at, timezone)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Upcoming classes</CardTitle>
+        </CardHeader>
         <CardContent>
           {!upcoming || upcoming.length === 0 ? (
             <p className="text-sm text-slate-500">No upcoming classes.</p>
