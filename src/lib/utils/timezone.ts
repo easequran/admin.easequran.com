@@ -88,3 +88,20 @@ export function listAllTimezones(): string[] {
     return COMMON_TIMEZONES;
   }
 }
+
+/**
+ * Human-friendly label for a picker option, e.g. "Asia/Karachi (GMT+5)" or
+ * "America/Chicago (CDT, GMT-5)". Uses today's date so it reflects the
+ * current DST state. Display only — the IANA name stays the stored value,
+ * since that's what stays correct across DST transitions.
+ */
+export function formatTimezoneOption(zone: string): string {
+  const now = DateTime.now().setZone(zone);
+  if (!now.isValid) return zone;
+  const offset = now.toFormat("ZZZZ"); // e.g. "GMT+5"
+  const shortAbbr = now.offsetNameShort; // e.g. "PKT", "CDT"
+  if (shortAbbr && shortAbbr !== offset) {
+    return `${zone} (${shortAbbr}, ${offset})`;
+  }
+  return `${zone} (${offset})`;
+}

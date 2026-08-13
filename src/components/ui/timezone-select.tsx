@@ -1,7 +1,7 @@
 "use client";
 
 import { Select } from "@/components/ui/input";
-import { listAllTimezones } from "@/lib/utils/timezone";
+import { formatTimezoneOption, listAllTimezones } from "@/lib/utils/timezone";
 
 export function TimezoneSelect({
   name,
@@ -25,7 +25,7 @@ export function TimezoneSelect({
     <Select name={name} required={required} {...controlledProps}>
       {zones.map((z) => (
         <option key={z} value={z}>
-          {z}
+          {formatTimezoneOption(z)}
         </option>
       ))}
     </Select>

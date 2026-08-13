@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Input, Label, Select } from "@/components/ui/input";
-import { listAllTimezones } from "@/lib/utils/timezone";
+import { formatTimezoneOption, listAllTimezones } from "@/lib/utils/timezone";
 import { guessTimezoneFromPhone, type PhoneTimezoneGuess } from "@/lib/utils/phone-timezone";
 
 export function PhoneCountryTimezoneField({
@@ -82,7 +82,7 @@ export function PhoneCountryTimezoneField({
         >
           {zones.map((z) => (
             <option key={z} value={z}>
-              {z}
+              {formatTimezoneOption(z)}
             </option>
           ))}
         </Select>
