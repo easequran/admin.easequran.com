@@ -3,12 +3,9 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatInZone } from "@/lib/utils/timezone";
 import { TeacherDashboardView } from "@/components/teachers/teacher-dashboard-view";
-import { TodayClassesWidget } from "@/components/dashboard/today-classes-widget";
+import { AdminDashboardLive } from "@/components/dashboard/admin-dashboard-live";
 import { DateTime } from "luxon";
-import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
-import { StatCard } from "@/components/ui/stat-card";
-import { GraduationCap, Users, Target, Clock, CreditCard } from "lucide-react";
 
 export default async function DashboardPage() {
   const profile = await getCurrentProfile();
@@ -50,29 +47,16 @@ export default async function DashboardPage() {
       <div className="space-y-6">
         <PageHeader title="Academy overview" description={`Today is ${DateTime.now().setZone(profile.timezone).toFormat("EEEE, MMMM d")}.`} />
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          <StatCard label="Active students" value={studentCount ?? 0} icon={Users} tone="info" />
-          <StatCard label="Active teachers" value={teacherCount ?? 0} icon={GraduationCap} tone="success" />
-          <StatCard label="Open leads" value={activeLeads ?? 0} icon={Target} tone="accent" />
-          <Link href="/leads/follow-ups">
-            <StatCard
-              label="Overdue follow-ups"
-              value={overdueFollowUps?.length ?? 0}
-              icon={Clock}
-              tone={overdueFollowUps && overdueFollowUps.length > 0 ? "danger" : "neutral"}
-            />
-          </Link>
-          <StatCard
-            label="Overdue invoices"
-            value={`${overdueInvoices?.length ?? 0}`}
-            hint={overdueTotal > 0 ? `$${overdueTotal.toFixed(2)} outstanding` : undefined}
-            icon={CreditCard}
-            tone={overdueInvoices && overdueInvoices.length > 0 ? "danger" : "neutral"}
-          />
-        </div>
-
-        <TodayClassesWidget
+        <AdminDashboardLive
           timezone={profile.timezone}
+          initialStats={{
+            studentCount: studentCount ?? 0,
+            teacherCount: teacherCount ?? 0,
+            activeLeads: activeLeads ?? 0,
+            overdueFollowUps: overdueFollowUps?.length ?? 0,
+            overdueInvoicesCount: overdueInvoices?.length ?? 0,
+            overdueTotal,
+          }}
           initialClasses={(
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (todayClasses ?? []) as any[]

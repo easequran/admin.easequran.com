@@ -1,17 +1,11 @@
-"use client";
-
-import { useEffect, useMemo, useState } from "react";
 import { DateTime } from "luxon";
 import { User, GraduationCap, Clock } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatInZone } from "@/lib/utils/timezone";
 import { cn } from "@/lib/utils/cn";
-import { createClient } from "@/lib/supabase/client";
 
-const REFRESH_SECONDS = 30;
-
-type OccurrenceRow = {
+export type OccurrenceRow = {
   id: string;
   start_at: string;
   end_at: string;
@@ -40,7 +34,7 @@ function bucketOf(o: OccurrenceRow, now: DateTime): Bucket {
   return "missed";
 }
 
-/** "Starting in 1h 01m" / "Starting in 46m 11s" -- mirrors a countdown-style live label. */
+/** "1h 41m" / "46m 11s" -- a live countdown label. */
 function formatCountdown(target: DateTime, now: DateTime): string {
   const diff = target.diff(now, ["hours", "minutes", "seconds"]).toObject();
   const hours = Math.floor(diff.hours ?? 0);
@@ -50,92 +44,29 @@ function formatCountdown(target: DateTime, now: DateTime): string {
   return `${minutes}m ${seconds.toString().padStart(2, "0")}s`;
 }
 
-export function TodayClassesWidget({
-  initialClasses,
+/** Pure, presentational -- the parent owns fetching/timers and passes `now` down so every countdown ticks in lockstep with the rest of the dashboard. */
+export function TodayClassesBoard({
+  classes,
   timezone,
+  now,
+  refreshLabel,
 }: {
-  initialClasses: OccurrenceRow[];
+  classes: OccurrenceRow[];
   timezone: string;
+  now: DateTime;
+  refreshLabel: string;
 }) {
-  const [classes, setClasses] = useState(initialClasses);
-  const [now, setNow] = useState(() => DateTime.now());
-  const [secondsLeft, setSecondsLeft] = useState(REFRESH_SECONDS);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-
-  useEffect(() => {
-    const tick = setInterval(() => {
-      setNow(DateTime.now());
-      setSecondsLeft((s) => (s <= 1 ? REFRESH_SECONDS : s - 1));
-    }, 1000);
-    return () => clearInterval(tick);
-  }, []);
-
-  useEffect(() => {
-    if (secondsLeft !== REFRESH_SECONDS) return;
-
-    let cancelled = false;
-    async function refresh() {
-      setIsRefreshing(true);
-      const supabase = createClient();
-      const startOfDay = DateTime.utc().startOf("day").toISO();
-      const endOfDay = DateTime.utc().endOf("day").toISO();
-
-      const { data } = await supabase
-        .from("class_occurrences")
-        .select("id, start_at, end_at, status, is_trial, students(full_name), teachers(profile_id, profiles(full_name))")
-        .gte("start_at", startOfDay!)
-        .lte("start_at", endOfDay!)
-        .order("start_at");
-
-      if (cancelled || !data) return;
-      type RawRow = {
-        id: string;
-        start_at: string;
-        end_at: string;
-        status: string;
-        is_trial: boolean;
-        students: { full_name: string } | null;
-        teachers: { profiles: { full_name: string } | null } | null;
-      };
-      setClasses(
-        (data as unknown as RawRow[]).map((c) => ({
-          id: c.id,
-          start_at: c.start_at,
-          end_at: c.end_at,
-          status: c.status,
-          is_trial: c.is_trial,
-          studentName: c.students?.full_name ?? "Trial",
-          teacherName: c.teachers?.profiles?.full_name ?? "—",
-        })),
-      );
-      setIsRefreshing(false);
-    }
-    void refresh();
-    return () => {
-      cancelled = true;
-    };
-    // Intentionally re-runs every time the countdown wraps back to its
-    // starting value, not on every secondsLeft tick.
-  }, [secondsLeft]);
-
-  const buckets = useMemo(() => {
-    const grouped: Record<Bucket, OccurrenceRow[]> = { missed: [], completed: [], ongoing: [], upcoming: [] };
-    for (const c of classes) grouped[bucketOf(c, now)].push(c);
-    return grouped;
-    // Recomputed every second (via `now`) so a class visibly moves from
-    // Upcoming -> Ongoing -> Missed without waiting for the next data refetch.
-  }, [classes, now]);
+  const buckets: Record<Bucket, OccurrenceRow[]> = { missed: [], completed: [], ongoing: [], upcoming: [] };
+  for (const c of classes) buckets[bucketOf(c, now)].push(c);
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <CardTitle>Today&apos;s classes ({timezone})</CardTitle>
-          <p className="text-xs text-slate-400">Local date: {now.toFormat("LLL d, yyyy")}</p>
+          <CardTitle className="text-lg">Today&apos;s classes ({timezone})</CardTitle>
+          <p className="text-sm text-slate-400">Local date: {now.toFormat("LLL d, yyyy")}</p>
         </div>
-        <span className="text-xs text-slate-400">
-          {isRefreshing ? "Refreshing…" : `Refreshing in 00:${secondsLeft.toString().padStart(2, "0")}`}
-        </span>
+        <span className="text-sm text-slate-400">{refreshLabel}</span>
       </CardHeader>
       <CardContent>
         {classes.length === 0 ? (
@@ -147,24 +78,24 @@ export function TodayClassesWidget({
               const rows = buckets[bucket];
               return (
                 <div key={bucket} className="overflow-hidden rounded-lg border border-primary-100">
-                  <div className={cn("flex items-center justify-between px-3 py-2.5", meta.headerClass)}>
-                    <span className="text-sm font-semibold text-white">{meta.label}</span>
-                    <span className={cn("flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-semibold", meta.badgeClass)}>
+                  <div className={cn("flex items-center justify-between px-4 py-3", meta.headerClass)}>
+                    <span className="text-base font-semibold text-white">{meta.label}</span>
+                    <span className={cn("flex h-6 min-w-6 items-center justify-center rounded-full px-2 text-sm font-semibold", meta.badgeClass)}>
                       {rows.length}
                     </span>
                   </div>
-                  <ul className="max-h-64 divide-y divide-primary-50 overflow-y-auto">
+                  <ul className="max-h-[420px] divide-y divide-primary-50 overflow-y-auto">
                     {rows.length === 0 ? (
-                      <li className="px-3 py-3 text-xs text-slate-400">
+                      <li className="px-4 py-4 text-sm text-slate-400">
                         {bucket === "ongoing" ? "No ongoing classes." : "None"}
                       </li>
                     ) : (
                       rows.map((c) => {
                         const start = DateTime.fromISO(c.start_at);
                         return (
-                          <li key={c.id} className="px-3 py-2.5 text-xs">
-                            <div className="flex items-center gap-1.5 font-medium text-primary-900">
-                              <User className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                          <li key={c.id} className="px-4 py-3.5 text-sm">
+                            <div className="flex items-center gap-2 font-semibold text-primary-900">
+                              <User className="h-4 w-4 shrink-0 text-slate-400" />
                               {c.studentName}
                               {c.is_trial && (
                                 <Badge tone="accent" className="ml-0.5">
@@ -172,16 +103,17 @@ export function TodayClassesWidget({
                                 </Badge>
                               )}
                             </div>
-                            <div className="mt-1 flex items-center gap-1.5 text-slate-500">
-                              <GraduationCap className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                            <div className="mt-1.5 flex items-center gap-2 text-slate-600">
+                              <GraduationCap className="h-4 w-4 shrink-0 text-slate-400" />
                               {c.teacherName}
                             </div>
-                            <div className="mt-1 flex items-center gap-1.5 text-slate-500">
-                              <Clock className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                            <div className="mt-1.5 flex items-center gap-2 text-slate-600">
+                              <Clock className="h-4 w-4 shrink-0 text-slate-400" />
                               {formatInZone(c.start_at, timezone)} – {formatInZone(c.end_at, timezone)}
                             </div>
                             {bucket === "upcoming" && (
-                              <div className="mt-1 font-semibold text-teal-700">
+                              <div className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-teal-50 px-2.5 py-1 font-mono text-base font-bold tabular-nums text-teal-700">
+                                <Clock className="h-4 w-4 shrink-0" />
                                 Starting in {formatCountdown(start, now)}
                               </div>
                             )}
