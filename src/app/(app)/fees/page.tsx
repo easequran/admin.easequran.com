@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
 import { CurrencySelect } from "@/components/ui/currency-select";
 import { PageHeader } from "@/components/ui/page-header";
+import { StatCard } from "@/components/ui/stat-card";
 import { createFeePlan } from "@/lib/actions/fees";
 import { FeePlanRowActions } from "@/components/fees/fee-plan-row-actions";
 import { cn } from "@/lib/utils/cn";
+import { Wallet, TrendingUp, AlertCircle } from "lucide-react";
 
 export default async function FeesPage({
   searchParams,
@@ -34,12 +36,36 @@ export default async function FeesPage({
   const studentIdsWithPlan = new Set(plans.map((p) => p.student_id));
   const studentsWithoutPlan = (students ?? []).filter((s) => !studentIdsWithPlan.has(s.id));
 
+  // Total monthly revenue by currency, since a mixed-currency academy
+  // shouldn't get a single misleading combined total.
+  const revenueByCurrency = new Map<string, number>();
+  for (const p of plans) {
+    revenueByCurrency.set(p.currency, (revenueByCurrency.get(p.currency) ?? 0) + Number(p.monthly_amount));
+  }
+  const totalRevenue =
+    revenueByCurrency.size === 0
+      ? "0"
+      : Array.from(revenueByCurrency.entries())
+          .map(([currency, amount]) => `${currency} ${amount.toFixed(2)}`)
+          .join(" + ");
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Fees"
         description="Set and manage each confirmed student's monthly fee plan. Actual billing periods are generated on the Invoices page."
       />
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <StatCard label="Active fee plans" value={plans.length} icon={Wallet} tone="info" />
+        <StatCard label="Monthly revenue" value={totalRevenue} icon={TrendingUp} tone="success" />
+        <StatCard
+          label="Students without a plan"
+          value={studentsWithoutPlan.length}
+          icon={AlertCircle}
+          tone={studentsWithoutPlan.length > 0 ? "warning" : "neutral"}
+        />
+      </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-1">

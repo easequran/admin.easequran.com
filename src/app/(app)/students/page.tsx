@@ -2,8 +2,10 @@ import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/data/profile";
 import { LinkButton } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
+import { StatCard } from "@/components/ui/stat-card";
 import { StudentsTable } from "@/components/students/students-table";
 import type { Student } from "@/lib/types/database";
+import { Users, UserCheck, PauseCircle } from "lucide-react";
 
 export default async function StudentsPage() {
   await requireAdmin();
@@ -28,6 +30,10 @@ export default async function StudentsPage() {
     else if (!existing.split(", ").includes(name)) teacherByStudent.set(s.student_id, `${existing}, ${name}`);
   }
 
+  const rows = (students as Student[] | null) ?? [];
+  const activeCount = rows.filter((s) => s.enrollment_status === "active").length;
+  const pausedCount = rows.filter((s) => s.enrollment_status === "paused").length;
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -35,8 +41,15 @@ export default async function StudentsPage() {
         description="Everyone currently enrolled or paused. Trial students live in the Trials/Leads pipeline until converted."
         actions={<LinkButton href="/students/new">Add student</LinkButton>}
       />
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <StatCard label="Total students" value={rows.length} icon={Users} tone="info" />
+        <StatCard label="Active" value={activeCount} icon={UserCheck} tone="success" />
+        <StatCard label="Paused" value={pausedCount} icon={PauseCircle} tone={pausedCount > 0 ? "warning" : "neutral"} />
+      </div>
+
       <StudentsTable
-        students={(students as Student[] | null) ?? []}
+        students={rows}
         teacherByStudent={Object.fromEntries(teacherByStudent)}
       />
     </div>

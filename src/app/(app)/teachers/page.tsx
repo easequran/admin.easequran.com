@@ -2,7 +2,9 @@ import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/data/profile";
 import { LinkButton } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
+import { StatCard } from "@/components/ui/stat-card";
 import { TeachersTable, type TeacherRow } from "@/components/teachers/teachers-table";
+import { GraduationCap, UserCheck, UserX } from "lucide-react";
 
 export default async function TeachersPage() {
   await requireAdmin();
@@ -23,6 +25,9 @@ export default async function TeachersPage() {
     active: t.active,
   }));
 
+  const activeCount = rows.filter((t) => t.active).length;
+  const inactiveCount = rows.length - activeCount;
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -30,6 +35,13 @@ export default async function TeachersPage() {
         description="Everyone teaching classes at the academy."
         actions={<LinkButton href="/teachers/new">Add teacher</LinkButton>}
       />
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <StatCard label="Total teachers" value={rows.length} icon={GraduationCap} tone="info" />
+        <StatCard label="Active" value={activeCount} icon={UserCheck} tone="success" />
+        <StatCard label="Disabled" value={inactiveCount} icon={UserX} tone={inactiveCount > 0 ? "warning" : "neutral"} />
+      </div>
+
       <TeachersTable teachers={rows} />
     </div>
   );

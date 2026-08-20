@@ -1,12 +1,14 @@
 import { getCurrentProfile } from "@/lib/data/profile";
 import { createClient } from "@/lib/supabase/server";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { formatInZone } from "@/lib/utils/timezone";
 import { TeacherDashboardView } from "@/components/teachers/teacher-dashboard-view";
+import { TodayClassesWidget } from "@/components/dashboard/today-classes-widget";
 import { DateTime } from "luxon";
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
+import { StatCard } from "@/components/ui/stat-card";
+import { GraduationCap, Users, Target, Clock, CreditCard } from "lucide-react";
 
 export default async function DashboardPage() {
   const profile = await getCurrentProfile();
@@ -29,7 +31,7 @@ export default async function DashboardPage() {
       supabase.from("leads").select("*", { count: "exact", head: true }).not("status", "in", "(converted,lost)"),
       supabase
         .from("class_occurrences")
-        .select("id, start_at, is_trial, students(full_name), teachers(profile_id, profiles(full_name))")
+        .select("id, start_at, end_at, status, is_trial, students(full_name), teachers(profile_id, profiles(full_name))")
         .gte("start_at", startOfDay!)
         .lte("start_at", endOfDay!)
         .order("start_at"),
@@ -49,13 +51,14 @@ export default async function DashboardPage() {
         <PageHeader title="Academy overview" description={`Today is ${DateTime.now().setZone(profile.timezone).toFormat("EEEE, MMMM d")}.`} />
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          <StatCard label="Active students" value={studentCount ?? 0} />
-          <StatCard label="Active teachers" value={teacherCount ?? 0} />
-          <StatCard label="Open leads" value={activeLeads ?? 0} />
+          <StatCard label="Active students" value={studentCount ?? 0} icon={Users} tone="info" />
+          <StatCard label="Active teachers" value={teacherCount ?? 0} icon={GraduationCap} tone="success" />
+          <StatCard label="Open leads" value={activeLeads ?? 0} icon={Target} tone="accent" />
           <Link href="/leads/follow-ups">
             <StatCard
               label="Overdue follow-ups"
               value={overdueFollowUps?.length ?? 0}
+              icon={Clock}
               tone={overdueFollowUps && overdueFollowUps.length > 0 ? "danger" : "neutral"}
             />
           </Link>
@@ -63,43 +66,26 @@ export default async function DashboardPage() {
             label="Overdue invoices"
             value={`${overdueInvoices?.length ?? 0}`}
             hint={overdueTotal > 0 ? `$${overdueTotal.toFixed(2)} outstanding` : undefined}
+            icon={CreditCard}
             tone={overdueInvoices && overdueInvoices.length > 0 ? "danger" : "neutral"}
           />
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Today&apos;s classes ({profile.timezone})</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {!todayClasses || todayClasses.length === 0 ? (
-              <p className="text-sm text-slate-500">No classes scheduled for today.</p>
-            ) : (
-              <ul className="divide-y divide-primary-50">
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                {(todayClasses as any[]).map((c) => (
-                  <li key={c.id} className="flex items-center justify-between py-3 text-sm">
-                    <div>
-                      <span className="font-medium text-primary-900">
-                        {c.students?.full_name ?? "Trial"}
-                      </span>
-                      <span className="text-slate-400"> with </span>
-                      <span className="text-primary-700">
-                        {c.teachers?.profiles?.full_name ?? "—"}
-                      </span>
-                      {c.is_trial && (
-                        <Badge tone="accent" className="ml-2">
-                          Trial
-                        </Badge>
-                      )}
-                    </div>
-                    <span className="text-slate-500">{formatInZone(c.start_at, profile.timezone)}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
+        <TodayClassesWidget
+          timezone={profile.timezone}
+          initialClasses={(
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (todayClasses ?? []) as any[]
+          ).map((c) => ({
+            id: c.id,
+            start_at: c.start_at,
+            end_at: c.end_at,
+            status: c.status,
+            is_trial: c.is_trial,
+            studentName: c.students?.full_name ?? "Trial",
+            teacherName: c.teachers?.profiles?.full_name ?? "—",
+          }))}
+        />
       </div>
     );
   }
@@ -164,26 +150,3 @@ export default async function DashboardPage() {
   );
 }
 
-function StatCard({
-  label,
-  value,
-  hint,
-  tone = "neutral",
-}: {
-  label: string;
-  value: string | number;
-  hint?: string;
-  tone?: "neutral" | "danger";
-}) {
-  return (
-    <Card>
-      <CardContent>
-        <p className="text-sm text-slate-500">{label}</p>
-        <p className={tone === "danger" ? "text-2xl font-semibold text-red-600" : "text-2xl font-semibold text-primary-900"}>
-          {value}
-        </p>
-        {hint && <p className="mt-1 text-xs text-slate-400">{hint}</p>}
-      </CardContent>
-    </Card>
-  );
-}
