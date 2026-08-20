@@ -2,9 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { DateTime } from "luxon";
+import { User, GraduationCap, Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatInZone } from "@/lib/utils/timezone";
+import { cn } from "@/lib/utils/cn";
 import { createClient } from "@/lib/supabase/client";
 
 const REFRESH_SECONDS = 30;
@@ -21,21 +23,31 @@ type OccurrenceRow = {
 
 type Bucket = "missed" | "completed" | "ongoing" | "upcoming";
 
-const BUCKET_META: Record<Bucket, { label: string; tone: "danger" | "success" | "info" | "accent" }> = {
-  missed: { label: "Missed", tone: "danger" },
-  completed: { label: "Completed", tone: "success" },
-  ongoing: { label: "Ongoing", tone: "info" },
-  upcoming: { label: "Upcoming", tone: "accent" },
+const BUCKET_META: Record<Bucket, { label: string; headerClass: string; badgeClass: string }> = {
+  missed: { label: "Missed", headerClass: "bg-red-600", badgeClass: "bg-white/20 text-white" },
+  completed: { label: "Completed", headerClass: "bg-emerald-600", badgeClass: "bg-white/20 text-white" },
+  ongoing: { label: "Ongoing", headerClass: "bg-blue-600", badgeClass: "bg-white/20 text-white" },
+  upcoming: { label: "Upcoming", headerClass: "bg-teal-600", badgeClass: "bg-white/20 text-white" },
 };
 
 function bucketOf(o: OccurrenceRow, now: DateTime): Bucket {
   if (o.status === "completed") return "completed";
+  if (o.status === "cancelled" || o.status === "no_show") return "completed";
   const start = DateTime.fromISO(o.start_at);
   const end = DateTime.fromISO(o.end_at);
-  if (o.status === "cancelled" || o.status === "no_show") return "completed";
   if (now < start) return "upcoming";
   if (now >= start && now <= end) return "ongoing";
   return "missed";
+}
+
+/** "Starting in 1h 01m" / "Starting in 46m 11s" -- mirrors a countdown-style live label. */
+function formatCountdown(target: DateTime, now: DateTime): string {
+  const diff = target.diff(now, ["hours", "minutes", "seconds"]).toObject();
+  const hours = Math.floor(diff.hours ?? 0);
+  const minutes = Math.floor(diff.minutes ?? 0);
+  const seconds = Math.floor(diff.seconds ?? 0);
+  if (hours > 0) return `${hours}h ${minutes.toString().padStart(2, "0")}m`;
+  return `${minutes}m ${seconds.toString().padStart(2, "0")}s`;
 }
 
 export function TodayClassesWidget({
@@ -46,11 +58,13 @@ export function TodayClassesWidget({
   timezone: string;
 }) {
   const [classes, setClasses] = useState(initialClasses);
+  const [now, setNow] = useState(() => DateTime.now());
   const [secondsLeft, setSecondsLeft] = useState(REFRESH_SECONDS);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     const tick = setInterval(() => {
+      setNow(DateTime.now());
       setSecondsLeft((s) => (s <= 1 ? REFRESH_SECONDS : s - 1));
     }, 1000);
     return () => clearInterval(tick);
@@ -105,16 +119,20 @@ export function TodayClassesWidget({
   }, [secondsLeft]);
 
   const buckets = useMemo(() => {
-    const now = DateTime.now();
     const grouped: Record<Bucket, OccurrenceRow[]> = { missed: [], completed: [], ongoing: [], upcoming: [] };
     for (const c of classes) grouped[bucketOf(c, now)].push(c);
     return grouped;
-  }, [classes]);
+    // Recomputed every second (via `now`) so a class visibly moves from
+    // Upcoming -> Ongoing -> Missed without waiting for the next data refetch.
+  }, [classes, now]);
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Today&apos;s classes ({timezone})</CardTitle>
+        <div>
+          <CardTitle>Today&apos;s classes ({timezone})</CardTitle>
+          <p className="text-xs text-slate-400">Local date: {now.toFormat("LLL d, yyyy")}</p>
+        </div>
         <span className="text-xs text-slate-400">
           {isRefreshing ? "Refreshing…" : `Refreshing in 00:${secondsLeft.toString().padStart(2, "0")}`}
         </span>
@@ -128,30 +146,48 @@ export function TodayClassesWidget({
               const meta = BUCKET_META[bucket];
               const rows = buckets[bucket];
               return (
-                <div key={bucket} className="rounded-lg border border-primary-100">
-                  <div className="flex items-center justify-between border-b border-primary-100 px-3 py-2">
-                    <span className="text-sm font-medium text-primary-900">{meta.label}</span>
-                    <Badge tone={meta.tone}>{rows.length}</Badge>
+                <div key={bucket} className="overflow-hidden rounded-lg border border-primary-100">
+                  <div className={cn("flex items-center justify-between px-3 py-2.5", meta.headerClass)}>
+                    <span className="text-sm font-semibold text-white">{meta.label}</span>
+                    <span className={cn("flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-semibold", meta.badgeClass)}>
+                      {rows.length}
+                    </span>
                   </div>
-                  <ul className="max-h-56 divide-y divide-primary-50 overflow-y-auto">
+                  <ul className="max-h-64 divide-y divide-primary-50 overflow-y-auto">
                     {rows.length === 0 ? (
-                      <li className="px-3 py-3 text-xs text-slate-400">None</li>
+                      <li className="px-3 py-3 text-xs text-slate-400">
+                        {bucket === "ongoing" ? "No ongoing classes." : "None"}
+                      </li>
                     ) : (
-                      rows.map((c) => (
-                        <li key={c.id} className="px-3 py-2 text-xs">
-                          <div className="font-medium text-primary-900">
-                            {c.studentName}
-                            {c.is_trial && (
-                              <Badge tone="accent" className="ml-1.5">
-                                Trial
-                              </Badge>
+                      rows.map((c) => {
+                        const start = DateTime.fromISO(c.start_at);
+                        return (
+                          <li key={c.id} className="px-3 py-2.5 text-xs">
+                            <div className="flex items-center gap-1.5 font-medium text-primary-900">
+                              <User className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                              {c.studentName}
+                              {c.is_trial && (
+                                <Badge tone="accent" className="ml-0.5">
+                                  Trial
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="mt-1 flex items-center gap-1.5 text-slate-500">
+                              <GraduationCap className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                              {c.teacherName}
+                            </div>
+                            <div className="mt-1 flex items-center gap-1.5 text-slate-500">
+                              <Clock className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                              {formatInZone(c.start_at, timezone)} – {formatInZone(c.end_at, timezone)}
+                            </div>
+                            {bucket === "upcoming" && (
+                              <div className="mt-1 font-semibold text-teal-700">
+                                Starting in {formatCountdown(start, now)}
+                              </div>
                             )}
-                          </div>
-                          <div className="text-slate-500">
-                            {c.teacherName} · {formatInZone(c.start_at, timezone)}
-                          </div>
-                        </li>
-                      ))
+                          </li>
+                        );
+                      })
                     )}
                   </ul>
                 </div>
