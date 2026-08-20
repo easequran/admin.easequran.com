@@ -1,8 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { LinkButton } from "@/components/ui/button";
-import { formatInZone } from "@/lib/utils/timezone";
+import { OccurrenceList } from "@/components/schedule/occurrence-list";
 import { AvailabilityEditor } from "@/components/teachers/availability-editor";
 import { TeacherReminders } from "@/components/teachers/teacher-reminders";
 import { addAvailability, removeAvailability } from "@/lib/actions/teachers";
@@ -35,19 +34,29 @@ export async function TeacherDashboardView({
   const [{ data: todayClasses }, { data: upcoming }] = await Promise.all([
     supabase
       .from("class_occurrences")
-      .select("id, start_at, is_trial, students(full_name), teachers!inner(profile_id)")
+      .select("id, start_at, status, is_trial, students(full_name), teachers!inner(profile_id)")
       .eq("teachers.profile_id", profileId)
       .gte("start_at", todayStart.toUTC().toISO()!)
       .lte("start_at", todayEnd.toUTC().toISO()!)
       .order("start_at"),
     supabase
       .from("class_occurrences")
-      .select("id, start_at, is_trial, students(full_name), teachers!inner(profile_id)")
+      .select("id, start_at, status, is_trial, students(full_name), teachers!inner(profile_id)")
       .eq("teachers.profile_id", profileId)
       .gte("start_at", DateTime.utc().toISO()!)
       .order("start_at")
       .limit(10),
   ]);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mapOccurrences = (rows: any[] | null) =>
+    (rows ?? []).map((c) => ({
+      id: c.id,
+      start_at: c.start_at,
+      status: c.status,
+      is_trial: c.is_trial,
+      studentName: c.students?.full_name ?? "Trial student",
+    }));
   const { data: availability } = await supabase
     .from("teacher_availability")
     .select("*")
@@ -69,26 +78,7 @@ export async function TeacherDashboardView({
           <CardTitle>Today&apos;s classes ({timezone})</CardTitle>
         </CardHeader>
         <CardContent>
-          {!todayClasses || todayClasses.length === 0 ? (
-            <p className="text-sm text-slate-500">No classes scheduled for today.</p>
-          ) : (
-            <ul className="divide-y divide-primary-50">
-              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-              {(todayClasses as any[]).map((c) => (
-                <li key={c.id} className="flex items-center justify-between py-3 text-sm">
-                  <span className="font-medium text-primary-900">
-                    {c.students?.full_name ?? "Trial student"}
-                    {c.is_trial && (
-                      <Badge tone="accent" className="ml-2">
-                        Trial
-                      </Badge>
-                    )}
-                  </span>
-                  <span className="text-slate-500">{formatInZone(c.start_at, timezone)}</span>
-                </li>
-              ))}
-            </ul>
-          )}
+          <OccurrenceList occurrences={mapOccurrences(todayClasses)} viewerTimezone={timezone} />
         </CardContent>
       </Card>
 
@@ -97,21 +87,7 @@ export async function TeacherDashboardView({
           <CardTitle>Upcoming classes</CardTitle>
         </CardHeader>
         <CardContent>
-          {!upcoming || upcoming.length === 0 ? (
-            <p className="text-sm text-slate-500">No upcoming classes.</p>
-          ) : (
-            <ul className="divide-y divide-primary-50">
-              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-              {(upcoming as any[]).map((c) => (
-                <li key={c.id} className="flex items-center justify-between py-3 text-sm">
-                  <span className="font-medium text-primary-900">
-                    {c.students?.full_name ?? "Trial student"}
-                  </span>
-                  <span className="text-slate-500">{formatInZone(c.start_at, timezone)}</span>
-                </li>
-              ))}
-            </ul>
-          )}
+          <OccurrenceList occurrences={mapOccurrences(upcoming)} viewerTimezone={timezone} />
         </CardContent>
       </Card>
 

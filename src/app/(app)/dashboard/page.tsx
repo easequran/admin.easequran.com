@@ -1,9 +1,9 @@
 import { getCurrentProfile } from "@/lib/data/profile";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent } from "@/components/ui/card";
-import { formatInZone } from "@/lib/utils/timezone";
 import { TeacherDashboardView } from "@/components/teachers/teacher-dashboard-view";
 import { AdminDashboardLive } from "@/components/dashboard/admin-dashboard-live";
+import { OccurrenceList } from "@/components/schedule/occurrence-list";
 import { DateTime } from "luxon";
 import { PageHeader } from "@/components/ui/page-header";
 
@@ -102,7 +102,7 @@ export default async function DashboardPage() {
   // student
   const { data: upcoming } = await supabase
     .from("class_occurrences")
-    .select("id, start_at, teachers(profiles(full_name)), students!inner(profile_id)")
+    .select("id, start_at, status, is_trial, teachers(profiles(full_name)), students!inner(profile_id)")
     .eq("students.profile_id", profile.id)
     .gte("start_at", DateTime.utc().toISO()!)
     .order("start_at")
@@ -113,21 +113,19 @@ export default async function DashboardPage() {
       <PageHeader title="Your upcoming classes" />
       <Card>
         <CardContent>
-          {!upcoming || upcoming.length === 0 ? (
-            <p className="text-sm text-slate-500">No upcoming classes scheduled.</p>
-          ) : (
-            <ul className="divide-y divide-primary-50">
-              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-              {(upcoming as any[]).map((c) => (
-                <li key={c.id} className="flex items-center justify-between py-3 text-sm">
-                  <span className="font-medium text-primary-900">
-                    with {c.teachers?.profiles?.full_name ?? "—"}
-                  </span>
-                  <span className="text-slate-500">{formatInZone(c.start_at, profile.timezone)}</span>
-                </li>
-              ))}
-            </ul>
-          )}
+          <OccurrenceList
+            occurrences={(
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              (upcoming ?? []) as any[]
+            ).map((c) => ({
+              id: c.id,
+              start_at: c.start_at,
+              status: c.status,
+              is_trial: c.is_trial,
+              teacherName: c.teachers?.profiles?.full_name ?? "—",
+            }))}
+            viewerTimezone={profile.timezone}
+          />
         </CardContent>
       </Card>
     </div>

@@ -3,6 +3,7 @@ import { User, GraduationCap, Clock } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatInZone } from "@/lib/utils/timezone";
+import { formatCountdown } from "@/lib/utils/countdown";
 import { cn } from "@/lib/utils/cn";
 
 export type OccurrenceRow = {
@@ -32,18 +33,6 @@ function bucketOf(o: OccurrenceRow, now: DateTime): Bucket {
   if (now < start) return "upcoming";
   if (now >= start && now <= end) return "ongoing";
   return "missed";
-}
-
-/** "01:22:35" / "22:35" -- a clock-style countdown, seconds always visible. */
-function formatCountdown(target: DateTime, now: DateTime): string {
-  const totalSeconds = Math.max(0, Math.floor(target.diff(now, "seconds").seconds));
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-  const mm = minutes.toString().padStart(2, "0");
-  const ss = seconds.toString().padStart(2, "0");
-  if (hours > 0) return `${hours}:${mm}:${ss}`;
-  return `${mm}:${ss}`;
 }
 
 /** Pure, presentational -- the parent owns fetching/timers and passes `now` down so every countdown ticks in lockstep with the rest of the dashboard. */

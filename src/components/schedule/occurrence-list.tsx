@@ -1,7 +1,13 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { DateTime } from "luxon";
+import { User, GraduationCap, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button, LinkButton } from "@/components/ui/button";
 import { formatInZone } from "@/lib/utils/timezone";
+import { formatCountdown } from "@/lib/utils/countdown";
 import { updateOccurrenceStatus } from "@/lib/actions/schedule";
 import type { OccurrenceStatus } from "@/lib/types/database";
 
@@ -35,6 +41,13 @@ export function OccurrenceList({
   /** Show Completed / Didn't show / Cancel quick actions on scheduled rows (trials only). */
   showStatusActions?: boolean;
 }) {
+  const [now, setNow] = useState(() => DateTime.now());
+
+  useEffect(() => {
+    const tick = setInterval(() => setNow(DateTime.now()), 1000);
+    return () => clearInterval(tick);
+  }, []);
+
   if (occurrences.length === 0) {
     return <p className="text-sm text-slate-500">No classes scheduled.</p>;
   }
@@ -42,20 +55,45 @@ export function OccurrenceList({
   return (
     <ul className="divide-y divide-primary-50">
       {occurrences.map((o) => {
+        const start = DateTime.fromISO(o.start_at);
+        const isFutureScheduled = o.status === "scheduled" && start > now;
+
         const label = (
           <>
-            <span className="font-medium text-primary-900">{o.studentName ?? "Trial"}</span>
-            {o.teacherName && <span className="text-slate-400"> with {o.teacherName}</span>}
-            {o.is_trial && (
-              <Badge tone="accent" className="ml-2">
-                Trial
-              </Badge>
+            {o.studentName !== undefined ? (
+              <>
+                <div className="flex items-center gap-2 font-semibold text-primary-900">
+                  <User className="h-4 w-4 shrink-0 text-slate-400" />
+                  {o.studentName || "Trial"}
+                  {o.is_trial && (
+                    <Badge tone="accent" className="ml-0.5">
+                      Trial
+                    </Badge>
+                  )}
+                </div>
+                {o.teacherName && (
+                  <div className="mt-1 flex items-center gap-2 text-sm text-slate-600">
+                    <GraduationCap className="h-4 w-4 shrink-0 text-slate-400" />
+                    {o.teacherName}
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="flex items-center gap-2 font-semibold text-primary-900">
+                <GraduationCap className="h-4 w-4 shrink-0 text-slate-400" />
+                With {o.teacherName ?? "—"}
+                {o.is_trial && (
+                  <Badge tone="accent" className="ml-0.5">
+                    Trial
+                  </Badge>
+                )}
+              </div>
             )}
           </>
         );
 
         return (
-          <li key={o.id} className="flex flex-col gap-1 py-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+          <li key={o.id} className="flex flex-col gap-2 py-3.5 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-3">
             <div className="min-w-0">
               {editBasePath ? (
                 <Link href={`${editBasePath}/${o.id}`} prefetch={false} className="hover:underline">
@@ -65,8 +103,20 @@ export function OccurrenceList({
                 label
               )}
             </div>
-            <div className="flex shrink-0 items-center gap-3">
-              <span className="text-slate-500">{formatInZone(o.start_at, viewerTimezone)}</span>
+            <div className="flex shrink-0 flex-col items-start gap-2 sm:items-end">
+              <div className="flex items-center gap-2 text-slate-600">
+                <Clock className="h-4 w-4 shrink-0 text-slate-400" />
+                {formatInZone(o.start_at, viewerTimezone)}
+              </div>
+              {isFutureScheduled && (
+                <div className="inline-flex items-center gap-2 rounded-md bg-slate-100 px-2.5 py-1">
+                  <Clock className="h-4 w-4 shrink-0 text-slate-900" />
+                  <span className="text-xs font-medium text-slate-500">Starting in</span>
+                  <span className="font-mono text-base font-bold tabular-nums text-slate-900">
+                    {formatCountdown(start, now)}
+                  </span>
+                </div>
+              )}
               {showStatusActions && o.status === "scheduled" ? (
                 <div className="flex items-center gap-1.5">
                   <form action={updateOccurrenceStatus.bind(null, o.id, "completed")}>
