@@ -4,6 +4,8 @@ import { LinkButton } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { OccurrenceList } from "@/components/schedule/occurrence-list";
 import { PageHeader } from "@/components/ui/page-header";
+import { StatCard } from "@/components/ui/stat-card";
+import { CalendarClock, Clock, CheckCircle2, XCircle } from "lucide-react";
 
 export default async function TrialsPage({
   searchParams,
@@ -33,6 +35,10 @@ export default async function TrialsPage({
     leadConverted: t.leads?.status === "converted",
   }));
 
+  const upcomingCount = mapped.filter((t) => t.status === "scheduled").length;
+  const completedCount = mapped.filter((t) => t.status === "completed").length;
+  const missedCount = mapped.filter((t) => t.status === "no_show" || t.status === "cancelled").length;
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -44,6 +50,13 @@ export default async function TrialsPage({
       {params.error && (
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{params.error}</p>
       )}
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Total trials" value={mapped.length} icon={CalendarClock} tone="info" />
+        <StatCard label="Upcoming" value={upcomingCount} icon={Clock} tone="accent" />
+        <StatCard label="Completed" value={completedCount} icon={CheckCircle2} tone="success" />
+        <StatCard label="Missed / cancelled" value={missedCount} icon={XCircle} tone={missedCount > 0 ? "warning" : "neutral"} />
+      </div>
 
       <Card>
         <CardContent>
