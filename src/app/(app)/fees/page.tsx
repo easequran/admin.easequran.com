@@ -1,15 +1,15 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/data/profile";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
 import { CurrencySelect } from "@/components/ui/currency-select";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
+import { SectionCard } from "@/components/ui/section-card";
 import { createFeePlan } from "@/lib/actions/fees";
 import { FeePlanRowActions } from "@/components/fees/fee-plan-row-actions";
 import { cn } from "@/lib/utils/cn";
-import { Wallet, TrendingUp, AlertCircle } from "lucide-react";
+import { Wallet, TrendingUp, AlertCircle, PlusCircle, ListChecks } from "lucide-react";
 
 export default async function FeesPage({
   searchParams,
@@ -68,11 +68,7 @@ export default async function FeesPage({
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-1">
-          <CardHeader>
-            <CardTitle>Add a fee</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <SectionCard icon={PlusCircle} tone="accent" title="Add a fee" className="lg:col-span-1">
             {studentsWithoutPlan.length === 0 ? (
               <p className="text-sm text-slate-500">
                 Every confirmed student already has a fee plan. Use Edit below to change one.
@@ -122,14 +118,9 @@ export default async function FeesPage({
                 fee plan yet.
               </p>
             )}
-          </CardContent>
-        </Card>
+        </SectionCard>
 
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Active fee plans</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
+        <SectionCard icon={ListChecks} tone="success" title="Active fee plans" className="lg:col-span-2" contentClassName="p-0">
             {plans.length === 0 ? (
               <p className="px-5 py-8 text-center text-sm text-slate-400">No fee plans set yet.</p>
             ) : (
@@ -165,8 +156,7 @@ export default async function FeesPage({
                 </table>
               </div>
             )}
-          </CardContent>
-        </Card>
+        </SectionCard>
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/data/profile";
 import { LinkButton } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
+import { SectionHeading } from "@/components/ui/section-heading";
 import { StudentsTable } from "@/components/students/students-table";
 import type { Student } from "@/lib/types/database";
 import { Users, UserCheck, PauseCircle } from "lucide-react";
@@ -48,6 +49,7 @@ export default async function StudentsPage() {
         <StatCard label="Paused" value={pausedCount} icon={PauseCircle} tone={pausedCount > 0 ? "warning" : "neutral"} />
       </div>
 
+      <SectionHeading icon={Users} tone="info" title="Student directory" description="Search, filter, and manage enrollment status." />
       <StudentsTable
         students={rows}
         teacherByStudent={Object.fromEntries(teacherByStudent)}

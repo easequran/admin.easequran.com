@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/data/profile";
 import { LinkButton } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
+import { SectionHeading } from "@/components/ui/section-heading";
 import { TeachersTable, type TeacherRow } from "@/components/teachers/teachers-table";
 import { GraduationCap, UserCheck, UserX } from "lucide-react";
 
@@ -42,6 +43,7 @@ export default async function TeachersPage() {
         <StatCard label="Disabled" value={inactiveCount} icon={UserX} tone={inactiveCount > 0 ? "warning" : "neutral"} />
       </div>
 
+      <SectionHeading icon={GraduationCap} tone="success" title="Teacher directory" description="Manage profiles, rates, and active status." />
       <TeachersTable teachers={rows} />
     </div>
   );

@@ -1,6 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/data/profile";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { generateMonthlyInvoices, markInvoicePaid } from "@/lib/actions/invoices";
@@ -8,7 +7,8 @@ import { InvoiceRowActions } from "@/components/invoices/invoice-row-actions";
 import { PageHeader } from "@/components/ui/page-header";
 import { PrintInvoicesButton } from "@/components/invoices/print-invoices-button";
 import { StatCard } from "@/components/ui/stat-card";
-import { CheckCircle2, Clock, AlertTriangle, XCircle } from "lucide-react";
+import { SectionCard } from "@/components/ui/section-card";
+import { CheckCircle2, Clock, AlertTriangle, XCircle, Receipt } from "lucide-react";
 
 const statusTone = {
   pending: "warning",
@@ -75,7 +75,14 @@ export default async function InvoicesPage() {
         <StatCard label="Cancelled" value={formatTotal("cancelled")} icon={XCircle} tone="neutral" />
       </div>
 
-      <Card className="overflow-hidden" id="invoices-print-area">
+      <SectionCard
+        icon={Receipt}
+        tone="info"
+        title="All invoices"
+        description="Most recent 50 billing periods."
+        id="invoices-print-area"
+        contentClassName="p-0"
+      >
         <div className="overflow-x-auto">
         <table className="w-full min-w-[720px] text-sm">
           <thead className="bg-primary-50 text-left text-xs uppercase text-primary-500">
@@ -130,7 +137,7 @@ export default async function InvoicesPage() {
           </tbody>
         </table>
         </div>
-      </Card>
+      </SectionCard>
     </div>
   );
 }

@@ -1,10 +1,11 @@
 import { getCurrentProfile } from "@/lib/data/profile";
 import { createClient } from "@/lib/supabase/server";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SectionCard } from "@/components/ui/section-card";
 import { NewScheduleForm } from "@/components/schedule/new-schedule-form";
 import { OccurrenceList } from "@/components/schedule/occurrence-list";
 import { PageHeader } from "@/components/ui/page-header";
 import { DateTime } from "luxon";
+import { CalendarDays, CalendarClock, CalendarPlus } from "lucide-react";
 
 export default async function SchedulePage({
   searchParams,
@@ -85,36 +86,21 @@ export default async function SchedulePage({
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{params.error}</p>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Today ({todayStartLocal.toFormat("EEEE, MMMM d")})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <OccurrenceList occurrences={todayClasses} viewerTimezone={profile.timezone} />
-        </CardContent>
-      </Card>
+      <SectionCard icon={CalendarDays} tone="danger" title={`Today (${todayStartLocal.toFormat("EEEE, MMMM d")})`}>
+        <OccurrenceList occurrences={todayClasses} viewerTimezone={profile.timezone} />
+      </SectionCard>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Upcoming classes ({profile.timezone})</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <OccurrenceList occurrences={mapped} viewerTimezone={profile.timezone} />
-            </CardContent>
-          </Card>
+          <SectionCard icon={CalendarClock} tone="info" title={`Upcoming classes (${profile.timezone})`}>
+            <OccurrenceList occurrences={mapped} viewerTimezone={profile.timezone} />
+          </SectionCard>
         </div>
 
         {profile.role === "admin" && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Schedule a weekly class</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <NewScheduleForm students={studentsForForm} teachers={teachersForForm} />
-            </CardContent>
-          </Card>
+          <SectionCard icon={CalendarPlus} tone="accent" title="Schedule a weekly class">
+            <NewScheduleForm students={studentsForForm} teachers={teachersForForm} />
+          </SectionCard>
         )}
       </div>
     </div>

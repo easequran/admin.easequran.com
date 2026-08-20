@@ -1,10 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/data/profile";
 import { LinkButton } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { OccurrenceList } from "@/components/schedule/occurrence-list";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
+import { SectionCard } from "@/components/ui/section-card";
 import { CalendarClock, Clock, CheckCircle2, XCircle } from "lucide-react";
 
 export default async function TrialsPage({
@@ -58,11 +58,9 @@ export default async function TrialsPage({
         <StatCard label="Missed / cancelled" value={missedCount} icon={XCircle} tone={missedCount > 0 ? "warning" : "neutral"} />
       </div>
 
-      <Card>
-        <CardContent>
-          <OccurrenceList occurrences={mapped} viewerTimezone={profile.timezone} editBasePath="/trials" showStatusActions />
-        </CardContent>
-      </Card>
+      <SectionCard icon={CalendarClock} tone="accent" title="Trial bookings">
+        <OccurrenceList occurrences={mapped} viewerTimezone={profile.timezone} editBasePath="/trials" showStatusActions />
+      </SectionCard>
     </div>
   );
 }
