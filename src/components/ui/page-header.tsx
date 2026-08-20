@@ -1,9 +1,9 @@
 import type { LucideIcon } from "lucide-react";
 import { BackLink } from "@/components/ui/back-link";
-import { cn } from "@/lib/utils/cn";
 import type { StatTone } from "@/components/ui/stat-card";
-import { SECTION_TONE_CLASSES } from "@/components/ui/section-card";
 
+/** Neutral gray icon badge next to the title -- not color-per-page, which
+ * made the app feel busy rather than clearer. */
 export function PageHeader({
   title,
   description,
@@ -11,7 +11,6 @@ export function PageHeader({
   backLabel,
   actions,
   icon: Icon,
-  tone = "info",
 }: {
   title: string;
   description?: string;
@@ -21,15 +20,14 @@ export function PageHeader({
   icon?: LucideIcon;
   tone?: StatTone;
 }) {
-  const classes = SECTION_TONE_CLASSES[tone];
   return (
     <div className="space-y-3">
       {backHref && <BackLink href={backHref} label={backLabel ?? "Back"} />}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-start gap-3">
           {Icon && (
-            <div className={cn("flex h-11 w-11 shrink-0 items-center justify-center rounded-xl", classes.iconBg)}>
-              <Icon className={cn("h-6 w-6", classes.iconColor)} />
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100">
+              <Icon className="h-6 w-6 text-slate-500" />
             </div>
           )}
           <div>
