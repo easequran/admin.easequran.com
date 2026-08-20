@@ -34,14 +34,16 @@ function bucketOf(o: OccurrenceRow, now: DateTime): Bucket {
   return "missed";
 }
 
-/** "1h 41m" / "46m 11s" -- a live countdown label. */
+/** "01:22:35" / "22:35" -- a clock-style countdown, seconds always visible. */
 function formatCountdown(target: DateTime, now: DateTime): string {
-  const diff = target.diff(now, ["hours", "minutes", "seconds"]).toObject();
-  const hours = Math.floor(diff.hours ?? 0);
-  const minutes = Math.floor(diff.minutes ?? 0);
-  const seconds = Math.floor(diff.seconds ?? 0);
-  if (hours > 0) return `${hours}h ${minutes.toString().padStart(2, "0")}m`;
-  return `${minutes}m ${seconds.toString().padStart(2, "0")}s`;
+  const totalSeconds = Math.max(0, Math.floor(target.diff(now, "seconds").seconds));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  const mm = minutes.toString().padStart(2, "0");
+  const ss = seconds.toString().padStart(2, "0");
+  if (hours > 0) return `${hours}:${mm}:${ss}`;
+  return `${mm}:${ss}`;
 }
 
 /** Pure, presentational -- the parent owns fetching/timers and passes `now` down so every countdown ticks in lockstep with the rest of the dashboard. */
@@ -112,9 +114,12 @@ export function TodayClassesBoard({
                               {formatInZone(c.start_at, timezone)} – {formatInZone(c.end_at, timezone)}
                             </div>
                             {bucket === "upcoming" && (
-                              <div className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-teal-50 px-2.5 py-1 font-mono text-base font-bold tabular-nums text-teal-700">
-                                <Clock className="h-4 w-4 shrink-0" />
-                                Starting in {formatCountdown(start, now)}
+                              <div className="mt-2 inline-flex items-center gap-2 rounded-md bg-slate-100 px-2.5 py-1">
+                                <Clock className="h-4 w-4 shrink-0 text-slate-900" />
+                                <span className="text-xs font-medium text-slate-500">Starting in</span>
+                                <span className="font-mono text-base font-bold tabular-nums text-slate-900">
+                                  {formatCountdown(start, now)}
+                                </span>
                               </div>
                             )}
                           </li>
