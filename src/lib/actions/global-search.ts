@@ -18,6 +18,19 @@ export interface SearchResultGroup {
 const LIMIT = 5;
 
 /**
+ * PostgREST's `.or()` filter mini-language treats commas as condition
+ * separators and parentheses as grouping, so a raw search value containing
+ * either (e.g. "Khan, Ali" or "Ahmed (Jr)") splits into malformed extra
+ * conditions instead of being matched literally. Wrapping the value in
+ * double quotes (escaping any `\` or `"` inside it first) makes PostgREST
+ * treat it as one literal string, per its filter syntax for values with
+ * reserved characters.
+ */
+function escapeOrValue(value: string): string {
+  return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+}
+
+/**
  * Global "mega search" across every entity the caller's role can see.
  * Uses the request-scoped Supabase client (not the admin client) so RLS is
  * the actual safety net -- the role branching below only decides which
@@ -29,7 +42,7 @@ export async function globalSearch(rawQuery: string): Promise<SearchResultGroup[
 
   const profile = await getCurrentProfile();
   const supabase = await createClient();
-  const like = `%${query}%`;
+  const like = escapeOrValue(`%${query}%`);
 
   if (profile.role === "admin") {
     const [{ data: leads }, { data: students }, { data: teachers }, { data: trials }, { data: invoices }] = await Promise.all([
@@ -136,11 +149,13 @@ export async function globalSearch(rawQuery: string): Promise<SearchResultGroup[
   const { data: studentRow } = await supabase.from("students").select("id").eq("profile_id", profile.id).single();
   if (!studentRow) return [];
 
+  // `.ilike()` here is the query-builder method, not a raw `.or()` filter
+  // string, so it takes the unescaped/unquoted pattern directly.
   const { data: invoices } = await supabase
     .from("invoices")
     .select("id, amount, currency, status")
     .eq("student_id", studentRow.id)
-    .ilike("status", like)
+    .ilike("status", `%${query}%`)
     .limit(LIMIT);
 
   return [

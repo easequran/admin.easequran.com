@@ -10,6 +10,7 @@ import { withToast } from "@/lib/toast";
 
 /** Generates this month's invoice for every active fee plan that doesn't already have one for the current period. */
 export async function generateMonthlyInvoices() {
+  await requireAdmin();
   const supabase = await createClient();
 
   const { data: plans } = await supabase.from("fee_plans").select("*").eq("active", true);
@@ -45,6 +46,7 @@ export async function generateMonthlyInvoices() {
 }
 
 export async function markInvoicePaid(invoiceId: string, formData: FormData) {
+  await requireAdmin();
   const supabase = await createClient();
 
   const { error } = await supabase
