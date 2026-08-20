@@ -23,8 +23,8 @@ export default async function AttendancePage({
     .from("class_occurrences")
     .select(
       profile.role === "teacher"
-        ? "id, start_at, is_trial, students(full_name), leads(full_name), attendance(status, notes), teachers!inner(profile_id)"
-        : "id, start_at, is_trial, students(full_name), leads(full_name), attendance(status, notes), teachers(id, profiles(full_name))",
+        ? "id, start_at, is_trial, student_id, teacher_id, students(full_name, timezone), leads(full_name), attendance(status, notes), teachers!inner(profile_id)"
+        : "id, start_at, is_trial, student_id, teacher_id, students(full_name, timezone), leads(full_name), attendance(status, notes), teachers(id, profiles(full_name))",
     )
     .lte("start_at", DateTime.utc().toISO()!)
     .order("start_at", { ascending: false })
@@ -68,12 +68,16 @@ export default async function AttendancePage({
             <AttendanceRow
               key={o.id}
               occurrenceId={o.id}
+              studentId={o.student_id}
+              teacherId={o.teacher_id}
               studentName={o.students?.full_name ?? o.leads?.full_name ?? "Unknown"}
+              studentTimezone={o.students?.timezone}
               isTrial={o.is_trial}
               startAt={o.start_at}
               viewerTimezone={profile.timezone}
               currentStatus={o.attendance?.status}
               currentNotes={o.attendance?.notes}
+              canScheduleMakeup={profile.role === "admin"}
             />
           ))}
           {(!occurrences || occurrences.length === 0) && (

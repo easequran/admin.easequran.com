@@ -310,3 +310,92 @@ export async function cancelTrialClass(occurrenceId: string) {
   revalidatePath("/trials");
   redirect(withToast("/trials", "Trial class cancelled"));
 }
+
+/**
+ * Books a one-off makeup class for a student who was excused/on leave --
+ * a normal (non-recurring, non-trial) occurrence tied to the same teacher,
+ * with a Google Calendar invite so the teacher sees it on their calendar
+ * immediately, not just next time they open the app.
+ */
+export async function scheduleMakeupClass(
+  studentId: string,
+  teacherId: string,
+  sourceOccurrenceId: string,
+  formData: FormData,
+) {
+  await requireAdmin();
+  const supabase = await createClient();
+
+  const startAtLocal = String(formData.get("start_at_local")); // yyyy-MM-ddTHH:mm
+  const timezone = String(formData.get("timezone"));
+  const durationMinutes = Number(formData.get("duration_minutes") || 30);
+
+  const { DateTime } = await import("luxon");
+  const startAt = DateTime.fromISO(startAtLocal, { zone: timezone });
+  const endAt = startAt.plus({ minutes: durationMinutes });
+
+  const conflict = await hasConflict({
+    teacherId,
+    startAt: startAt.toUTC().toISO()!,
+    endAt: endAt.toUTC().toISO()!,
+  });
+  if (conflict) {
+    throw new Error("Teacher already has a class at that time.");
+  }
+
+  const { data: occurrence, error } = await supabase
+    .from("class_occurrences")
+    .insert({
+      student_id: studentId,
+      teacher_id: teacherId,
+      is_trial: false,
+      start_at: startAt.toUTC().toISO()!,
+      end_at: endAt.toUTC().toISO()!,
+      notes: `Makeup class for missed class on ${DateTime.now().toISODate()}`,
+    })
+    .select("id")
+    .single();
+  if (error) throw new Error(error.message);
+
+  const [{ data: student }, { data: teacher }] = await Promise.all([
+    supabase.from("students").select("full_name, guardian_email, profiles(email)").eq("id", studentId).single(),
+    supabase.from("teachers").select("profiles(full_name, email)").eq("id", teacherId).single(),
+  ]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const studentEmail = (student as any)?.profiles?.email ?? student?.guardian_email;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const teacherProfile = (teacher as any)?.profiles;
+
+  try {
+    const eventId = await createCalendarEvent({
+      summary: `Makeup class: ${student?.full_name ?? "Student"} with ${teacherProfile?.full_name ?? "Teacher"}`,
+      description: "Ease Quran academy makeup class (rescheduled from an excused absence)",
+      startAtUtcIso: startAt.toUTC().toISO()!,
+      endAtUtcIso: endAt.toUTC().toISO()!,
+      attendeeEmails: [teacherProfile?.email, studentEmail].filter(Boolean) as string[],
+    });
+    if (eventId) {
+      await supabase.from("class_occurrences").update({ calendar_event_id: eventId }).eq("id", occurrence.id);
+    }
+  } catch (err) {
+    console.error("Failed to create Google Calendar event for makeup class", occurrence.id, err);
+  }
+
+  // Note the makeup on the original excused attendance record (appended,
+  // not overwritten, so any existing teacher comment survives) so it's
+  // clear from the attendance log that this leave already has one booked.
+  const { data: sourceAttendance } = await supabase
+    .from("attendance")
+    .select("notes")
+    .eq("occurrence_id", sourceOccurrenceId)
+    .single();
+  const makeupNote = `Makeup class scheduled for ${startAt.toFormat("EEE, MMM d 'at' h:mm a")} (${timezone}).`;
+  await supabase
+    .from("attendance")
+    .update({ notes: sourceAttendance?.notes ? `${sourceAttendance.notes}\n${makeupNote}` : makeupNote })
+    .eq("occurrence_id", sourceOccurrenceId);
+
+  revalidatePath("/attendance");
+  revalidatePath("/schedule");
+  revalidatePath(`/students/${studentId}`);
+}

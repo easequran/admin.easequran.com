@@ -78,14 +78,24 @@ export default async function FeesPage({
             ) : (
               <form action={createFeePlan} className="space-y-3">
                 <div>
-                  <Label htmlFor="student_id">Student</Label>
-                  <Select id="student_id" name="student_id" defaultValue={highlightStudentId} required>
+                  <Label>Student(s)</Label>
+                  <p className="mb-1.5 text-xs text-slate-400">
+                    Select more than one for siblings sharing the same fee plan.
+                  </p>
+                  <div className="max-h-40 space-y-1.5 overflow-y-auto rounded-lg border border-primary-200 p-2">
                     {studentsWithoutPlan.map((s) => (
-                      <option key={s.id} value={s.id}>
+                      <label key={s.id} className="flex items-center gap-2 text-sm text-primary-900">
+                        <input
+                          type="checkbox"
+                          name="student_id"
+                          value={s.id}
+                          defaultChecked={s.id === highlightStudentId}
+                          className="h-4 w-4 rounded border-primary-300"
+                        />
                         {s.full_name}
-                      </option>
+                      </label>
                     ))}
-                  </Select>
+                  </div>
                 </div>
                 <div>
                   <Label htmlFor="monthly_amount">Fee amount</Label>
