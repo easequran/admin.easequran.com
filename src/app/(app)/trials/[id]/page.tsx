@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/data/profile";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SectionCard } from "@/components/ui/section-card";
 import { Input, Label, Select } from "@/components/ui/input";
 import { TimezoneSelect } from "@/components/ui/timezone-select";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { updateTrialClass, cancelTrialClass } from "@/lib/actions/schedule";
 import { PageHeader } from "@/components/ui/page-header";
 import { notFound } from "next/navigation";
 import { DateTime } from "luxon";
+import { CalendarClock } from "lucide-react";
 
 export default async function EditTrialPage({
   params,
@@ -57,11 +58,7 @@ export default async function EditTrialPage({
 
       {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Trial details</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <SectionCard icon={CalendarClock} tone="accent" title="Trial details">
           <form action={boundUpdate} className="max-w-xl space-y-4">
             <div>
               <Label htmlFor="teacher_id">Teacher</Label>
@@ -97,8 +94,7 @@ export default async function EditTrialPage({
             </div>
             <Button type="submit">Save changes</Button>
           </form>
-        </CardContent>
-      </Card>
+      </SectionCard>
     </div>
   );
 }

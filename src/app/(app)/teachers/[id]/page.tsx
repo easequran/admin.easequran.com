@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/data/profile";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SectionCard } from "@/components/ui/section-card";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { TimezoneSelect } from "@/components/ui/timezone-select";
 import { Button, LinkButton } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { AvailabilityEditor } from "@/components/teachers/availability-editor";
 import { updateTeacher, deleteTeacher, addAvailability, removeAvailability } from "@/lib/actions/teachers";
 import { PageHeader } from "@/components/ui/page-header";
 import { notFound } from "next/navigation";
+import { User, CalendarClock } from "lucide-react";
 
 export default async function TeacherDetailPage({
   params,
@@ -65,11 +66,7 @@ export default async function TeacherDetailPage({
       />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Profile</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <SectionCard icon={User} tone="info" title="Profile">
             <form action={boundUpdate} className="space-y-4">
               <div>
                 <Label htmlFor="full_name">Full name</Label>
@@ -122,22 +119,16 @@ export default async function TeacherDetailPage({
                 Save changes
               </Button>
             </form>
-          </CardContent>
-        </Card>
+        </SectionCard>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Weekly availability ({teacherTimezone})</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <SectionCard icon={CalendarClock} tone="success" title={`Weekly availability (${teacherTimezone})`}>
             <AvailabilityEditor
               teacherTimezone={teacherTimezone}
               availability={availability ?? []}
               onAdd={boundAdd}
               onRemove={boundRemove}
             />
-          </CardContent>
-        </Card>
+        </SectionCard>
       </div>
     </div>
   );

@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/data/profile";
 import { StudentForm } from "@/components/students/student-form";
 import { updateStudent, deleteStudent, addStudentSchedule, removeStudentSchedule } from "@/lib/actions/students";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SectionCard } from "@/components/ui/section-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { WeeklyScheduleFields } from "@/components/students/weekly-schedule-fields";
@@ -10,6 +10,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DateTime } from "luxon";
+import { User, BarChart3, CalendarClock, Wallet, Receipt } from "lucide-react";
 
 export default async function StudentDetailPage({
   params,
@@ -89,18 +90,15 @@ export default async function StudentDetailPage({
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Profile</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <StudentForm student={student} action={boundUpdate} />
-            </CardContent>
-          </Card>
+          <SectionCard icon={User} tone="info" title="Profile">
+            <StudentForm student={student} action={boundUpdate} />
+          </SectionCard>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Monthly progress report — {selectedMonth.toFormat("MMMM yyyy")}</CardTitle>
+          <SectionCard
+            icon={BarChart3}
+            tone="accent"
+            title={`Monthly progress report — ${selectedMonth.toFormat("MMMM yyyy")}`}
+            actions={
               <div className="flex gap-2">
                 <a
                   href={`?month=${prevMonth}`}
@@ -115,8 +113,8 @@ export default async function StudentDetailPage({
                   Next →
                 </a>
               </div>
-            </CardHeader>
-            <CardContent>
+            }
+          >
               {classesThisMonth.length === 0 ? (
                 <p className="text-sm text-slate-500">No classes scheduled this month.</p>
               ) : (
@@ -168,16 +166,11 @@ export default async function StudentDetailPage({
                   )}
                 </>
               )}
-            </CardContent>
-          </Card>
+          </SectionCard>
         </div>
 
         <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Weekly schedule</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <SectionCard icon={CalendarClock} tone="success" title="Weekly schedule">
               {!schedules || schedules.length === 0 ? (
                 <p className="mb-4 text-sm text-slate-500">No recurring classes yet.</p>
               ) : (
@@ -217,14 +210,9 @@ export default async function StudentDetailPage({
                   </Button>
                 </form>
               </details>
-            </CardContent>
-          </Card>
+          </SectionCard>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Fee plan</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <SectionCard icon={Wallet} tone="warning" title="Fee plan">
               {feePlan ? (
                 <p className="mb-3 text-sm text-primary-900">
                   {feePlan.currency} {Number(feePlan.monthly_amount).toFixed(2)} / month · billed on day{" "}
@@ -239,14 +227,9 @@ export default async function StudentDetailPage({
               >
                 {feePlan ? "Manage fee plan →" : "Add a fee plan →"}
               </Link>
-            </CardContent>
-          </Card>
+          </SectionCard>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent invoices</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <SectionCard icon={Receipt} tone="neutral" title="Recent invoices">
               {!invoices || invoices.length === 0 ? (
                 <p className="text-sm text-slate-500">No invoices yet.</p>
               ) : (
@@ -259,8 +242,7 @@ export default async function StudentDetailPage({
                   ))}
                 </ul>
               )}
-            </CardContent>
-          </Card>
+          </SectionCard>
         </div>
       </div>
     </div>
