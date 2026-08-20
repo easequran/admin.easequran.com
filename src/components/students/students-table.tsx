@@ -15,8 +15,6 @@ import { downloadCsv } from "@/lib/utils/csv";
 import { bulkUpdateStudentStatus } from "@/lib/actions/students";
 import { toast } from "@/lib/toast";
 import type { EnrollmentStatus, Student } from "@/lib/types/database";
-import { TABLE_HEAD_TONE_CLASSES } from "@/components/ui/section-card";
-import { cn } from "@/lib/utils/cn";
 
 const statusTone = {
   trial: "accent",
@@ -154,7 +152,7 @@ export function StudentsTable({
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] text-sm">
-            <thead className={cn("text-left text-xs uppercase", TABLE_HEAD_TONE_CLASSES.info)}>
+            <thead className="bg-primary-50 text-left text-xs uppercase text-primary-500">
               <tr>
                 {selectMode && <th className="w-10 px-5 py-3" />}
                 <th className="px-5 py-3">Name</th>

@@ -10,7 +10,6 @@ import { createFeePlan } from "@/lib/actions/fees";
 import { FeePlanRowActions } from "@/components/fees/fee-plan-row-actions";
 import { cn } from "@/lib/utils/cn";
 import { Wallet, TrendingUp, AlertCircle, PlusCircle, ListChecks } from "lucide-react";
-import { TABLE_HEAD_TONE_CLASSES } from "@/components/ui/section-card";
 
 export default async function FeesPage({
   searchParams,
@@ -129,7 +128,7 @@ export default async function FeesPage({
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[640px] text-sm">
-                  <thead className={cn("text-left text-xs uppercase", TABLE_HEAD_TONE_CLASSES.success)}>
+                  <thead className="bg-primary-50 text-left text-xs uppercase text-primary-500">
                     <tr>
                       <th className="px-5 py-3">Student</th>
                       <th className="px-5 py-3">Fee</th>

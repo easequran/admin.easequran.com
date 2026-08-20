@@ -9,8 +9,6 @@ import { PrintInvoicesButton } from "@/components/invoices/print-invoices-button
 import { StatCard } from "@/components/ui/stat-card";
 import { SectionCard } from "@/components/ui/section-card";
 import { CheckCircle2, Clock, AlertTriangle, XCircle, Receipt } from "lucide-react";
-import { TABLE_HEAD_TONE_CLASSES } from "@/components/ui/section-card";
-import { cn } from "@/lib/utils/cn";
 
 const statusTone = {
   pending: "warning",
@@ -89,7 +87,7 @@ export default async function InvoicesPage() {
       >
         <div className="overflow-x-auto">
         <table className="w-full min-w-[720px] text-sm">
-          <thead className={cn("text-left text-xs uppercase", TABLE_HEAD_TONE_CLASSES.info)}>
+          <thead className="bg-primary-50 text-left text-xs uppercase text-primary-500">
             <tr>
               <th className="px-5 py-3">Student</th>
               <th className="px-5 py-3">Period</th>

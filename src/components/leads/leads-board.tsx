@@ -6,8 +6,6 @@ import { UserPlus, Download, X, LayoutGrid, List } from "lucide-react";
 import { DateTime } from "luxon";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TABLE_HEAD_TONE_CLASSES } from "@/components/ui/section-card";
-import { cn } from "@/lib/utils/cn";
 import { Select } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/ui/search-input";
@@ -301,7 +299,7 @@ function LeadsTable({
     <Card className="overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full min-w-[880px] text-sm">
-          <thead className={cn("text-left text-xs uppercase", TABLE_HEAD_TONE_CLASSES.accent)}>
+          <thead className="bg-primary-50 text-left text-xs uppercase text-primary-500">
             <tr>
               {selectMode && <th className="w-10 px-5 py-3" />}
               <th className="px-5 py-3">Name</th>
