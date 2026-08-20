@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { SearchInput } from "@/components/ui/search-input";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LinkButton } from "@/components/ui/button";
+import { TABLE_HEAD_TONE_CLASSES } from "@/components/ui/section-card";
+import { cn } from "@/lib/utils/cn";
 
 export interface TeacherRow {
   id: string;
@@ -50,7 +52,7 @@ export function TeachersTable({ teachers }: { teachers: TeacherRow[] }) {
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] text-sm">
-            <thead className="bg-primary-50 text-left text-xs uppercase text-primary-500">
+            <thead className={cn("text-left text-xs uppercase", TABLE_HEAD_TONE_CLASSES.success)}>
               <tr>
                 <th className="px-5 py-3">Name</th>
                 <th className="px-5 py-3">Email</th>

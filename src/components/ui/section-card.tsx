@@ -13,6 +13,18 @@ export const SECTION_TONE_CLASSES: Record<StatTone, { border: string; iconBg: st
   accent: { border: "border-l-accent-500", iconBg: "bg-accent-100", iconColor: "text-accent-700" },
 };
 
+/** Tinted `<thead>` background + text per tone, so a table's column header
+ * row matches the color of the section/page it lives in instead of always
+ * being the same neutral navy-tinted strip. */
+export const TABLE_HEAD_TONE_CLASSES: Record<StatTone, string> = {
+  neutral: "bg-slate-50 text-slate-500",
+  success: "bg-emerald-50 text-emerald-700",
+  warning: "bg-amber-50 text-amber-700",
+  danger: "bg-red-50 text-red-700",
+  info: "bg-blue-50 text-blue-700",
+  accent: "bg-accent-50 text-accent-700",
+};
+
 /**
  * A Card with a colored left accent, an icon badge, and a title/description
  * header -- gives every major section on a page a clear, consistent visual
