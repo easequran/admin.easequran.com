@@ -42,6 +42,8 @@ export default async function TeacherDetailPage({
     <div className="space-y-6">
       <PageHeader
         title={profile?.full_name ?? "Teacher"}
+        icon={User}
+        tone="success"
         description={profile?.email ?? undefined}
         backHref="/teachers"
         backLabel="Back to Teachers"

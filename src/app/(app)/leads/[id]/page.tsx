@@ -12,6 +12,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { notFound } from "next/navigation";
 import type { LeadStatus } from "@/lib/types/database";
 import { DateTime } from "luxon";
+import { Target } from "lucide-react";
 
 const STATUS_FLOW: LeadStatus[] = [
   "new",
@@ -55,6 +56,8 @@ export default async function LeadDetailPage({
     <div className="space-y-6">
       <PageHeader
         title={lead.full_name}
+        icon={Target}
+        tone="accent"
         description={`${lead.email ?? "No email"} · ${lead.phone ?? "No phone"}`}
         backHref="/leads"
         backLabel="Back to Leads"

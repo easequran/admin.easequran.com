@@ -52,6 +52,8 @@ export default async function AttendancePage({
     <div className="space-y-6">
       <PageHeader
         title="Attendance"
+        icon={ClipboardCheck}
+        tone="info"
         description="Mark and review attendance for recent classes and trials."
         actions={
           profile.role === "admin" ? (

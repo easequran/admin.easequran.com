@@ -77,6 +77,8 @@ export default async function StudentDetailPage({
     <div className="space-y-6">
       <PageHeader
         title={student.full_name}
+        icon={User}
+        tone="info"
         backHref="/students"
         backLabel="Back to Students"
         actions={

@@ -4,12 +4,13 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import { PageHeader } from "@/components/ui/page-header";
 import { createLead } from "@/lib/actions/leads";
 import { requireAdmin } from "@/lib/data/profile";
+import { UserPlus } from "lucide-react";
 
 export default async function NewLeadPage() {
   await requireAdmin();
   return (
     <div className="space-y-6">
-      <PageHeader title="Add lead" backHref="/leads" backLabel="Back to Leads" />
+      <PageHeader title="Add lead" icon={UserPlus} tone="accent" backHref="/leads" backLabel="Back to Leads" />
       <form action={createLead} className="max-w-xl space-y-4">
         <div>
           <Label htmlFor="full_name">Full name</Label>

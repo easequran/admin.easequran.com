@@ -53,6 +53,8 @@ export default async function InvoicesPage() {
     <div className="space-y-6">
       <PageHeader
         title="Invoices & Fees"
+        icon={Receipt}
+        tone="info"
         description="Monthly billing across all students."
         actions={
           <div className="flex flex-wrap items-center gap-2">

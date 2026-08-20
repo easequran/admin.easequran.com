@@ -5,6 +5,7 @@ import { FollowUpBadge } from "@/components/leads/follow-up-badge";
 import { PageHeader } from "@/components/ui/page-header";
 import Link from "next/link";
 import { DateTime } from "luxon";
+import { Clock } from "lucide-react";
 
 export default async function FollowUpsPage() {
   await requireAdmin();
@@ -35,6 +36,8 @@ export default async function FollowUpsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Follow-ups"
+        icon={Clock}
+        tone="danger"
         description="Leads sorted by who needs a call next."
         backHref="/leads"
         backLabel="Back to Leads"

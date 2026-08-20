@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/data/profile";
 import { LinkButton } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
+import { SectionHeading } from "@/components/ui/section-heading";
 import { LeadsBoard } from "@/components/leads/leads-board";
 import { FollowUpsButton } from "@/components/leads/follow-ups-button";
 import type { Lead } from "@/lib/types/database";
@@ -29,6 +30,8 @@ export default async function LeadsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Leads"
+        icon={Target}
+        tone="accent"
         description="Your prospective-student pipeline, from first contact to enrollment."
         actions={
           <>
@@ -50,6 +53,7 @@ export default async function LeadsPage() {
         />
       </div>
 
+      <SectionHeading icon={Target} tone="accent" title="Lead pipeline" description="Search, filter, and manage every lead's stage." />
       <LeadsBoard leads={rows} assignees={assignees ?? []} />
     </div>
   );

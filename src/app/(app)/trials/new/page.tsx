@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { bookTrialClass } from "@/lib/actions/schedule";
 import { PageHeader } from "@/components/ui/page-header";
 import { LeadTimezoneFields } from "@/components/trials/lead-timezone-fields";
+import { CalendarPlus } from "lucide-react";
 
 export default async function NewTrialPage({
   searchParams,
@@ -22,7 +23,7 @@ export default async function NewTrialPage({
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Book a trial class" backHref="/trials" backLabel="Back to Trial classes" />
+      <PageHeader title="Book a trial class" icon={CalendarPlus} tone="accent" backHref="/trials" backLabel="Back to Trial classes" />
       <form action={bookTrialClass} className="max-w-xl space-y-4">
         <LeadTimezoneFields leads={leads ?? []} defaultLeadId={leadId} />
         <div>

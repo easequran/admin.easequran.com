@@ -5,6 +5,7 @@ import { WeeklyScheduleFields } from "@/components/students/weekly-schedule-fiel
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { notFound } from "next/navigation";
+import { UserCheck } from "lucide-react";
 
 export default async function ConvertLeadPage({
   params,
@@ -39,6 +40,8 @@ export default async function ConvertLeadPage({
     <div className="space-y-6">
       <PageHeader
         title={`Convert ${lead.full_name} to a student`}
+        icon={UserCheck}
+        tone="success"
         backHref={`/leads/${id}`}
         backLabel="Back to lead"
       />

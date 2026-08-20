@@ -53,6 +53,8 @@ export default async function FeesPage({
     <div className="space-y-6">
       <PageHeader
         title="Fees"
+        icon={Wallet}
+        tone="info"
         description="Set and manage each confirmed student's monthly fee plan. Actual billing periods are generated on the Invoices page."
       />
 

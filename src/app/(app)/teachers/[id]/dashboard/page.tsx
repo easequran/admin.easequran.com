@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/data/profile";
 import { TeacherDashboardView } from "@/components/teachers/teacher-dashboard-view";
 import { PageHeader } from "@/components/ui/page-header";
 import { notFound } from "next/navigation";
+import { LayoutDashboard } from "lucide-react";
 
 export default async function TeacherDashboardPage({
   params,
@@ -27,6 +28,8 @@ export default async function TeacherDashboardPage({
     <div className="space-y-6">
       <PageHeader
         title={`${profile?.full_name ?? "Teacher"}'s dashboard`}
+        icon={LayoutDashboard}
+        tone="info"
         backHref={`/teachers/${id}`}
         backLabel="Back to teacher"
       />

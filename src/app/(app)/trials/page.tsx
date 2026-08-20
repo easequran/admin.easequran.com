@@ -43,6 +43,8 @@ export default async function TrialsPage({
     <div className="space-y-6">
       <PageHeader
         title="Trial classes"
+        icon={CalendarClock}
+        tone="accent"
         description="Upcoming and past trial bookings."
         actions={<LinkButton href="/trials/new">Book trial class</LinkButton>}
       />

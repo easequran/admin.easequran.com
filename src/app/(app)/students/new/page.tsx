@@ -4,6 +4,7 @@ import { createStudent } from "@/lib/actions/students";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/data/profile";
 import { PageHeader } from "@/components/ui/page-header";
+import { UserPlus } from "lucide-react";
 
 export default async function NewStudentPage() {
   await requireAdmin();
@@ -23,7 +24,7 @@ export default async function NewStudentPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Add student" backHref="/students" backLabel="Back to Students" />
+      <PageHeader title="Add student" icon={UserPlus} tone="info" backHref="/students" backLabel="Back to Students" />
       <StudentForm action={createStudent}>
         <WeeklyScheduleFields teachers={teacherOptions} />
       </StudentForm>

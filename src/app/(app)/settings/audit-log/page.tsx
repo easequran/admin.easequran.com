@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/page-header";
 import { DateTime } from "luxon";
+import { History } from "lucide-react";
 
 const ACTION_LABELS: Record<string, string> = {
   "lead.deleted": "Deleted lead",
@@ -30,6 +31,8 @@ export default async function AuditLogPage() {
     <div className="space-y-6">
       <PageHeader
         title="Audit Log"
+        icon={History}
+        tone="neutral"
         description="Who changed what, and when — deletions, status changes, and bulk actions across the portal."
       />
 

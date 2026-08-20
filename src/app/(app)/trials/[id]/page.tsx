@@ -45,6 +45,8 @@ export default async function EditTrialPage({
     <div className="space-y-6">
       <PageHeader
         title={`Edit trial: ${lead?.full_name ?? "Trial"}`}
+        icon={CalendarClock}
+        tone="accent"
         backHref="/trials"
         backLabel="Back to Trial classes"
         actions={

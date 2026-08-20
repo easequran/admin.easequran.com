@@ -5,7 +5,7 @@ import { NewScheduleForm } from "@/components/schedule/new-schedule-form";
 import { OccurrenceList } from "@/components/schedule/occurrence-list";
 import { PageHeader } from "@/components/ui/page-header";
 import { DateTime } from "luxon";
-import { CalendarDays, CalendarClock, CalendarPlus } from "lucide-react";
+import { CalendarDays, CalendarClock, CalendarPlus, CalendarRange } from "lucide-react";
 
 export default async function SchedulePage({
   searchParams,
@@ -80,7 +80,7 @@ export default async function SchedulePage({
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Schedule" description="Upcoming classes, shown in your own timezone." />
+      <PageHeader title="Schedule" description="Upcoming classes, shown in your own timezone." icon={CalendarRange} tone="info" />
 
       {params.error && (
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{params.error}</p>

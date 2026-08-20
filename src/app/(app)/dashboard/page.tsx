@@ -6,6 +6,7 @@ import { AdminDashboardLive } from "@/components/dashboard/admin-dashboard-live"
 import { OccurrenceList } from "@/components/schedule/occurrence-list";
 import { DateTime } from "luxon";
 import { PageHeader } from "@/components/ui/page-header";
+import { LayoutDashboard, CalendarClock } from "lucide-react";
 
 export default async function DashboardPage() {
   const profile = await getCurrentProfile();
@@ -45,7 +46,12 @@ export default async function DashboardPage() {
 
     return (
       <div className="space-y-6">
-        <PageHeader title="Academy overview" description={`Today is ${DateTime.now().setZone(profile.timezone).toFormat("EEEE, MMMM d")}.`} />
+        <PageHeader
+          title="Academy overview"
+          description={`Today is ${DateTime.now().setZone(profile.timezone).toFormat("EEEE, MMMM d")}.`}
+          icon={LayoutDashboard}
+          tone="info"
+        />
 
         <AdminDashboardLive
           timezone={profile.timezone}
@@ -79,7 +85,7 @@ export default async function DashboardPage() {
 
     return (
       <div className="space-y-6">
-        <PageHeader title="Your upcoming classes" />
+        <PageHeader title="Your upcoming classes" icon={CalendarClock} tone="info" />
         {teacherRow ? (
           <TeacherDashboardView
             teacherId={teacherRow.id}
@@ -110,7 +116,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Your upcoming classes" />
+      <PageHeader title="Your upcoming classes" icon={CalendarClock} tone="info" />
       <Card>
         <CardContent>
           <OccurrenceList

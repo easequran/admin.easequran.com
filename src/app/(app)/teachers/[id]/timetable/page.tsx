@@ -7,6 +7,7 @@ import { TeacherReminders } from "@/components/teachers/teacher-reminders";
 import { loadTeacherTimetable } from "@/lib/scheduling";
 import { PageHeader } from "@/components/ui/page-header";
 import { notFound } from "next/navigation";
+import { CalendarClock } from "lucide-react";
 
 export default async function TeacherTimetablePage({
   params,
@@ -33,6 +34,8 @@ export default async function TeacherTimetablePage({
     <div className="space-y-6">
       <PageHeader
         title={`${profile?.full_name ?? "Teacher"}'s timetable`}
+        icon={CalendarClock}
+        tone="success"
         backHref={`/teachers/${id}`}
         backLabel="Back to teacher"
         actions={

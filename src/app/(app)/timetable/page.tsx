@@ -7,6 +7,7 @@ import { TeacherReminders } from "@/components/teachers/teacher-reminders";
 import { loadTeacherTimetable } from "@/lib/scheduling";
 import { PageHeader } from "@/components/ui/page-header";
 import { redirect } from "next/navigation";
+import { CalendarClock } from "lucide-react";
 
 export default async function MyTimetablePage() {
   const profile = await getCurrentProfile();
@@ -20,6 +21,8 @@ export default async function MyTimetablePage() {
     <div className="space-y-6">
       <PageHeader
         title="Your timetable"
+        icon={CalendarClock}
+        tone="info"
         actions={
           <LinkButton href="/attendance" variant="outline" size="sm">
             Attendance

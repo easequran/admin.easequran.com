@@ -2,6 +2,7 @@ import { Input, Label } from "@/components/ui/input";
 import { TimezoneSelect } from "@/components/ui/timezone-select";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { PageHeader } from "@/components/ui/page-header";
+import { UserPlus } from "lucide-react";
 import { createTeacher } from "@/lib/actions/teachers";
 import { requireAdmin } from "@/lib/data/profile";
 
@@ -9,7 +10,7 @@ export default async function NewTeacherPage() {
   await requireAdmin();
   return (
     <div className="space-y-6">
-      <PageHeader title="Add teacher" backHref="/teachers" backLabel="Back to Teachers" />
+      <PageHeader title="Add teacher" icon={UserPlus} tone="success" backHref="/teachers" backLabel="Back to Teachers" />
       <form action={createTeacher} className="max-w-xl space-y-4">
         <div>
           <Label htmlFor="full_name">Full name</Label>

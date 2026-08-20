@@ -39,6 +39,8 @@ export default async function StudentsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Students"
+        icon={Users}
+        tone="info"
         description="Everyone currently enrolled or paused. Trial students live in the Trials/Leads pipeline until converted."
         actions={<LinkButton href="/students/new">Add student</LinkButton>}
       />

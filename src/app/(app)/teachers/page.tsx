@@ -33,6 +33,8 @@ export default async function TeachersPage() {
     <div className="space-y-6">
       <PageHeader
         title="Teachers"
+        icon={GraduationCap}
+        tone="success"
         description="Everyone teaching classes at the academy."
         actions={<LinkButton href="/teachers/new">Add teacher</LinkButton>}
       />
