@@ -8,6 +8,7 @@ import { redirect } from "next/navigation";
 import type { EnrollmentStatus } from "@/lib/types/database";
 import { createWeeklySchedulesForStudent } from "@/lib/scheduling";
 import { withToast } from "@/lib/toast";
+import { deleteCalendarEvent } from "@/lib/google/calendar";
 
 export async function createStudent(formData: FormData) {
   await requireAdmin();
@@ -80,7 +81,14 @@ export async function addStudentSchedule(studentId: string, formData: FormData) 
   redirect(withToast(`/students/${studentId}`, "Class added to schedule"));
 }
 
-/** Deactivates a recurring schedule and cancels its not-yet-happened occurrences. */
+/**
+ * Deactivates a recurring schedule and removes its not-yet-happened
+ * occurrences outright (deleted, not soft-cancelled) so nothing lingers on
+ * the Schedule page or Today's classes -- a cancelled-but-still-present row
+ * used to look like a duplicate of whatever schedule replaced it. Past
+ * occurrences (already happened, or already marked complete/no-show) are
+ * left alone since they're real attendance history, not stale schedule data.
+ */
 export async function removeStudentSchedule(scheduleId: string, studentId: string) {
   await requireAdmin();
   const supabase = await createClient();
@@ -97,15 +105,30 @@ export async function removeStudentSchedule(scheduleId: string, studentId: strin
     .eq("id", scheduleId);
   if (error) throw new Error(error.message);
 
-  await supabase
+  const { data: futureOccurrences } = await supabase
     .from("class_occurrences")
-    .update({ status: "cancelled" })
+    .select("id, calendar_event_id")
     .eq("recurring_schedule_id", scheduleId)
     .eq("status", "scheduled")
     .gte("start_at", new Date().toISOString());
 
+  for (const occurrence of futureOccurrences ?? []) {
+    if (occurrence.calendar_event_id) {
+      await deleteCalendarEvent(occurrence.calendar_event_id).catch(() => {});
+    }
+  }
+
+  if (futureOccurrences && futureOccurrences.length > 0) {
+    await supabase
+      .from("class_occurrences")
+      .delete()
+      .in("id", futureOccurrences.map((o) => o.id));
+  }
+
   revalidatePath(`/students/${studentId}`);
   revalidatePath("/schedule");
+  revalidatePath("/dashboard");
+  revalidatePath("/attendance");
   if (schedule?.teacher_id) revalidatePath(`/teachers/${schedule.teacher_id}`);
   redirect(withToast(`/students/${studentId}`, "Class removed from schedule"));
 }

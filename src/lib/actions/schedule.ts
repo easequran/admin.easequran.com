@@ -74,6 +74,7 @@ export async function createRecurringSchedule(formData: FormData) {
   redirect(withToast("/schedule", "Class scheduled"));
 }
 
+/** Deletes (not soft-cancels) a schedule's not-yet-happened occurrences so nothing stale lingers on the Schedule page. */
 export async function cancelSchedule(scheduleId: string) {
   await requireAdmin();
   const supabase = await createClient();
@@ -83,6 +84,7 @@ export async function cancelSchedule(scheduleId: string) {
     .from("class_occurrences")
     .select("id, calendar_event_id")
     .eq("recurring_schedule_id", scheduleId)
+    .eq("status", "scheduled")
     .gte("start_at", new Date().toISOString());
 
   for (const occurrence of upcoming ?? []) {
@@ -91,12 +93,16 @@ export async function cancelSchedule(scheduleId: string) {
     }
   }
 
-  await supabase
-    .from("class_occurrences")
-    .update({ status: "cancelled" })
-    .eq("recurring_schedule_id", scheduleId)
-    .gte("start_at", new Date().toISOString());
+  if (upcoming && upcoming.length > 0) {
+    await supabase
+      .from("class_occurrences")
+      .delete()
+      .in("id", upcoming.map((o) => o.id));
+  }
+
   revalidatePath("/schedule");
+  revalidatePath("/dashboard");
+  revalidatePath("/attendance");
 }
 
 /**
