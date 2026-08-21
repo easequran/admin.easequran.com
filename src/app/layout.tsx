@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   title: "Ease Quran",
   description: "Ease Quran Academy management system",
   icons: {
-    icon: "/logo.png",
+    icon: "/favicon.png",
   },
 };
 

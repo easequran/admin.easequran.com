@@ -136,35 +136,37 @@ export function LeadsBoard({ leads, assignees }: { leads: Lead[]; assignees: { i
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="min-w-0 flex-1">
           <SearchInput value={query} onChange={setQuery} placeholder="Search leads..." />
         </div>
-        <div className="inline-flex rounded-lg border border-primary-100 p-0.5">
-          <button
-            type="button"
-            onClick={() => setView("table")}
-            title="Table view"
-            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
-              view === "table" ? "bg-accent-500 text-primary-900" : "text-primary-700 hover:bg-primary-50"
-            }`}
-          >
-            <List className="h-3.5 w-3.5" /> Table
-          </button>
-          <button
-            type="button"
-            onClick={() => setView("board")}
-            title="Board view"
-            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
-              view === "board" ? "bg-accent-500 text-primary-900" : "text-primary-700 hover:bg-primary-50"
-            }`}
-          >
-            <LayoutGrid className="h-3.5 w-3.5" /> Board
-          </button>
+        <div className="flex items-center gap-3">
+          <div className="inline-flex rounded-lg border border-primary-100 p-0.5">
+            <button
+              type="button"
+              onClick={() => setView("table")}
+              title="Table view"
+              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                view === "table" ? "bg-accent-500 text-primary-900" : "text-primary-700 hover:bg-primary-50"
+              }`}
+            >
+              <List className="h-3.5 w-3.5" /> Table
+            </button>
+            <button
+              type="button"
+              onClick={() => setView("board")}
+              title="Board view"
+              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                view === "board" ? "bg-accent-500 text-primary-900" : "text-primary-700 hover:bg-primary-50"
+              }`}
+            >
+              <LayoutGrid className="h-3.5 w-3.5" /> Board
+            </button>
+          </div>
+          <Button variant={selectMode ? "outline" : "ghost"} size="sm" onClick={() => (selectMode ? exitSelectMode() : setSelectMode(true))}>
+            {selectMode ? "Cancel selection" : "Select"}
+          </Button>
         </div>
-        <Button variant={selectMode ? "outline" : "ghost"} size="sm" onClick={() => (selectMode ? exitSelectMode() : setSelectMode(true))}>
-          {selectMode ? "Cancel selection" : "Select"}
-        </Button>
       </div>
 
       {selectMode && (
