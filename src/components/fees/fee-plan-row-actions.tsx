@@ -42,9 +42,13 @@ export function FeePlanRowActions({ feePlan, studentName }: FeePlanRowActionsPro
             </h3>
             <form
               action={async (formData) => {
-                await boundUpdate(formData);
-                toast.success("Fee plan updated");
-                setMode("idle");
+                try {
+                  await boundUpdate(formData);
+                  toast.success("Fee plan updated");
+                  setMode("idle");
+                } catch (err) {
+                  toast.error(err instanceof Error ? err.message : "Failed to update fee plan");
+                }
               }}
               className="mt-4 space-y-4"
             >
@@ -56,6 +60,7 @@ export function FeePlanRowActions({ feePlan, studentName }: FeePlanRowActionsPro
                     name="monthly_amount"
                     type="number"
                     step="0.01"
+                    min="0.01"
                     required
                     defaultValue={feePlan.monthly_amount}
                   />
@@ -115,9 +120,13 @@ export function FeePlanRowActions({ feePlan, studentName }: FeePlanRowActionsPro
               </Button>
               <form
                 action={async () => {
-                  await boundDeactivate();
-                  toast.success("Fee plan deactivated");
-                  setMode("idle");
+                  try {
+                    await boundDeactivate();
+                    toast.success("Fee plan deactivated");
+                    setMode("idle");
+                  } catch (err) {
+                    toast.error(err instanceof Error ? err.message : "Failed to deactivate fee plan");
+                  }
                 }}
               >
                 <Button type="submit" size="sm" variant="danger">

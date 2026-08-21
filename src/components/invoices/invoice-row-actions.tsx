@@ -40,9 +40,13 @@ export function InvoiceRowActions({ invoice, studentName }: InvoiceRowActionsPro
             </h3>
             <form
               action={async (formData) => {
-                await boundUpdate(formData);
-                toast.success("Invoice updated");
-                setMode("idle");
+                try {
+                  await boundUpdate(formData);
+                  toast.success("Invoice updated");
+                  setMode("idle");
+                } catch (err) {
+                  toast.error(err instanceof Error ? err.message : "Failed to update invoice");
+                }
               }}
               className="mt-4 space-y-4"
             >
@@ -54,6 +58,7 @@ export function InvoiceRowActions({ invoice, studentName }: InvoiceRowActionsPro
                     name="amount"
                     type="number"
                     step="0.01"
+                    min="0.01"
                     required
                     defaultValue={invoice.amount}
                   />
@@ -109,9 +114,13 @@ export function InvoiceRowActions({ invoice, studentName }: InvoiceRowActionsPro
               </Button>
               <form
                 action={async () => {
-                  await boundDelete();
-                  toast.success("Invoice deleted");
-                  setMode("idle");
+                  try {
+                    await boundDelete();
+                    toast.success("Invoice deleted");
+                    setMode("idle");
+                  } catch (err) {
+                    toast.error(err instanceof Error ? err.message : "Failed to delete invoice");
+                  }
                 }}
               >
                 <Button type="submit" size="sm" variant="danger">

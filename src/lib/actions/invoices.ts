@@ -68,11 +68,13 @@ export async function updateInvoice(invoiceId: string, formData: FormData) {
   const supabase = await createClient();
 
   const status = String(formData.get("status") || "pending") as InvoiceStatus;
+  const amount = Number(formData.get("amount"));
+  if (!(amount > 0)) throw new Error("Amount must be greater than zero");
 
   const { error } = await supabase
     .from("invoices")
     .update({
-      amount: Number(formData.get("amount")),
+      amount,
       currency: String(formData.get("currency") || "USD"),
       due_date: String(formData.get("due_date")),
       status,

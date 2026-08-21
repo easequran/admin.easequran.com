@@ -21,6 +21,7 @@ export async function createFeePlan(formData: FormData) {
   if (studentIds.length === 0) throw new Error("Select at least one student");
 
   const monthly_amount = Number(formData.get("monthly_amount"));
+  if (!(monthly_amount > 0)) throw new Error("Fee amount must be greater than zero");
   const currency = String(formData.get("currency") || "USD");
   const billing_day = Number(formData.get("billing_day") || 1);
   const classes_per_week = Number(formData.get("classes_per_week") || 2);
@@ -45,10 +46,13 @@ export async function updateFeePlan(feePlanId: string, studentId: string, formDa
   await requireAdmin();
   const supabase = await createClient();
 
+  const monthly_amount = Number(formData.get("monthly_amount"));
+  if (!(monthly_amount > 0)) throw new Error("Fee amount must be greater than zero");
+
   const { error } = await supabase
     .from("fee_plans")
     .update({
-      monthly_amount: Number(formData.get("monthly_amount")),
+      monthly_amount,
       currency: String(formData.get("currency") || "USD"),
       billing_day: Number(formData.get("billing_day") || 1),
       classes_per_week: Number(formData.get("classes_per_week") || 2),
