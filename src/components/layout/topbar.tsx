@@ -36,7 +36,7 @@ export function Topbar({
         >
           <Menu className="h-5 w-5" />
         </button>
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-600 p-1.5">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-primary-100 bg-white p-1.5 shadow-sm">
           <Image src="/logo.png" alt="Ease Quran" width={24} height={24} unoptimized />
         </div>
         <div className="min-w-0">
