@@ -10,6 +10,14 @@ import { createFeePlan } from "@/lib/actions/fees";
 import { FeePlanRowActions } from "@/components/fees/fee-plan-row-actions";
 import { cn } from "@/lib/utils/cn";
 import { Wallet, TrendingUp, AlertCircle, PlusCircle, ListChecks } from "lucide-react";
+import {
+  TABLE_ELEMENT_CLASS,
+  TABLE_HEAD_CLASS,
+  TABLE_HEAD_CELL_CLASS,
+  TABLE_CELL_CLASS,
+  TABLE_CELL_SECONDARY_CLASS,
+  tableRowClass,
+} from "@/lib/utils/table-styles";
 
 export default async function FeesPage({
   searchParams,
@@ -137,29 +145,29 @@ export default async function FeesPage({
               <p className="px-5 py-8 text-center text-sm text-slate-400">No fee plans set yet.</p>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[640px] text-sm">
-                  <thead className="bg-primary-50 text-left text-xs uppercase text-primary-500">
+                <table className={cn(TABLE_ELEMENT_CLASS, "min-w-[640px]")}>
+                  <thead className={TABLE_HEAD_CLASS}>
                     <tr>
-                      <th className="px-5 py-3">Student</th>
-                      <th className="px-5 py-3">Fee</th>
-                      <th className="px-5 py-3">Fee date</th>
-                      <th className="px-5 py-3">Classes/week</th>
-                      <th className="px-5 py-3 text-right">Actions</th>
+                      <th className={TABLE_HEAD_CELL_CLASS}>Student</th>
+                      <th className={TABLE_HEAD_CELL_CLASS}>Fee</th>
+                      <th className={TABLE_HEAD_CELL_CLASS}>Fee date</th>
+                      <th className={TABLE_HEAD_CELL_CLASS}>Classes/week</th>
+                      <th className={cn(TABLE_HEAD_CELL_CLASS, "text-right")}>Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-primary-50">
-                    {plans.map((p) => (
+                  <tbody>
+                    {plans.map((p, i) => (
                       <tr
                         key={p.id}
-                        className={cn("hover:bg-slate-50", p.student_id === highlightStudentId && "bg-accent-100/60")}
+                        className={tableRowClass(i, p.student_id === highlightStudentId ? "!bg-accent-100/60" : undefined)}
                       >
-                        <td className="px-5 py-3 font-medium text-primary-900">{p.students?.full_name}</td>
-                        <td className="px-5 py-3 text-slate-600">
+                        <td className={cn(TABLE_CELL_CLASS, "font-medium text-primary-900")}>{p.students?.full_name}</td>
+                        <td className={cn(TABLE_CELL_CLASS, TABLE_CELL_SECONDARY_CLASS)}>
                           {p.currency} {Number(p.monthly_amount).toFixed(2)} / month
                         </td>
-                        <td className="px-5 py-3 text-slate-600">Day {p.billing_day}</td>
-                        <td className="px-5 py-3 text-slate-600">{p.classes_per_week}</td>
-                        <td className="px-5 py-3">
+                        <td className={cn(TABLE_CELL_CLASS, TABLE_CELL_SECONDARY_CLASS)}>Day {p.billing_day}</td>
+                        <td className={cn(TABLE_CELL_CLASS, TABLE_CELL_SECONDARY_CLASS)}>{p.classes_per_week}</td>
+                        <td className={TABLE_CELL_CLASS}>
                           <FeePlanRowActions feePlan={p} studentName={p.students?.full_name} />
                         </td>
                       </tr>

@@ -9,6 +9,15 @@ import { PrintInvoicesButton } from "@/components/invoices/print-invoices-button
 import { StatCard } from "@/components/ui/stat-card";
 import { SectionCard } from "@/components/ui/section-card";
 import { CheckCircle2, Clock, AlertTriangle, XCircle, Receipt } from "lucide-react";
+import {
+  TABLE_ELEMENT_CLASS,
+  TABLE_HEAD_CLASS,
+  TABLE_HEAD_CELL_CLASS,
+  TABLE_CELL_CLASS,
+  TABLE_CELL_SECONDARY_CLASS,
+  tableRowClass,
+} from "@/lib/utils/table-styles";
+import { cn } from "@/lib/utils/cn";
 
 const statusTone = {
   pending: "warning",
@@ -86,35 +95,35 @@ export default async function InvoicesPage() {
         contentClassName="p-0"
       >
         <div className="overflow-x-auto">
-        <table className="w-full min-w-[720px] text-sm">
-          <thead className="bg-primary-50 text-left text-xs uppercase text-primary-500">
+        <table className={cn(TABLE_ELEMENT_CLASS, "min-w-[720px]")}>
+          <thead className={TABLE_HEAD_CLASS}>
             <tr>
-              <th className="px-5 py-3">Student</th>
-              <th className="px-5 py-3">Period</th>
-              <th className="px-5 py-3">Amount</th>
-              <th className="px-5 py-3">Due date</th>
-              <th className="px-5 py-3">Status</th>
-              {profile.role === "admin" && <th className="px-5 py-3 text-right">Actions</th>}
+              <th className={TABLE_HEAD_CELL_CLASS}>Student</th>
+              <th className={TABLE_HEAD_CELL_CLASS}>Period</th>
+              <th className={TABLE_HEAD_CELL_CLASS}>Amount</th>
+              <th className={TABLE_HEAD_CELL_CLASS}>Due date</th>
+              <th className={TABLE_HEAD_CELL_CLASS}>Status</th>
+              {profile.role === "admin" && <th className={cn(TABLE_HEAD_CELL_CLASS, "text-right")}>Actions</th>}
             </tr>
           </thead>
-          <tbody className="divide-y divide-primary-50">
-            {invoices?.map((inv) => (
-              <tr key={inv.id} className="hover:bg-slate-50">
-                <td className="px-5 py-3 font-medium text-primary-900">
+          <tbody>
+            {invoices?.map((inv, i) => (
+              <tr key={inv.id} className={tableRowClass(i)}>
+                <td className={cn(TABLE_CELL_CLASS, "font-medium text-primary-900")}>
                   {inv.students?.full_name}
                 </td>
-                <td className="px-5 py-3 text-slate-600">
+                <td className={cn(TABLE_CELL_CLASS, TABLE_CELL_SECONDARY_CLASS)}>
                   {inv.period_start} → {inv.period_end}
                 </td>
-                <td className="px-5 py-3 text-slate-600">
+                <td className={cn(TABLE_CELL_CLASS, TABLE_CELL_SECONDARY_CLASS)}>
                   {inv.currency} {Number(inv.amount).toFixed(2)}
                 </td>
-                <td className="px-5 py-3 text-slate-600">{inv.due_date}</td>
-                <td className="px-5 py-3">
+                <td className={cn(TABLE_CELL_CLASS, TABLE_CELL_SECONDARY_CLASS)}>{inv.due_date}</td>
+                <td className={TABLE_CELL_CLASS}>
                   <Badge tone={statusTone[inv.status as keyof typeof statusTone]}>{inv.status}</Badge>
                 </td>
                 {profile.role === "admin" && (
-                  <td className="px-5 py-3">
+                  <td className={TABLE_CELL_CLASS}>
                     <div className="flex justify-end gap-2">
                       {inv.status !== "paid" && (
                         <form action={markInvoicePaid.bind(null, inv.id)}>
@@ -131,7 +140,7 @@ export default async function InvoicesPage() {
             ))}
             {(!invoices || invoices.length === 0) && (
               <tr>
-                <td colSpan={6} className="px-5 py-8 text-center text-slate-400">
+                <td colSpan={6} className="px-4 py-8 text-center text-slate-400">
                   No invoices yet.
                 </td>
               </tr>

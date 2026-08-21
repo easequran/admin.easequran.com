@@ -8,7 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import { SearchInput } from "@/components/ui/search-input";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LinkButton } from "@/components/ui/button";
-import { TABLE_HEAD_CLASS, TABLE_HEAD_CELL_CLASS, TABLE_CELL_CLASS, tableRowClass } from "@/lib/utils/table-styles";
+import {
+  TABLE_ELEMENT_CLASS,
+  TABLE_HEAD_CLASS,
+  TABLE_HEAD_CELL_CLASS,
+  TABLE_CELL_CLASS,
+  TABLE_CELL_SECONDARY_CLASS,
+  tableRowClass,
+} from "@/lib/utils/table-styles";
 import { cn } from "@/lib/utils/cn";
 
 export interface TeacherRow {
@@ -51,7 +58,7 @@ export function TeachersTable({ teachers }: { teachers: TeacherRow[] }) {
 
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] text-sm">
+          <table className={cn(TABLE_ELEMENT_CLASS, "min-w-[640px]")}>
             <thead className={TABLE_HEAD_CLASS}>
               <tr>
                 <th className={TABLE_HEAD_CELL_CLASS}>Name</th>
@@ -69,9 +76,9 @@ export function TeachersTable({ teachers }: { teachers: TeacherRow[] }) {
                       {t.fullName}
                     </Link>
                   </td>
-                  <td className={cn(TABLE_CELL_CLASS, "text-slate-600")}>{t.email}</td>
-                  <td className={cn(TABLE_CELL_CLASS, "text-slate-600")}>{t.timezone}</td>
-                  <td className={cn(TABLE_CELL_CLASS, "text-slate-600")}>
+                  <td className={cn(TABLE_CELL_CLASS, TABLE_CELL_SECONDARY_CLASS)}>{t.email}</td>
+                  <td className={cn(TABLE_CELL_CLASS, TABLE_CELL_SECONDARY_CLASS)}>{t.timezone}</td>
+                  <td className={cn(TABLE_CELL_CLASS, TABLE_CELL_SECONDARY_CLASS)}>
                     {t.hourlyRate ? `${t.currency} ${t.hourlyRate}/hr` : "—"}
                   </td>
                   <td className={TABLE_CELL_CLASS}>

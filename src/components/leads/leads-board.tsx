@@ -6,7 +6,14 @@ import { UserPlus, Download, X, LayoutGrid, List } from "lucide-react";
 import { DateTime } from "luxon";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TABLE_HEAD_CLASS, TABLE_HEAD_CELL_CLASS, TABLE_CELL_CLASS, tableRowClass } from "@/lib/utils/table-styles";
+import {
+  TABLE_ELEMENT_CLASS,
+  TABLE_HEAD_CLASS,
+  TABLE_HEAD_CELL_CLASS,
+  TABLE_CELL_CLASS,
+  TABLE_CELL_SECONDARY_CLASS,
+  tableRowClass,
+} from "@/lib/utils/table-styles";
 import { cn } from "@/lib/utils/cn";
 import { Select } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -300,7 +307,7 @@ function LeadsTable({
   return (
     <Card className="overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[880px] text-sm">
+        <table className={cn(TABLE_ELEMENT_CLASS, "min-w-[880px]")}>
           <thead className={TABLE_HEAD_CLASS}>
             <tr>
               {selectMode && <th className={cn("w-10", TABLE_HEAD_CELL_CLASS)} />}
@@ -339,9 +346,9 @@ function LeadsTable({
                       </Link>
                     )}
                   </td>
-                  <td className={cn(TABLE_CELL_CLASS, "text-slate-600")}>{l.email ?? l.phone ?? "—"}</td>
-                  <td className={cn(TABLE_CELL_CLASS, "text-slate-600")}>{l.country ?? "—"}</td>
-                  <td className={cn(TABLE_CELL_CLASS, "text-slate-600")}>{l.source ?? "—"}</td>
+                  <td className={cn(TABLE_CELL_CLASS, TABLE_CELL_SECONDARY_CLASS)}>{l.email ?? l.phone ?? "—"}</td>
+                  <td className={cn(TABLE_CELL_CLASS, TABLE_CELL_SECONDARY_CLASS)}>{l.country ?? "—"}</td>
+                  <td className={cn(TABLE_CELL_CLASS, TABLE_CELL_SECONDARY_CLASS)}>{l.source ?? "—"}</td>
                   <td className={TABLE_CELL_CLASS}>
                     {l.status === "trial_scheduled" || l.status === "trial_completed" ? (
                       <span title="Set automatically by booking/completing a trial in Trial classes">
@@ -361,7 +368,7 @@ function LeadsTable({
                       </Select>
                     )}
                   </td>
-                  <td className={cn(TABLE_CELL_CLASS, "text-slate-600")}>{assigneeById.get(l.assigned_to ?? "") ?? "—"}</td>
+                  <td className={cn(TABLE_CELL_CLASS, TABLE_CELL_SECONDARY_CLASS)}>{assigneeById.get(l.assigned_to ?? "") ?? "—"}</td>
                   <td className={TABLE_CELL_CLASS}>
                     {l.next_follow_up_at ? (
                       <span className={overdue ? "font-medium text-red-600" : "text-slate-500"}>

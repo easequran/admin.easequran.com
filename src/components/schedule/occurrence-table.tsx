@@ -9,7 +9,14 @@ import { Button, LinkButton } from "@/components/ui/button";
 import { formatInZone } from "@/lib/utils/timezone";
 import { formatCountdown } from "@/lib/utils/countdown";
 import { updateOccurrenceStatus } from "@/lib/actions/schedule";
-import { TABLE_HEAD_CLASS, TABLE_HEAD_CELL_CLASS, TABLE_CELL_CLASS, tableRowClass } from "@/lib/utils/table-styles";
+import {
+  TABLE_ELEMENT_CLASS,
+  TABLE_HEAD_CLASS,
+  TABLE_HEAD_CELL_CLASS,
+  TABLE_CELL_CLASS,
+  TABLE_CELL_SECONDARY_CLASS,
+  tableRowClass,
+} from "@/lib/utils/table-styles";
 import { cn } from "@/lib/utils/cn";
 import type { OccurrenceStatus } from "@/lib/types/database";
 
@@ -55,7 +62,7 @@ export function OccurrenceTable({
 
   return (
     <div className="overflow-x-auto rounded-lg">
-      <table className="w-full min-w-[560px] text-sm">
+      <table className={cn(TABLE_ELEMENT_CLASS, "min-w-[560px]")}>
         <thead className={TABLE_HEAD_CLASS}>
           <tr>
             <th className={TABLE_HEAD_CELL_CLASS}>Student</th>
@@ -90,10 +97,10 @@ export function OccurrenceTable({
                     )}
                   </div>
                 </td>
-                <td className={cn(TABLE_CELL_CLASS, "text-slate-600")}>
+                <td className={cn(TABLE_CELL_CLASS, TABLE_CELL_SECONDARY_CLASS)}>
                   {o.studentName !== undefined ? (o.teacherName ?? "—") : "—"}
                 </td>
-                <td className={cn(TABLE_CELL_CLASS, "text-slate-600")}>
+                <td className={cn(TABLE_CELL_CLASS, TABLE_CELL_SECONDARY_CLASS)}>
                   <div className="flex items-center gap-1.5">
                     <Clock className="h-3.5 w-3.5 shrink-0 text-slate-400" />
                     {formatInZone(o.start_at, viewerTimezone)}

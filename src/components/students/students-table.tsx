@@ -15,7 +15,14 @@ import { downloadCsv } from "@/lib/utils/csv";
 import { bulkUpdateStudentStatus } from "@/lib/actions/students";
 import { toast } from "@/lib/toast";
 import type { EnrollmentStatus, Student } from "@/lib/types/database";
-import { TABLE_HEAD_CLASS, TABLE_HEAD_CELL_CLASS, TABLE_CELL_CLASS, tableRowClass } from "@/lib/utils/table-styles";
+import {
+  TABLE_ELEMENT_CLASS,
+  TABLE_HEAD_CLASS,
+  TABLE_HEAD_CELL_CLASS,
+  TABLE_CELL_CLASS,
+  TABLE_CELL_SECONDARY_CLASS,
+  tableRowClass,
+} from "@/lib/utils/table-styles";
 import { cn } from "@/lib/utils/cn";
 
 const statusTone = {
@@ -153,7 +160,7 @@ export function StudentsTable({
 
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] text-sm">
+          <table className={cn(TABLE_ELEMENT_CLASS, "min-w-[640px]")}>
             <thead className={TABLE_HEAD_CLASS}>
               <tr>
                 {selectMode && <th className={cn("w-10", TABLE_HEAD_CELL_CLASS)} />}
@@ -189,13 +196,13 @@ export function StudentsTable({
                       </Link>
                     )}
                   </td>
-                  <td className={cn(TABLE_CELL_CLASS, "text-slate-600")}>{teacherByStudent[s.id] ?? "—"}</td>
-                  <td className={cn(TABLE_CELL_CLASS, "text-slate-600")}>{s.timezone}</td>
-                  <td className={cn(TABLE_CELL_CLASS, "text-slate-600")}>{s.country ?? "—"}</td>
+                  <td className={cn(TABLE_CELL_CLASS, TABLE_CELL_SECONDARY_CLASS)}>{teacherByStudent[s.id] ?? "—"}</td>
+                  <td className={cn(TABLE_CELL_CLASS, TABLE_CELL_SECONDARY_CLASS)}>{s.timezone}</td>
+                  <td className={cn(TABLE_CELL_CLASS, TABLE_CELL_SECONDARY_CLASS)}>{s.country ?? "—"}</td>
                   <td className={TABLE_CELL_CLASS}>
                     <Badge tone={statusTone[s.enrollment_status]}>{s.enrollment_status}</Badge>
                   </td>
-                  <td className={cn(TABLE_CELL_CLASS, "text-slate-600")}>{s.guardian_name ?? "—"}</td>
+                  <td className={cn(TABLE_CELL_CLASS, TABLE_CELL_SECONDARY_CLASS)}>{s.guardian_name ?? "—"}</td>
                 </tr>
               ))}
               {filtered.length === 0 && (
