@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button, LinkButton } from "@/components/ui/button";
 import { formatInZone } from "@/lib/utils/timezone";
 import { formatCountdown } from "@/lib/utils/countdown";
-import { updateOccurrenceStatus } from "@/lib/actions/schedule";
+import { updateOccurrenceStatus, deleteTrialClass } from "@/lib/actions/schedule";
 import type { OccurrenceStatus } from "@/lib/types/database";
 
 const statusTone: Record<OccurrenceStatus, "neutral" | "success" | "warning" | "danger" | "info"> = {
@@ -141,6 +141,20 @@ export function OccurrenceList({
                   <LinkButton href={`/leads/${o.leadId}/convert`} size="sm">
                     Convert to student
                   </LinkButton>
+                </div>
+              ) : showStatusActions && (o.status === "cancelled" || o.status === "no_show") ? (
+                <div className="flex items-center gap-2">
+                  <Badge tone={statusTone[o.status]}>{o.status.replace("_", " ")}</Badge>
+                  <form
+                    action={deleteTrialClass.bind(null, o.id)}
+                    onSubmit={(e) => {
+                      if (!confirm("Permanently delete this trial? This can't be undone.")) e.preventDefault();
+                    }}
+                  >
+                    <Button type="submit" size="sm" variant="danger">
+                      Delete
+                    </Button>
+                  </form>
                 </div>
               ) : (
                 <Badge tone={statusTone[o.status]}>{o.status.replace("_", " ")}</Badge>

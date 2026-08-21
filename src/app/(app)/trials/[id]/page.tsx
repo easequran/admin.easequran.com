@@ -5,6 +5,7 @@ import { Input, Label, Select } from "@/components/ui/input";
 import { TimezoneSelect } from "@/components/ui/timezone-select";
 import { Button } from "@/components/ui/button";
 import { updateTrialClass, cancelTrialClass } from "@/lib/actions/schedule";
+import { DeleteTrialButton } from "@/components/schedule/delete-trial-button";
 import { PageHeader } from "@/components/ui/page-header";
 import { notFound } from "next/navigation";
 import { DateTime } from "luxon";
@@ -50,11 +51,15 @@ export default async function EditTrialPage({
         backHref="/trials"
         backLabel="Back to Trial classes"
         actions={
-          <form action={boundCancel}>
-            <Button type="submit" variant="danger" size="sm">
-              Cancel trial
-            </Button>
-          </form>
+          occurrence.status === "scheduled" ? (
+            <form action={boundCancel}>
+              <Button type="submit" variant="danger" size="sm">
+                Cancel trial
+              </Button>
+            </form>
+          ) : (
+            <DeleteTrialButton occurrenceId={id} />
+          )
         }
       />
 

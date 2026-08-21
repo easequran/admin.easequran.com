@@ -317,6 +317,28 @@ export async function cancelTrialClass(occurrenceId: string) {
   redirect(withToast("/trials", "Trial class cancelled"));
 }
 
+/** Permanently removes a trial booking (cancelled/no-show/completed) from the list entirely, not just marking it cancelled. */
+export async function deleteTrialClass(occurrenceId: string) {
+  await requireAdmin();
+  const supabase = await createClient();
+
+  const { data: occurrence } = await supabase
+    .from("class_occurrences")
+    .select("calendar_event_id")
+    .eq("id", occurrenceId)
+    .eq("is_trial", true)
+    .single();
+  if (occurrence?.calendar_event_id) {
+    await deleteCalendarEvent(occurrence.calendar_event_id).catch(() => {});
+  }
+
+  const { error } = await supabase.from("class_occurrences").delete().eq("id", occurrenceId).eq("is_trial", true);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/trials");
+  redirect(withToast("/trials", "Trial class deleted"));
+}
+
 /**
  * Books a one-off makeup class for a student who was excused/on leave --
  * a normal (non-recurring, non-trial) occurrence tied to the same teacher,
