@@ -1,7 +1,10 @@
+"use client";
+
 import { Input, Label } from "@/components/ui/input";
 import { TimezoneSelect } from "@/components/ui/timezone-select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "@/lib/toast";
 import type { TeacherAvailability } from "@/lib/types/database";
 
 const DAYS = [
@@ -69,7 +72,21 @@ export function AvailabilityEditor({
         ))}
       </div>
 
-      <form action={onAdd} className="space-y-3 rounded-lg border border-primary-100 p-4">
+      <form
+        action={(formData) => {
+          const start = String(formData.get("local_start_time") || "");
+          const end = String(formData.get("local_end_time") || "");
+          // An inverted range (end <= start) isn't rejected server-side --
+          // it just silently matches nothing in isWithinAvailability, so a
+          // teacher's slot fails every check with no clue why. Catch it here.
+          if (start && end && end <= start) {
+            toast.error("End time must be after start time.");
+            return;
+          }
+          onAdd(formData);
+        }}
+        className="space-y-3 rounded-lg border border-primary-100 p-4"
+      >
         <div>
           <Label>Days</Label>
           <div className="flex flex-wrap gap-2">

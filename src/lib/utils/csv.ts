@@ -1,5 +1,10 @@
 function escapeCsvCell(value: unknown): string {
-  const s = value === null || value === undefined ? "" : String(value);
+  let s = value === null || value === undefined ? "" : String(value);
+  // Neutralize CSV formula injection: a cell starting with =, +, -, or @
+  // is interpreted as a formula by Excel/Sheets when opened, and these
+  // fields (lead name/notes/email, etc.) come from public-facing forms --
+  // prefixing with a leading apostrophe forces it to render as plain text.
+  if (/^[=+\-@]/.test(s)) s = `'${s}`;
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 

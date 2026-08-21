@@ -140,6 +140,13 @@ export async function addAvailability(teacherId: string, returnPath: string, for
   const timezone = String(formData.get("timezone"));
 
   if (days.length === 0) return;
+  // An inverted range (end <= start) would otherwise insert silently and
+  // then match nothing in isWithinAvailability -- every slot check against
+  // it fails with no indication why. Reject it here too (the UI already
+  // checks this, but a server action is reachable directly).
+  if (localEndTime <= localStartTime) {
+    throw new Error("End time must be after start time.");
+  }
 
   const { error } = await supabase.from("teacher_availability").insert(
     days.map((day_of_week) => ({
