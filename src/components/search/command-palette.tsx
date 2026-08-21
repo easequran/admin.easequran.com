@@ -22,6 +22,10 @@ export function CommandPalette({
   const [isPending, startTransition] = useTransition();
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Guards against a slower earlier request resolving after a faster later
+  // one and overwriting its results -- only the most recently *fired*
+  // request is allowed to apply its response.
+  const requestIdRef = useRef(0);
 
   const flatItems = groups.flatMap((g) => g.items);
 
@@ -45,8 +49,10 @@ export function CommandPalette({
       return;
     }
     debounceRef.current = setTimeout(() => {
+      const requestId = ++requestIdRef.current;
       startTransition(async () => {
         const results = await globalSearch(query);
+        if (requestId !== requestIdRef.current) return; // a newer search superseded this one
         setGroups(results);
         setActiveIndex(0);
       });
