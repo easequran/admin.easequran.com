@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 export const preferredRegion = "sin1";
 
 export const metadata: Metadata = {
-  title: "Ease Quran",
+  title: "Portal Ease Quran",
   description: "Ease Quran Academy management system",
   icons: {
     icon: "/favicon.png",
