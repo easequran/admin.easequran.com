@@ -6,6 +6,8 @@ import { UserPlus, Download, X, LayoutGrid, List } from "lucide-react";
 import { DateTime } from "luxon";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { TABLE_HEAD_CLASS, TABLE_HEAD_CELL_CLASS, TABLE_CELL_CLASS, tableRowClass } from "@/lib/utils/table-styles";
+import { cn } from "@/lib/utils/cn";
 import { Select } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/ui/search-input";
@@ -299,25 +301,25 @@ function LeadsTable({
     <Card className="overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full min-w-[880px] text-sm">
-          <thead className="bg-primary-50 text-left text-xs uppercase text-primary-500">
+          <thead className={TABLE_HEAD_CLASS}>
             <tr>
-              {selectMode && <th className="w-10 px-5 py-3" />}
-              <th className="px-5 py-3">Name</th>
-              <th className="px-5 py-3">Contact</th>
-              <th className="px-5 py-3">Country</th>
-              <th className="px-5 py-3">Source</th>
-              <th className="px-5 py-3">Status</th>
-              <th className="px-5 py-3">Assigned to</th>
-              <th className="px-5 py-3">Follow up</th>
+              {selectMode && <th className={cn("w-10", TABLE_HEAD_CELL_CLASS)} />}
+              <th className={TABLE_HEAD_CELL_CLASS}>Name</th>
+              <th className={TABLE_HEAD_CELL_CLASS}>Contact</th>
+              <th className={TABLE_HEAD_CELL_CLASS}>Country</th>
+              <th className={TABLE_HEAD_CELL_CLASS}>Source</th>
+              <th className={TABLE_HEAD_CELL_CLASS}>Status</th>
+              <th className={TABLE_HEAD_CELL_CLASS}>Assigned to</th>
+              <th className={TABLE_HEAD_CELL_CLASS}>Follow up</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-primary-50">
-            {leads.map((l) => {
+          <tbody>
+            {leads.map((l, i) => {
               const overdue = l.next_follow_up_at && DateTime.fromISO(l.next_follow_up_at) < now;
               return (
-                <tr key={l.id} className={`hover:bg-slate-50 ${overdue ? "bg-red-50/60" : ""}`}>
+                <tr key={l.id} className={tableRowClass(i, overdue ? "!bg-red-50/70" : undefined)}>
                   {selectMode && (
-                    <td className="px-5 py-3">
+                    <td className={TABLE_CELL_CLASS}>
                       <input
                         type="checkbox"
                         className="h-4 w-4 rounded border-primary-300"
@@ -326,7 +328,7 @@ function LeadsTable({
                       />
                     </td>
                   )}
-                  <td className="px-5 py-3">
+                  <td className={TABLE_CELL_CLASS}>
                     {selectMode ? (
                       <button type="button" className="font-medium text-primary-900 hover:underline" onClick={() => toggleSelected(l.id)}>
                         {l.full_name}
@@ -337,10 +339,10 @@ function LeadsTable({
                       </Link>
                     )}
                   </td>
-                  <td className="px-5 py-3 text-slate-600">{l.email ?? l.phone ?? "—"}</td>
-                  <td className="px-5 py-3 text-slate-600">{l.country ?? "—"}</td>
-                  <td className="px-5 py-3 text-slate-600">{l.source ?? "—"}</td>
-                  <td className="px-5 py-3">
+                  <td className={cn(TABLE_CELL_CLASS, "text-slate-600")}>{l.email ?? l.phone ?? "—"}</td>
+                  <td className={cn(TABLE_CELL_CLASS, "text-slate-600")}>{l.country ?? "—"}</td>
+                  <td className={cn(TABLE_CELL_CLASS, "text-slate-600")}>{l.source ?? "—"}</td>
+                  <td className={TABLE_CELL_CLASS}>
                     {l.status === "trial_scheduled" || l.status === "trial_completed" ? (
                       <span title="Set automatically by booking/completing a trial in Trial classes">
                         <Badge tone="accent">{l.status.replace("_", " ")}</Badge>
@@ -359,8 +361,8 @@ function LeadsTable({
                       </Select>
                     )}
                   </td>
-                  <td className="px-5 py-3 text-slate-600">{assigneeById.get(l.assigned_to ?? "") ?? "—"}</td>
-                  <td className="px-5 py-3">
+                  <td className={cn(TABLE_CELL_CLASS, "text-slate-600")}>{assigneeById.get(l.assigned_to ?? "") ?? "—"}</td>
+                  <td className={TABLE_CELL_CLASS}>
                     {l.next_follow_up_at ? (
                       <span className={overdue ? "font-medium text-red-600" : "text-slate-500"}>
                         {overdue ? "Overdue: " : ""}
@@ -375,7 +377,7 @@ function LeadsTable({
             })}
             {leads.length === 0 && (
               <tr>
-                <td colSpan={selectMode ? 8 : 7} className="px-5 py-8 text-center text-slate-400">
+                <td colSpan={selectMode ? 8 : 7} className="px-4 py-8 text-center text-slate-400">
                   No leads match &quot;{query}&quot;.
                 </td>
               </tr>

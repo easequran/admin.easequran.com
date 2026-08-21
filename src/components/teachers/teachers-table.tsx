@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { SearchInput } from "@/components/ui/search-input";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LinkButton } from "@/components/ui/button";
+import { TABLE_HEAD_CLASS, TABLE_HEAD_CELL_CLASS, TABLE_CELL_CLASS, tableRowClass } from "@/lib/utils/table-styles";
+import { cn } from "@/lib/utils/cn";
 
 export interface TeacherRow {
   id: string;
@@ -50,36 +52,36 @@ export function TeachersTable({ teachers }: { teachers: TeacherRow[] }) {
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] text-sm">
-            <thead className="bg-primary-50 text-left text-xs uppercase text-primary-500">
+            <thead className={TABLE_HEAD_CLASS}>
               <tr>
-                <th className="px-5 py-3">Name</th>
-                <th className="px-5 py-3">Email</th>
-                <th className="px-5 py-3">Timezone</th>
-                <th className="px-5 py-3">Rate</th>
-                <th className="px-5 py-3">Status</th>
+                <th className={TABLE_HEAD_CELL_CLASS}>Name</th>
+                <th className={TABLE_HEAD_CELL_CLASS}>Email</th>
+                <th className={TABLE_HEAD_CELL_CLASS}>Timezone</th>
+                <th className={TABLE_HEAD_CELL_CLASS}>Rate</th>
+                <th className={TABLE_HEAD_CELL_CLASS}>Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-primary-50">
-              {filtered.map((t) => (
-                <tr key={t.id} className="hover:bg-slate-50">
-                  <td className="px-5 py-3">
+            <tbody>
+              {filtered.map((t, i) => (
+                <tr key={t.id} className={tableRowClass(i)}>
+                  <td className={TABLE_CELL_CLASS}>
                     <Link href={`/teachers/${t.id}`} prefetch={false} className="font-medium text-primary-900 hover:underline">
                       {t.fullName}
                     </Link>
                   </td>
-                  <td className="px-5 py-3 text-slate-600">{t.email}</td>
-                  <td className="px-5 py-3 text-slate-600">{t.timezone}</td>
-                  <td className="px-5 py-3 text-slate-600">
+                  <td className={cn(TABLE_CELL_CLASS, "text-slate-600")}>{t.email}</td>
+                  <td className={cn(TABLE_CELL_CLASS, "text-slate-600")}>{t.timezone}</td>
+                  <td className={cn(TABLE_CELL_CLASS, "text-slate-600")}>
                     {t.hourlyRate ? `${t.currency} ${t.hourlyRate}/hr` : "—"}
                   </td>
-                  <td className="px-5 py-3">
+                  <td className={TABLE_CELL_CLASS}>
                     <Badge tone={t.active ? "success" : "neutral"}>{t.active ? "Active" : "Inactive"}</Badge>
                   </td>
                 </tr>
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-5 py-8 text-center text-slate-400">
+                  <td colSpan={5} className="px-4 py-8 text-center text-slate-400">
                     No teachers match &quot;{query}&quot;.
                   </td>
                 </tr>

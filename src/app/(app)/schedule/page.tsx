@@ -2,7 +2,7 @@ import { getCurrentProfile } from "@/lib/data/profile";
 import { createClient } from "@/lib/supabase/server";
 import { SectionCard } from "@/components/ui/section-card";
 import { NewScheduleForm } from "@/components/schedule/new-schedule-form";
-import { OccurrenceList } from "@/components/schedule/occurrence-list";
+import { OccurrenceTable } from "@/components/schedule/occurrence-table";
 import { PageHeader } from "@/components/ui/page-header";
 import { DateTime } from "luxon";
 import { CalendarDays, CalendarClock, CalendarPlus, CalendarRange } from "lucide-react";
@@ -87,13 +87,13 @@ export default async function SchedulePage({
       )}
 
       <SectionCard icon={CalendarDays} tone="danger" title={`Today (${todayStartLocal.toFormat("EEEE, MMMM d")})`}>
-        <OccurrenceList occurrences={todayClasses} viewerTimezone={profile.timezone} />
+        <OccurrenceTable occurrences={todayClasses} viewerTimezone={profile.timezone} />
       </SectionCard>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <SectionCard icon={CalendarClock} tone="info" title={`Upcoming classes (${profile.timezone})`}>
-            <OccurrenceList occurrences={mapped} viewerTimezone={profile.timezone} />
+            <OccurrenceTable occurrences={mapped} viewerTimezone={profile.timezone} />
           </SectionCard>
         </div>
 

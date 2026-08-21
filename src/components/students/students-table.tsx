@@ -15,6 +15,8 @@ import { downloadCsv } from "@/lib/utils/csv";
 import { bulkUpdateStudentStatus } from "@/lib/actions/students";
 import { toast } from "@/lib/toast";
 import type { EnrollmentStatus, Student } from "@/lib/types/database";
+import { TABLE_HEAD_CLASS, TABLE_HEAD_CELL_CLASS, TABLE_CELL_CLASS, tableRowClass } from "@/lib/utils/table-styles";
+import { cn } from "@/lib/utils/cn";
 
 const statusTone = {
   trial: "accent",
@@ -152,22 +154,22 @@ export function StudentsTable({
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] text-sm">
-            <thead className="bg-primary-50 text-left text-xs uppercase text-primary-500">
+            <thead className={TABLE_HEAD_CLASS}>
               <tr>
-                {selectMode && <th className="w-10 px-5 py-3" />}
-                <th className="px-5 py-3">Name</th>
-                <th className="px-5 py-3">Teacher</th>
-                <th className="px-5 py-3">Timezone</th>
-                <th className="px-5 py-3">Country</th>
-                <th className="px-5 py-3">Status</th>
-                <th className="px-5 py-3">Guardian</th>
+                {selectMode && <th className={cn("w-10", TABLE_HEAD_CELL_CLASS)} />}
+                <th className={TABLE_HEAD_CELL_CLASS}>Name</th>
+                <th className={TABLE_HEAD_CELL_CLASS}>Teacher</th>
+                <th className={TABLE_HEAD_CELL_CLASS}>Timezone</th>
+                <th className={TABLE_HEAD_CELL_CLASS}>Country</th>
+                <th className={TABLE_HEAD_CELL_CLASS}>Status</th>
+                <th className={TABLE_HEAD_CELL_CLASS}>Guardian</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-primary-50">
-              {filtered.map((s) => (
-                <tr key={s.id} className="hover:bg-slate-50">
+            <tbody>
+              {filtered.map((s, i) => (
+                <tr key={s.id} className={tableRowClass(i)}>
                   {selectMode && (
-                    <td className="px-5 py-3">
+                    <td className={TABLE_CELL_CLASS}>
                       <input
                         type="checkbox"
                         className="h-4 w-4 rounded border-primary-300"
@@ -176,7 +178,7 @@ export function StudentsTable({
                       />
                     </td>
                   )}
-                  <td className="px-5 py-3">
+                  <td className={TABLE_CELL_CLASS}>
                     {selectMode ? (
                       <button type="button" className="font-medium text-primary-900 hover:underline" onClick={() => toggleSelected(s.id)}>
                         {s.full_name}
@@ -187,18 +189,18 @@ export function StudentsTable({
                       </Link>
                     )}
                   </td>
-                  <td className="px-5 py-3 text-slate-600">{teacherByStudent[s.id] ?? "—"}</td>
-                  <td className="px-5 py-3 text-slate-600">{s.timezone}</td>
-                  <td className="px-5 py-3 text-slate-600">{s.country ?? "—"}</td>
-                  <td className="px-5 py-3">
+                  <td className={cn(TABLE_CELL_CLASS, "text-slate-600")}>{teacherByStudent[s.id] ?? "—"}</td>
+                  <td className={cn(TABLE_CELL_CLASS, "text-slate-600")}>{s.timezone}</td>
+                  <td className={cn(TABLE_CELL_CLASS, "text-slate-600")}>{s.country ?? "—"}</td>
+                  <td className={TABLE_CELL_CLASS}>
                     <Badge tone={statusTone[s.enrollment_status]}>{s.enrollment_status}</Badge>
                   </td>
-                  <td className="px-5 py-3 text-slate-600">{s.guardian_name ?? "—"}</td>
+                  <td className={cn(TABLE_CELL_CLASS, "text-slate-600")}>{s.guardian_name ?? "—"}</td>
                 </tr>
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={selectMode ? 7 : 6} className="px-5 py-8 text-center text-slate-400">
+                  <td colSpan={selectMode ? 7 : 6} className="px-4 py-8 text-center text-slate-400">
                     No students match &quot;{query}&quot;.
                   </td>
                 </tr>
