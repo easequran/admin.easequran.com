@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { signOut } from "@/lib/actions/auth";
 import type { Profile } from "@/lib/types/database";
 import { Badge } from "@/components/ui/badge";
@@ -24,8 +25,6 @@ export function Topbar({
   onMenuClick: () => void;
   onOpenSearch: () => void;
 }) {
-  const initial = profile.full_name?.trim()?.[0]?.toUpperCase() ?? "?";
-
   return (
     <header className="flex h-16 items-center justify-between gap-2 border-b-2 border-accent-500 bg-white px-3 shadow-sm sm:px-6">
       <div className="flex min-w-0 items-center gap-3">
@@ -37,8 +36,8 @@ export function Topbar({
         >
           <Menu className="h-5 w-5" />
         </button>
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-600 text-sm font-semibold text-white">
-          {initial}
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-600 p-1.5">
+          <Image src="/logo.png" alt="Ease Quran" width={24} height={24} unoptimized />
         </div>
         <div className="min-w-0">
           <div className="flex items-center gap-2">
