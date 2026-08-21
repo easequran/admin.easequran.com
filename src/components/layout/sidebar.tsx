@@ -22,19 +22,44 @@ import {
   History,
 } from "lucide-react";
 
-const NAV: { href: string; label: string; icon: React.ComponentType<{ className?: string }>; roles: UserRole[] }[] = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "teacher", "student"] },
-  { href: "/schedule", label: "Schedule", icon: CalendarClock, roles: ["admin", "teacher", "student"] },
-  { href: "/timetable", label: "Timetable", icon: CalendarClock, roles: ["teacher"] },
-  { href: "/students", label: "Students", icon: Users, roles: ["admin"] },
-  { href: "/teachers", label: "Teachers", icon: GraduationCap, roles: ["admin"] },
-  { href: "/leads", label: "Leads (CRM)", icon: UserPlus, roles: ["admin"] },
-  { href: "/trials", label: "Trial Classes", icon: Sparkles, roles: ["admin"] },
-  { href: "/attendance", label: "Attendance", icon: ClipboardCheck, roles: ["admin", "teacher"] },
-  { href: "/fees", label: "Fees", icon: Wallet, roles: ["admin"] },
-  { href: "/invoices", label: "Invoices & Fees", icon: Receipt, roles: ["admin", "student"] },
-  { href: "/settings/integrations", label: "Integrations", icon: Settings, roles: ["admin"] },
-  { href: "/settings/audit-log", label: "Audit Log", icon: History, roles: ["admin"] },
+type NavItem = { href: string; label: string; icon: React.ComponentType<{ className?: string }>; roles: UserRole[] };
+
+const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
+  {
+    label: "Overview",
+    items: [
+      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "teacher", "student"] },
+      { href: "/schedule", label: "Schedule", icon: CalendarClock, roles: ["admin", "teacher", "student"] },
+      { href: "/timetable", label: "Timetable", icon: CalendarClock, roles: ["teacher"] },
+    ],
+  },
+  {
+    label: "People",
+    items: [
+      { href: "/students", label: "Students", icon: Users, roles: ["admin"] },
+      { href: "/teachers", label: "Teachers", icon: GraduationCap, roles: ["admin"] },
+      { href: "/leads", label: "Leads (CRM)", icon: UserPlus, roles: ["admin"] },
+      { href: "/trials", label: "Trial Classes", icon: Sparkles, roles: ["admin"] },
+    ],
+  },
+  {
+    label: "Operations",
+    items: [{ href: "/attendance", label: "Attendance", icon: ClipboardCheck, roles: ["admin", "teacher"] }],
+  },
+  {
+    label: "Billing",
+    items: [
+      { href: "/fees", label: "Fees", icon: Wallet, roles: ["admin"] },
+      { href: "/invoices", label: "Invoices & Fees", icon: Receipt, roles: ["admin", "student"] },
+    ],
+  },
+  {
+    label: "Settings",
+    items: [
+      { href: "/settings/integrations", label: "Integrations", icon: Settings, roles: ["admin"] },
+      { href: "/settings/audit-log", label: "Audit Log", icon: History, roles: ["admin"] },
+    ],
+  },
 ];
 
 export function Sidebar({
@@ -51,7 +76,9 @@ export function Sidebar({
   onToggleCollapse: () => void;
 }) {
   const pathname = usePathname();
-  const items = NAV.filter((item) => item.roles.includes(role));
+  const groups = NAV_GROUPS.map((g) => ({ ...g, items: g.items.filter((item) => item.roles.includes(role)) })).filter(
+    (g) => g.items.length > 0,
+  );
 
   return (
     <>
@@ -100,26 +127,41 @@ export function Sidebar({
           {!collapsed && <span>Collapse</span>}
         </button>
 
-        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-2">
-          {items.map(({ href, label, icon: Icon }) => {
-            const active = pathname === href || pathname.startsWith(href + "/");
-            return (
-              <Link
-                key={href}
-                href={href}
-                onClick={onClose}
-                title={collapsed ? label : undefined}
+        <nav className="flex-1 overflow-y-auto px-3 py-2">
+          {groups.map((group, groupIndex) => (
+            <div key={group.label} className={cn(groupIndex > 0 && "mt-4 border-t border-white/10 pt-4")}>
+              <p
                 className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-primary-100 transition-colors hover:bg-primary-500/40 hover:text-white",
-                  active && "bg-accent-500 text-primary-900 hover:bg-accent-500 hover:text-primary-900",
-                  collapsed && "md:justify-center md:px-0",
+                  "mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-wider text-primary-200/70",
+                  collapsed && "md:hidden",
                 )}
               >
-                <Icon className="h-4 w-4 shrink-0" />
-                <span className={cn(collapsed && "md:hidden")}>{label}</span>
-              </Link>
-            );
-          })}
+                {group.label}
+              </p>
+              <div className="space-y-1">
+                {group.items.map(({ href, label, icon: Icon }) => {
+                  const active = pathname === href || pathname.startsWith(href + "/");
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      onClick={onClose}
+                      title={collapsed ? label : undefined}
+                      className={cn(
+                        "flex items-center gap-3 rounded-lg border-l-[3px] border-transparent py-2 pl-[9px] pr-3 text-sm font-medium text-primary-100 transition-all duration-150 hover:translate-x-0.5 hover:bg-primary-500/40 hover:text-white",
+                        active &&
+                          "border-accent-300 bg-accent-500 text-primary-900 hover:translate-x-0 hover:bg-accent-500 hover:text-primary-900",
+                        collapsed && "md:justify-center md:border-l-0 md:px-0",
+                      )}
+                    >
+                      <Icon className="h-4 w-4 shrink-0" />
+                      <span className={cn(collapsed && "md:hidden")}>{label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
       </aside>
     </>
