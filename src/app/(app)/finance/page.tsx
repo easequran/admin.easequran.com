@@ -16,6 +16,8 @@ import {
   tableRowClass,
 } from "@/lib/utils/table-styles";
 import { cn } from "@/lib/utils/cn";
+import { MonthPicker } from "@/components/finance/month-picker";
+import Link from "next/link";
 import { DateTime } from "luxon";
 import { Wallet, TrendingUp, TrendingDown, PiggyBank, Landmark } from "lucide-react";
 
@@ -28,10 +30,10 @@ function pkr(amount: number) {
 export default async function FinancePage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; month?: string; showAll?: string }>;
 }) {
   await requireAdmin();
-  const { error } = await searchParams;
+  const { error, month, showAll } = await searchParams;
   const supabase = await createClient();
 
   const [{ data: income }, { data: expenses }, { data: draws }] = await Promise.all([
@@ -51,18 +53,27 @@ export default async function FinancePage({
   const totalDrawsAllTime = sum(allDraws);
   const currentBalance = totalIncomeAllTime - totalExpensesAllTime - totalDrawsAllTime;
 
-  const monthStart = DateTime.now().startOf("month");
-  const inThisMonth = (occurredOn: string) => DateTime.fromISO(occurredOn) >= monthStart;
+  const monthStart = month ? DateTime.fromFormat(month, "yyyy-LL").startOf("month") : DateTime.now().startOf("month");
+  const monthEnd = monthStart.endOf("month");
+  const inSelectedMonth = (occurredOn: string) => {
+    const d = DateTime.fromISO(occurredOn);
+    return d >= monthStart && d <= monthEnd;
+  };
 
-  const monthIncome = sum(allIncome.filter((r) => inThisMonth(r.occurred_on)));
-  const monthExpenses = sum(allExpenses.filter((r) => inThisMonth(r.occurred_on)));
+  const monthIncome = sum(allIncome.filter((r) => inSelectedMonth(r.occurred_on)));
+  const monthExpenses = sum(allExpenses.filter((r) => inSelectedMonth(r.occurred_on)));
   const monthNetProfit = monthIncome - monthExpenses;
   const monthProfitShare = monthNetProfit / 2;
 
   const monthDrawsByPartner: Record<string, number> = { umair: 0, shah_zaib: 0 };
-  for (const d of allDraws.filter((r) => inThisMonth(r.occurred_on))) {
+  for (const d of allDraws.filter((r) => inSelectedMonth(r.occurred_on))) {
     monthDrawsByPartner[d.partner] = (monthDrawsByPartner[d.partner] ?? 0) + Number(d.amount);
   }
+
+  const displayIncome = showAll ? allIncome : allIncome.filter((r) => inSelectedMonth(r.occurred_on));
+  const displayExpenses = showAll ? allExpenses : allExpenses.filter((r) => inSelectedMonth(r.occurred_on));
+  const displayDraws = showAll ? allDraws : allDraws.filter((r) => inSelectedMonth(r.occurred_on));
+  const logsQuery = `?month=${monthStart.toFormat("yyyy-LL")}`;
 
   return (
     <div className="space-y-6">
@@ -71,15 +82,16 @@ export default async function FinancePage({
         icon={Landmark}
         tone="accent"
         description="Partner finances, separate from student billing -- all figures in PKR."
+        actions={<MonthPicker month={monthStart.toFormat("yyyy-LL")} />}
       />
 
       {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Current balance" value={pkr(currentBalance)} icon={Wallet} tone="accent" />
-        <StatCard label="Income this month" value={pkr(monthIncome)} icon={TrendingUp} tone="success" />
-        <StatCard label="Expenses this month" value={pkr(monthExpenses)} icon={TrendingDown} tone="danger" />
-        <StatCard label="Net profit this month" value={pkr(monthNetProfit)} icon={PiggyBank} tone="info" />
+        <StatCard label="Current balance (all-time)" value={pkr(currentBalance)} icon={Wallet} tone="accent" />
+        <StatCard label={`Income -- ${monthStart.toFormat("LLL yyyy")}`} value={pkr(monthIncome)} icon={TrendingUp} tone="success" />
+        <StatCard label={`Expenses -- ${monthStart.toFormat("LLL yyyy")}`} value={pkr(monthExpenses)} icon={TrendingDown} tone="danger" />
+        <StatCard label={`Net profit -- ${monthStart.toFormat("LLL yyyy")}`} value={pkr(monthNetProfit)} icon={PiggyBank} tone="info" />
       </div>
 
       <SectionCard icon={PiggyBank} tone="accent" title={`Profit split -- ${monthStart.toFormat("LLLL yyyy")}`}>
@@ -207,18 +219,20 @@ export default async function FinancePage({
         </form>
       </SectionCard>
 
-      <SectionCard icon={TrendingUp} tone="success" title="Income log">
+      <LogToggle showAll={!!showAll} logsQuery={logsQuery} month={monthStart.toFormat("LLLL yyyy")} />
+
+      <SectionCard icon={TrendingUp} tone="success" title={showAll ? "Income log -- all time" : `Income log -- ${monthStart.toFormat("LLLL yyyy")}`}>
         <FinanceTable
-          rows={allIncome}
+          rows={displayIncome}
           table="finance_income"
           columns={["Date", "Amount", "Note"]}
           renderRow={(r) => [DateTime.fromISO(r.occurred_on).toFormat("d LLL yyyy"), pkr(Number(r.amount)), r.note ?? "—"]}
         />
       </SectionCard>
 
-      <SectionCard icon={TrendingDown} tone="danger" title="Expense log">
+      <SectionCard icon={TrendingDown} tone="danger" title={showAll ? "Expense log -- all time" : `Expense log -- ${monthStart.toFormat("LLLL yyyy")}`}>
         <FinanceTable
-          rows={allExpenses}
+          rows={displayExpenses}
           table="finance_expenses"
           columns={["Date", "Amount", "Category", "Paid by", "Note"]}
           renderRow={(r) => [
@@ -231,9 +245,9 @@ export default async function FinancePage({
         />
       </SectionCard>
 
-      <SectionCard icon={PiggyBank} tone="info" title="Partner draws log">
+      <SectionCard icon={PiggyBank} tone="info" title={showAll ? "Partner draws log -- all time" : `Partner draws log -- ${monthStart.toFormat("LLLL yyyy")}`}>
         <FinanceTable
-          rows={allDraws}
+          rows={displayDraws}
           table="finance_draws"
           columns={["Date", "Partner", "Amount", "Note"]}
           renderRow={(r) => [
@@ -245,6 +259,23 @@ export default async function FinancePage({
         />
       </SectionCard>
     </div>
+  );
+}
+
+function LogToggle({ showAll, logsQuery, month }: { showAll: boolean; logsQuery: string; month: string }) {
+  return (
+    <p className="text-sm text-slate-500">
+      Showing logs for <span className="font-medium text-primary-800">{showAll ? "all time" : month}</span> --{" "}
+      {showAll ? (
+        <Link href={logsQuery} className="font-medium text-primary-600 hover:underline">
+          Show this month only
+        </Link>
+      ) : (
+        <Link href={`${logsQuery}&showAll=1`} className="font-medium text-primary-600 hover:underline">
+          Show all time
+        </Link>
+      )}
+    </p>
   );
 }
 
