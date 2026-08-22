@@ -20,6 +20,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   History,
+  Landmark,
 } from "lucide-react";
 
 type NavItem = { href: string; label: string; icon: React.ComponentType<{ className?: string }>; roles: UserRole[] };
@@ -52,6 +53,10 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       { href: "/fees", label: "Fees", icon: Wallet, roles: ["admin"] },
       { href: "/invoices", label: "Invoices & Fees", icon: Receipt, roles: ["admin", "student"] },
     ],
+  },
+  {
+    label: "Finance",
+    items: [{ href: "/finance", label: "Finance", icon: Landmark, roles: ["admin"] }],
   },
   {
     label: "Settings",
