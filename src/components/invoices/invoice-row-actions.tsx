@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input, Label, Select } from "@/components/ui/input";
+import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { updateInvoice, deleteInvoice } from "@/lib/actions/invoices";
 import { toast } from "@/lib/toast";
 
@@ -13,6 +13,7 @@ interface InvoiceRowActionsProps {
     currency: string;
     due_date: string;
     status: string;
+    notes?: string | null;
   };
   studentName?: string;
 }
@@ -86,6 +87,16 @@ export function InvoiceRowActions({ invoice, studentName }: InvoiceRowActionsPro
                   <option value="overdue">Overdue</option>
                   <option value="cancelled">Cancelled</option>
                 </Select>
+              </div>
+              <div>
+                <Label htmlFor={`notes-${invoice.id}`}>Notes / instructions</Label>
+                <Textarea
+                  id={`notes-${invoice.id}`}
+                  name="notes"
+                  rows={3}
+                  placeholder="Shown on the PDF -- e.g. this month's payment link, bank details, or any instructions."
+                  defaultValue={invoice.notes ?? ""}
+                />
               </div>
               <div className="flex justify-end gap-2 pt-2">
                 <Button type="button" size="sm" variant="outline" onClick={() => setMode("idle")}>

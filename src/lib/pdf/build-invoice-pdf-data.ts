@@ -12,7 +12,7 @@ export async function getInvoicePdfData(invoiceId: string): Promise<InvoicePdfDa
 
   const { data: invoice } = await supabase
     .from("invoices")
-    .select("*, students(full_name)")
+    .select("*, students(full_name, guardian_name)")
     .eq("id", invoiceId)
     .single();
   if (!invoice) return null;
@@ -22,7 +22,7 @@ export async function getInvoicePdfData(invoiceId: string): Promise<InvoicePdfDa
   if (invoice.sibling_group_id) {
     const { data: siblingInvoices } = await supabase
       .from("invoices")
-      .select("*, students(full_name)")
+      .select("*, students(full_name, guardian_name)")
       .eq("sibling_group_id", invoice.sibling_group_id)
       .eq("period_start", invoice.period_start);
     if (siblingInvoices && siblingInvoices.length > 0) {
@@ -35,6 +35,14 @@ export async function getInvoicePdfData(invoiceId: string): Promise<InvoicePdfDa
   const totalAmount = rows.reduce((sum, r) => sum + Number(r.amount), 0);
   const shortId = invoice.id.slice(0, 8).toUpperCase();
   const monthTag = invoice.period_start.slice(0, 7).replace("-", "");
+
+  const guardianNames = Array.from(
+    new Set(rows.map((r) => r.students?.guardian_name).filter(Boolean)),
+  ) as string[];
+
+  const combinedNotes = Array.from(
+    new Set(rows.map((r) => r.notes).filter((n): n is string => Boolean(n && n.trim()))),
+  );
 
   return {
     isCombined: rows.length > 1,
@@ -49,5 +57,8 @@ export async function getInvoicePdfData(invoiceId: string): Promise<InvoicePdfDa
     dueDate: invoice.due_date,
     status: invoice.status,
     invoiceNumber: `INV-${monthTag}-${shortId}`,
+    guardianName: guardianNames.join(" / ") || null,
+    paymentMethod: invoice.payment_method ?? null,
+    notes: combinedNotes.join("\n") || null,
   };
 }

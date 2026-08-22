@@ -20,6 +20,9 @@ export interface InvoicePdfData {
   dueDate: string;
   status: string;
   invoiceNumber: string;
+  guardianName: string | null;
+  paymentMethod: string | null;
+  notes: string | null;
 }
 
 // Brand colors pulled from src/app/globals.css -- React-PDF can't read CSS
@@ -84,6 +87,25 @@ const styles = StyleSheet.create({
   },
   totalsLabel: { fontSize: 11, fontWeight: 700, color: "white" },
   totalsValue: { fontSize: 13, fontWeight: 700, color: GOLD },
+  paymentRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+  },
+  paymentLabel: { fontSize: 8, color: SLATE, textTransform: "uppercase" },
+  paymentValue: { fontSize: 10, fontWeight: 700, color: "#0f172a" },
+  notesBox: {
+    marginTop: 16,
+    padding: 10,
+    borderRadius: 4,
+    backgroundColor: "#fff7ec",
+    borderLeftWidth: 3,
+    borderLeftColor: GOLD,
+  },
+  notesLabel: { fontSize: 8, fontWeight: 700, color: NAVY, textTransform: "uppercase", marginBottom: 3 },
+  notesText: { fontSize: 9, color: "#0f172a", lineHeight: 1.4 },
   footer: { position: "absolute", bottom: 32, left: 40, right: 40, textAlign: "center" },
   footerText: { fontSize: 8, color: SLATE },
 });
@@ -117,6 +139,12 @@ export function InvoiceDocument({ data }: { data: InvoicePdfData }) {
               {formatDate(data.periodStart)} - {formatDate(data.periodEnd)}
             </Text>
           </View>
+          {data.guardianName && (
+            <View>
+              <Text style={styles.metaLabel}>Guardian</Text>
+              <Text style={styles.metaValue}>{data.guardianName}</Text>
+            </View>
+          )}
           <View>
             <Text style={styles.metaLabel}>Due date</Text>
             <Text style={styles.metaValue}>{formatDate(data.dueDate)}</Text>
@@ -145,8 +173,23 @@ export function InvoiceDocument({ data }: { data: InvoicePdfData }) {
           </Text>
         </View>
 
+        {data.status === "paid" && data.paymentMethod && (
+          <View style={styles.paymentRow}>
+            <Text style={styles.paymentLabel}>Payment method</Text>
+            <Text style={styles.paymentValue}>{data.paymentMethod}</Text>
+          </View>
+        )}
+
+        {data.notes && (
+          <View style={styles.notesBox}>
+            <Text style={styles.notesLabel}>Notes / instructions</Text>
+            <Text style={styles.notesText}>{data.notes}</Text>
+          </View>
+        )}
+
         <View style={styles.footer}>
           <Text style={styles.footerText}>Ease Quran Online Academy - Thank you for your continued trust.</Text>
+          <Text style={styles.footerText}>contacteasequran@gmail.com</Text>
         </View>
       </Page>
     </Document>

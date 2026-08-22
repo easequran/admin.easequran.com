@@ -80,6 +80,7 @@ export async function updateInvoice(invoiceId: string, formData: FormData) {
       due_date: String(formData.get("due_date")),
       status,
       paid_at: status === "paid" ? new Date().toISOString() : null,
+      notes: String(formData.get("notes") || "").trim() || null,
     })
     .eq("id", invoiceId);
   if (error) throw new Error(error.message);
