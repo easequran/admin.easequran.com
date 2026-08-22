@@ -39,6 +39,7 @@ export async function generateMonthlyInvoices() {
       amount: plan.monthly_amount,
       currency: plan.currency,
       due_date: dueDate,
+      sibling_group_id: plan.sibling_group_id,
     });
   }
 

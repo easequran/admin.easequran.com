@@ -88,7 +88,9 @@ export default async function FeesPage({
                 <div>
                   <Label>Student(s)</Label>
                   <p className="mb-1.5 text-xs text-slate-400">
-                    Select more than one for siblings sharing the same fee plan.
+                    Select more than one for siblings -- this permanently links them so their
+                    future invoices are always combined into one PDF, even if you edit each
+                    plan separately later.
                   </p>
                   <div className="max-h-40 space-y-1.5 overflow-y-auto rounded-lg border border-primary-200 p-2">
                     {studentsWithoutPlan.map((s) => (

@@ -11,6 +11,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DateTime } from "luxon";
 import { User, BarChart3, CalendarClock, Wallet, Receipt } from "lucide-react";
+import { INVOICE_STATUS_TONE } from "@/lib/utils/invoice-status";
 
 export default async function StudentDetailPage({
   params,
@@ -30,11 +31,11 @@ export default async function StudentDetailPage({
   const monthStart = selectedMonth.startOf("month");
   const monthEnd = selectedMonth.endOf("month");
 
-  const [{ data: student }, { data: schedules }, { data: invoices }, { data: feePlan }, { data: monthClasses }, { data: teachers }] = await Promise.all([
+  const [{ data: student }, { data: schedules }, { data: invoices }, { data: feePlans }, { data: monthClasses }, { data: teachers }] = await Promise.all([
     supabase.from("students").select("*").eq("id", id).single(),
     supabase.from("recurring_schedules").select("*, teachers(profiles(full_name))").eq("student_id", id).eq("active", true),
-    supabase.from("invoices").select("*").eq("student_id", id).order("due_date", { ascending: false }).limit(5),
-    supabase.from("fee_plans").select("*").eq("student_id", id).eq("active", true).maybeSingle(),
+    supabase.from("invoices").select("*").eq("student_id", id).order("due_date", { ascending: false }),
+    supabase.from("fee_plans").select("*").eq("student_id", id).order("created_at", { ascending: false }),
     supabase
       .from("class_occurrences")
       .select("id, start_at, status, teachers(profiles(full_name)), attendance(status, notes)")
@@ -65,6 +66,11 @@ export default async function StudentDetailPage({
   const excusedCount = marked.filter((c) => c.attendance.status === "excused").length;
   const attendanceRate = marked.length > 0 ? Math.round((presentCount / marked.length) * 100) : null;
   const comments = classesThisMonth.filter((c) => c.attendance?.notes);
+
+  const allFeePlans = feePlans ?? [];
+  const activeFeePlan = allFeePlans.find((p) => p.active);
+  const pastFeePlans = allFeePlans.filter((p) => p.id !== activeFeePlan?.id);
+  const allInvoices = invoices ?? [];
 
   const prevMonth = selectedMonth.minus({ months: 1 }).toFormat("yyyy-LL");
   const nextMonth = selectedMonth.plus({ months: 1 }).toFormat("yyyy-LL");
@@ -215,31 +221,69 @@ export default async function StudentDetailPage({
           </SectionCard>
 
           <SectionCard icon={Wallet} tone="warning" title="Fee plan">
-              {feePlan ? (
+              {activeFeePlan ? (
                 <p className="mb-3 text-sm text-primary-900">
-                  {feePlan.currency} {Number(feePlan.monthly_amount).toFixed(2)} / month · billed on day{" "}
-                  {feePlan.billing_day} · {feePlan.classes_per_week} classes/week
+                  {activeFeePlan.currency} {Number(activeFeePlan.monthly_amount).toFixed(2)} / month · billed on day{" "}
+                  {activeFeePlan.billing_day} · {activeFeePlan.classes_per_week} classes/week
                 </p>
               ) : (
-                <p className="mb-3 text-sm text-slate-500">No fee plan set yet.</p>
+                <p className="mb-3 text-sm text-slate-500">No active fee plan set.</p>
               )}
               <Link
                 href={`/fees?student=${id}`}
                 className="text-sm font-medium text-primary-700 hover:text-primary-900"
               >
-                {feePlan ? "Manage fee plan →" : "Add a fee plan →"}
+                {activeFeePlan ? "Manage fee plan →" : "Add a fee plan →"}
               </Link>
+
+              {pastFeePlans.length > 0 && (
+                <details className="group mt-3">
+                  <summary className="cursor-pointer text-sm font-medium text-primary-700 hover:text-primary-900">
+                    + {pastFeePlans.length} past fee plan{pastFeePlans.length > 1 ? "s" : ""}
+                  </summary>
+                  <ul className="mt-2 space-y-1.5 text-sm">
+                    {pastFeePlans.map((p) => (
+                      <li key={p.id} className="flex items-center justify-between rounded-lg bg-primary-50 px-3 py-2">
+                        <span className="text-primary-800">
+                          {p.currency} {Number(p.monthly_amount).toFixed(2)} / month · billed on day{" "}
+                          {p.billing_day} · {DateTime.fromISO(p.created_at).toFormat("MMM yyyy")}
+                        </span>
+                        {!p.active && <Badge tone="neutral">inactive</Badge>}
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
           </SectionCard>
 
-          <SectionCard icon={Receipt} tone="neutral" title="Recent invoices">
-              {!invoices || invoices.length === 0 ? (
+          <SectionCard icon={Receipt} tone="neutral" title="Invoice & payment history">
+              {allInvoices.length === 0 ? (
                 <p className="text-sm text-slate-500">No invoices yet.</p>
               ) : (
-                <ul className="space-y-2 text-sm">
-                  {invoices.map((inv) => (
-                    <li key={inv.id} className="flex justify-between rounded-lg bg-primary-50 px-3 py-2">
-                      <span>{inv.currency} {Number(inv.amount).toFixed(2)}</span>
-                      <span className="capitalize text-slate-500">{inv.status}</span>
+                <ul className="max-h-96 space-y-2 overflow-y-auto text-sm">
+                  {allInvoices.map((inv) => (
+                    <li key={inv.id} className="flex items-center justify-between gap-2 rounded-lg bg-primary-50 px-3 py-2">
+                      <div>
+                        <p className="text-primary-900">
+                          {inv.currency} {Number(inv.amount).toFixed(2)}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          Due {DateTime.fromISO(inv.due_date).toFormat("d MMM yyyy")}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge tone={INVOICE_STATUS_TONE[inv.status as keyof typeof INVOICE_STATUS_TONE]}>
+                          {inv.status}
+                        </Badge>
+                        <a
+                          href={`/api/invoices/${inv.id}/pdf`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-xs font-medium text-primary-700 hover:underline"
+                        >
+                          PDF
+                        </a>
+                      </div>
                     </li>
                   ))}
                 </ul>

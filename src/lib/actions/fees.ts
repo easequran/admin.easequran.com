@@ -5,16 +5,19 @@ import { requireAdmin } from "@/lib/data/profile";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { withToast } from "@/lib/toast";
+import { logAudit } from "@/lib/actions/audit";
 
 /**
  * Creates one fee plan per selected student, all with the same
  * amount/currency/billing day/classes-per-week -- covers siblings or any
- * group of students who share one fee arrangement, without changing the
- * underlying one-plan-per-student schema (invoices/billing stay keyed to a
- * single student_id each, just generated from identical sibling plans).
+ * group of students who share one fee arrangement. When more than one
+ * student is selected, every resulting row is durably tagged with the same
+ * sibling_group_id (not just a one-time convenience insert), so their
+ * invoices can always be found and combined into one PDF later, even if
+ * each plan is edited separately afterwards.
  */
 export async function createFeePlan(formData: FormData) {
-  await requireAdmin();
+  const profile = await requireAdmin();
   const supabase = await createClient();
 
   const studentIds = formData.getAll("student_id").map(String).filter(Boolean);
@@ -25,11 +28,28 @@ export async function createFeePlan(formData: FormData) {
   const currency = String(formData.get("currency") || "USD");
   const billing_day = Number(formData.get("billing_day") || 1);
   const classes_per_week = Number(formData.get("classes_per_week") || 2);
+  const siblingGroupId = studentIds.length > 1 ? crypto.randomUUID() : null;
 
-  const { error } = await supabase
-    .from("fee_plans")
-    .insert(studentIds.map((student_id) => ({ student_id, monthly_amount, currency, billing_day, classes_per_week })));
+  const { error } = await supabase.from("fee_plans").insert(
+    studentIds.map((student_id) => ({
+      student_id,
+      monthly_amount,
+      currency,
+      billing_day,
+      classes_per_week,
+      sibling_group_id: siblingGroupId,
+    })),
+  );
   if (error) throw new Error(error.message);
+
+  await logAudit({
+    action: "fee_plan.create",
+    entityType: "fee_plan",
+    entityId: siblingGroupId,
+    entityLabel:
+      studentIds.length > 1 ? `${studentIds.length} students (sibling group)` : undefined,
+    details: `${currency} ${monthly_amount}/mo, billing day ${billing_day}, ${studentIds.length} plan(s) created by ${profile.full_name}`,
+  });
 
   revalidatePath("/fees");
   for (const id of studentIds) revalidatePath(`/students/${id}`);

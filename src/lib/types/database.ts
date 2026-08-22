@@ -151,6 +151,7 @@ export interface FeePlan {
   billing_day: number;
   classes_per_week: number;
   active: boolean;
+  sibling_group_id: string | null;
   created_at: string;
 }
 
@@ -167,6 +168,7 @@ export interface Invoice {
   paid_at: string | null;
   payment_method: string | null;
   notes: string | null;
+  sibling_group_id: string | null;
   created_at: string;
 }
 

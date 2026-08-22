@@ -18,13 +18,9 @@ import {
   tableRowClass,
 } from "@/lib/utils/table-styles";
 import { cn } from "@/lib/utils/cn";
+import { INVOICE_STATUS_TONE } from "@/lib/utils/invoice-status";
 
-const statusTone = {
-  pending: "warning",
-  paid: "success",
-  overdue: "danger",
-  cancelled: "neutral",
-} as const;
+const statusTone = INVOICE_STATUS_TONE;
 
 export default async function InvoicesPage() {
   const profile = await getCurrentProfile();
@@ -132,6 +128,11 @@ export default async function InvoicesPage() {
                           </Button>
                         </form>
                       )}
+                      <a href={`/api/invoices/${inv.id}/pdf`} target="_blank" rel="noreferrer">
+                        <Button type="button" size="sm" variant="outline">
+                          PDF
+                        </Button>
+                      </a>
                       <InvoiceRowActions invoice={inv} studentName={inv.students?.full_name} />
                     </div>
                   </td>
