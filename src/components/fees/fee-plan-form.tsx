@@ -1,0 +1,131 @@
+"use client";
+
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input, Label, Select } from "@/components/ui/input";
+import { CurrencySelect } from "@/components/ui/currency-select";
+import { createFeePlan } from "@/lib/actions/fees";
+
+type Student = { id: string; full_name: string };
+
+/**
+ * "Add a fee" form. Client component only so the Monthly / Per-class-block
+ * toggle can show the right fields without a round-trip.
+ */
+export function FeePlanForm({
+  students,
+  highlightStudentId,
+  today,
+}: {
+  students: Student[];
+  highlightStudentId?: string;
+  today: string;
+}) {
+  const [mode, setMode] = useState<"monthly" | "per_block">("monthly");
+
+  return (
+    <form action={createFeePlan} className="space-y-3">
+      <div>
+        <Label>Student(s)</Label>
+        <p className="mb-1.5 text-xs text-slate-400">
+          Select more than one for siblings -- this permanently links them so their future invoices
+          are always combined into one PDF, even if you edit each plan separately later.
+        </p>
+        <div className="max-h-40 space-y-1.5 overflow-y-auto rounded-lg border border-primary-200 p-2">
+          {students.map((s) => (
+            <label key={s.id} className="flex items-center gap-2 text-sm text-primary-900">
+              <input
+                type="checkbox"
+                name="student_id"
+                value={s.id}
+                defaultChecked={s.id === highlightStudentId}
+                className="h-4 w-4 rounded border-primary-300"
+              />
+              {s.full_name}
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <Label htmlFor="billing_mode">Billing type</Label>
+        <Select
+          id="billing_mode"
+          name="billing_mode"
+          value={mode}
+          onChange={(e) => setMode(e.target.value as "monthly" | "per_block")}
+        >
+          <option value="monthly">Monthly (calendar month)</option>
+          <option value="per_block">Per class-block (every N classes)</option>
+        </Select>
+      </div>
+
+      <div>
+        <Label htmlFor="currency">Currency</Label>
+        <CurrencySelect id="currency" name="currency" />
+      </div>
+
+      {mode === "monthly" ? (
+        <>
+          <div>
+            <Label htmlFor="monthly_amount">Fee amount / month</Label>
+            <Input id="monthly_amount" name="monthly_amount" type="number" step="0.01" min="0.01" required />
+          </div>
+          <div>
+            <Label htmlFor="billing_day">Fee date (day of month)</Label>
+            <Input id="billing_day" name="billing_day" type="number" min={1} max={28} defaultValue={1} required />
+          </div>
+        </>
+      ) : (
+        <>
+          <div>
+            <Label htmlFor="classes_per_block">Classes per block</Label>
+            <Input
+              id="classes_per_block"
+              name="classes_per_block"
+              type="number"
+              min={1}
+              max={60}
+              defaultValue={8}
+              required
+            />
+            <p className="mt-1 text-xs text-slate-400">
+              An invoice is generated automatically once this many classes are completed. Absent
+              classes count; excused classes don&apos;t.
+            </p>
+          </div>
+          <div>
+            <Label htmlFor="block_amount">Amount per block</Label>
+            <Input id="block_amount" name="block_amount" type="number" step="0.01" min="0.01" required />
+          </div>
+          <div>
+            <Label htmlFor="grace_days">Days until due (after last class)</Label>
+            <Input id="grace_days" name="grace_days" type="number" min={0} max={60} defaultValue={3} required />
+          </div>
+          <div>
+            <Label htmlFor="block_billing_since">Count classes from</Label>
+            <Input id="block_billing_since" name="block_billing_since" type="date" defaultValue={today} required />
+            <p className="mt-1 text-xs text-slate-400">
+              Only classes on or after this date count. Leave as today so earlier classes aren&apos;t
+              billed again.
+            </p>
+          </div>
+        </>
+      )}
+
+      <div>
+        <Label htmlFor="classes_per_week">Classes/week</Label>
+        <Select id="classes_per_week" name="classes_per_week" defaultValue="2">
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="5">5</option>
+        </Select>
+      </div>
+
+      <Button type="submit" className="w-full">
+        Save fee
+      </Button>
+    </form>
+  );
+}

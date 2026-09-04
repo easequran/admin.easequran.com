@@ -143,15 +143,27 @@ export interface Attendance {
   notes: string | null;
 }
 
+export type BillingMode = "monthly" | "per_block";
+
 export interface FeePlan {
   id: string;
   student_id: string;
-  monthly_amount: number;
+  /** Used only when billing_mode = 'monthly'. Null for per_block plans. */
+  monthly_amount: number | null;
   currency: string;
   billing_day: number;
   classes_per_week: number;
   active: boolean;
   sibling_group_id: string | null;
+  billing_mode: BillingMode;
+  /** per_block only: billable classes per invoice. */
+  classes_per_block: number | null;
+  /** per_block only: price of one block. */
+  block_amount: number | null;
+  /** per_block only: days after the block's last class that payment is due. */
+  grace_days: number;
+  /** per_block only: only classes on/after this date count toward blocks. */
+  block_billing_since: string | null;
   created_at: string;
 }
 
@@ -169,6 +181,15 @@ export interface Invoice {
   payment_method: string | null;
   notes: string | null;
   sibling_group_id: string | null;
+  billing_mode: BillingMode;
+  /** per_block invoices: how many classes this invoice covers. Null for monthly. */
+  classes_count: number | null;
+  created_at: string;
+}
+
+export interface InvoiceClassOccurrence {
+  invoice_id: string;
+  occurrence_id: string;
   created_at: string;
 }
 

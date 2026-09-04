@@ -11,16 +11,23 @@ interface FeePlanRowActionsProps {
   feePlan: {
     id: string;
     student_id: string;
-    monthly_amount: number;
+    monthly_amount: number | null;
     currency: string;
     billing_day: number;
     classes_per_week: number;
+    billing_mode: "monthly" | "per_block";
+    classes_per_block: number | null;
+    block_amount: number | null;
+    grace_days: number;
+    block_billing_since: string | null;
   };
   studentName?: string;
+  today: string;
 }
 
-export function FeePlanRowActions({ feePlan, studentName }: FeePlanRowActionsProps) {
+export function FeePlanRowActions({ feePlan, studentName, today }: FeePlanRowActionsProps) {
   const [mode, setMode] = useState<"idle" | "editing" | "confirmingDeactivate">("idle");
+  const [billingMode, setBillingMode] = useState<"monthly" | "per_block">(feePlan.billing_mode);
 
   const boundUpdate = updateFeePlan.bind(null, feePlan.id, feePlan.student_id);
   const boundDeactivate = deactivateFeePlan.bind(null, feePlan.id, feePlan.student_id);
@@ -36,7 +43,7 @@ export function FeePlanRowActions({ feePlan, studentName }: FeePlanRowActionsPro
 
       {mode === "editing" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary-950/40 p-4">
-          <div className="w-full max-w-sm rounded-xl bg-white p-5 shadow-xl">
+          <div className="max-h-[90vh] w-full max-w-sm overflow-y-auto rounded-xl bg-white p-5 shadow-xl">
             <h3 className="text-base font-semibold text-primary-900">
               Edit fee{studentName ? ` — ${studentName}` : ""}
             </h3>
@@ -52,47 +59,124 @@ export function FeePlanRowActions({ feePlan, studentName }: FeePlanRowActionsPro
               }}
               className="mt-4 space-y-4"
             >
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label htmlFor={`amount-${feePlan.id}`}>Fee amount</Label>
-                  <Input
-                    id={`amount-${feePlan.id}`}
-                    name="monthly_amount"
-                    type="number"
-                    step="0.01"
-                    min="0.01"
-                    required
-                    defaultValue={feePlan.monthly_amount}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor={`currency-${feePlan.id}`}>Currency</Label>
-                  <CurrencySelect id={`currency-${feePlan.id}`} name="currency" defaultValue={feePlan.currency} />
-                </div>
+              <div>
+                <Label htmlFor={`billing_mode-${feePlan.id}`}>Billing type</Label>
+                <Select
+                  id={`billing_mode-${feePlan.id}`}
+                  name="billing_mode"
+                  value={billingMode}
+                  onChange={(e) => setBillingMode(e.target.value as "monthly" | "per_block")}
+                >
+                  <option value="monthly">Monthly (calendar month)</option>
+                  <option value="per_block">Per class-block (every N classes)</option>
+                </Select>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label htmlFor={`billing_day-${feePlan.id}`}>Fee date (day of month)</Label>
-                  <Input
-                    id={`billing_day-${feePlan.id}`}
-                    name="billing_day"
-                    type="number"
-                    min={1}
-                    max={28}
-                    required
-                    defaultValue={feePlan.billing_day}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor={`classes-${feePlan.id}`}>Classes/week</Label>
-                  <Select id={`classes-${feePlan.id}`} name="classes_per_week" defaultValue={String(feePlan.classes_per_week)}>
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="5">5</option>
-                  </Select>
-                </div>
+
+              <div>
+                <Label htmlFor={`currency-${feePlan.id}`}>Currency</Label>
+                <CurrencySelect id={`currency-${feePlan.id}`} name="currency" defaultValue={feePlan.currency} />
               </div>
+
+              {billingMode === "monthly" ? (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor={`amount-${feePlan.id}`}>Fee / month</Label>
+                    <Input
+                      id={`amount-${feePlan.id}`}
+                      name="monthly_amount"
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      required
+                      defaultValue={feePlan.monthly_amount ?? undefined}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor={`billing_day-${feePlan.id}`}>Fee date (day)</Label>
+                    <Input
+                      id={`billing_day-${feePlan.id}`}
+                      name="billing_day"
+                      type="number"
+                      min={1}
+                      max={28}
+                      required
+                      defaultValue={feePlan.billing_day}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor={`cpb-${feePlan.id}`}>Classes / block</Label>
+                      <Input
+                        id={`cpb-${feePlan.id}`}
+                        name="classes_per_block"
+                        type="number"
+                        min={1}
+                        max={60}
+                        required
+                        defaultValue={feePlan.classes_per_block ?? 8}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor={`block_amount-${feePlan.id}`}>Amount / block</Label>
+                      <Input
+                        id={`block_amount-${feePlan.id}`}
+                        name="block_amount"
+                        type="number"
+                        step="0.01"
+                        min="0.01"
+                        required
+                        defaultValue={feePlan.block_amount ?? undefined}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor={`grace-${feePlan.id}`}>Days until due</Label>
+                      <Input
+                        id={`grace-${feePlan.id}`}
+                        name="grace_days"
+                        type="number"
+                        min={0}
+                        max={60}
+                        required
+                        defaultValue={feePlan.grace_days}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor={`since-${feePlan.id}`}>Count classes from</Label>
+                      <Input
+                        id={`since-${feePlan.id}`}
+                        name="block_billing_since"
+                        type="date"
+                        required
+                        defaultValue={feePlan.block_billing_since ?? today}
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-400">
+                    Absent classes count toward a block; excused classes don&apos;t. Moving
+                    &quot;count from&quot; to an earlier date will bill already-completed classes.
+                  </p>
+                </>
+              )}
+
+              <div>
+                <Label htmlFor={`classes-${feePlan.id}`}>Classes/week</Label>
+                <Select
+                  id={`classes-${feePlan.id}`}
+                  name="classes_per_week"
+                  defaultValue={String(feePlan.classes_per_week)}
+                >
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="5">5</option>
+                </Select>
+              </div>
+
               <div className="flex justify-end gap-2 pt-2">
                 <Button type="button" size="sm" variant="outline" onClick={() => setMode("idle")}>
                   Cancel
