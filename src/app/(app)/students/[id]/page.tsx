@@ -72,6 +72,32 @@ export default async function StudentDetailPage({
   const pastFeePlans = allFeePlans.filter((p) => p.id !== activeFeePlan?.id);
   const allInvoices = invoices ?? [];
 
+  // For a per_block plan, how many billable classes are already banked toward
+  // the next auto-invoice (absent counts, excused doesn't, only since the
+  // plan's "count from" date, and only classes not already on an invoice).
+  let blockProgress: { done: number; per: number; remaining: number } | null = null;
+  if (activeFeePlan?.billing_mode === "per_block" && activeFeePlan.classes_per_block) {
+    const [{ data: occ }, { data: invoiced }] = await Promise.all([
+      supabase
+        .from("class_occurrences")
+        .select("id, start_at, attendance(status)")
+        .eq("student_id", id)
+        .in("status", ["completed", "no_show"]),
+      supabase.from("invoice_class_occurrences").select("occurrence_id"),
+    ]);
+    const invoicedIds = new Set((invoiced ?? []).map((r) => r.occurrence_id));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const billable = ((occ ?? []) as any[]).filter(
+      (r) =>
+        !invoicedIds.has(r.id) &&
+        r.attendance?.status !== "excused" &&
+        (!activeFeePlan.block_billing_since || r.start_at.slice(0, 10) >= activeFeePlan.block_billing_since),
+    ).length;
+    const per = activeFeePlan.classes_per_block as number;
+    const done = billable % per;
+    blockProgress = { done, per, remaining: per - done };
+  }
+
   const prevMonth = selectedMonth.minus({ months: 1 }).toFormat("yyyy-LL");
   const nextMonth = selectedMonth.plus({ months: 1 }).toFormat("yyyy-LL");
 
@@ -222,10 +248,30 @@ export default async function StudentDetailPage({
 
           <SectionCard icon={Wallet} tone="warning" title="Fee plan">
               {activeFeePlan ? (
-                <p className="mb-3 text-sm text-primary-900">
-                  {activeFeePlan.currency} {Number(activeFeePlan.monthly_amount).toFixed(2)} / month · billed on day{" "}
-                  {activeFeePlan.billing_day} · {activeFeePlan.classes_per_week} classes/week
-                </p>
+                activeFeePlan.billing_mode === "per_block" ? (
+                  <div className="mb-3 text-sm text-primary-900">
+                    <p>
+                      {activeFeePlan.currency} {Number(activeFeePlan.block_amount).toFixed(2)} every{" "}
+                      {activeFeePlan.classes_per_block} classes · due {activeFeePlan.grace_days} day
+                      {activeFeePlan.grace_days === 1 ? "" : "s"} after the last class ·{" "}
+                      {activeFeePlan.classes_per_week} classes/week
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      Counting classes since{" "}
+                      {DateTime.fromISO(activeFeePlan.block_billing_since).toFormat("d MMM yyyy")}
+                      {blockProgress
+                        ? ` · ${blockProgress.done}/${blockProgress.per} banked, ${blockProgress.remaining} more class${
+                            blockProgress.remaining === 1 ? "" : "es"
+                          } until the next invoice`
+                        : ""}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="mb-3 text-sm text-primary-900">
+                    {activeFeePlan.currency} {Number(activeFeePlan.monthly_amount).toFixed(2)} / month · billed on day{" "}
+                    {activeFeePlan.billing_day} · {activeFeePlan.classes_per_week} classes/week
+                  </p>
+                )
               ) : (
                 <p className="mb-3 text-sm text-slate-500">No active fee plan set.</p>
               )}
@@ -245,8 +291,10 @@ export default async function StudentDetailPage({
                     {pastFeePlans.map((p) => (
                       <li key={p.id} className="flex items-center justify-between rounded-lg bg-primary-50 px-3 py-2">
                         <span className="text-primary-800">
-                          {p.currency} {Number(p.monthly_amount).toFixed(2)} / month · billed on day{" "}
-                          {p.billing_day} · {DateTime.fromISO(p.created_at).toFormat("MMM yyyy")}
+                          {p.billing_mode === "per_block"
+                            ? `${p.currency} ${Number(p.block_amount).toFixed(2)} / ${p.classes_per_block} classes`
+                            : `${p.currency} ${Number(p.monthly_amount).toFixed(2)} / month · day ${p.billing_day}`}{" "}
+                          · {DateTime.fromISO(p.created_at).toFormat("MMM yyyy")}
                         </span>
                         {!p.active && <Badge tone="neutral">inactive</Badge>}
                       </li>

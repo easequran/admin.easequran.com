@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/data/profile";
 import { revalidatePath } from "next/cache";
 import type { AttendanceStatus } from "@/lib/types/database";
+import { syncClassBilling } from "@/lib/billing/sync-class-billing";
 
 /**
  * A teacher may only touch attendance for their own classes -- without this
@@ -64,9 +65,22 @@ export async function markAttendance(occurrenceId: string, formData: FormData) {
   // directly from the Trials page.
   const { data: occurrence } = await supabase
     .from("class_occurrences")
-    .select("is_trial, lead_id")
+    .select("is_trial, lead_id, student_id")
     .eq("id", occurrenceId)
     .single();
+
+  // A regular (non-trial) class that's now completed/no_show may complete a
+  // billing block -- generate the block invoice if so. Billing must never
+  // block the teacher from saving attendance, so failures are swallowed here
+  // (the nightly cron re-runs the same sync as a safety net).
+  if (occurrence && !occurrence.is_trial && occurrence.student_id) {
+    try {
+      await syncClassBilling(supabase, occurrence.student_id);
+      revalidatePath("/invoices");
+    } catch (err) {
+      console.error("syncClassBilling failed after markAttendance", err);
+    }
+  }
 
   if (occurrence?.is_trial && occurrence.lead_id) {
     const { data: lead } = await supabase.from("leads").select("status").eq("id", occurrence.lead_id).single();

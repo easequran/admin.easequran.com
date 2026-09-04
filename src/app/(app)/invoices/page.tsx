@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/data/profile";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { generateMonthlyInvoices, markInvoicePaid } from "@/lib/actions/invoices";
+import { generateMonthlyInvoices, markInvoicePaid, syncClassBlockInvoices } from "@/lib/actions/invoices";
 import { InvoiceRowActions } from "@/components/invoices/invoice-row-actions";
 import { PageHeader } from "@/components/ui/page-header";
 import { PrintInvoicesButton } from "@/components/invoices/print-invoices-button";
@@ -60,16 +60,23 @@ export default async function InvoicesPage() {
         title="Invoices & Fees"
         icon={Receipt}
         tone="info"
-        description="Monthly billing across all students."
+        description="Monthly fees and per-class-block invoices across all students."
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <PrintInvoicesButton />
             {profile.role === "admin" && (
-              <form action={generateMonthlyInvoices}>
-                <Button type="submit" variant="accent">
-                  Generate this month&apos;s invoices
-                </Button>
-              </form>
+              <>
+                <form action={syncClassBlockInvoices}>
+                  <Button type="submit" variant="outline">
+                    Sync class-block invoices
+                  </Button>
+                </form>
+                <form action={generateMonthlyInvoices}>
+                  <Button type="submit" variant="accent">
+                    Generate this month&apos;s invoices
+                  </Button>
+                </form>
+              </>
             )}
           </div>
         }
@@ -109,7 +116,9 @@ export default async function InvoicesPage() {
                   {inv.students?.full_name}
                 </td>
                 <td className={cn(TABLE_CELL_CLASS, TABLE_CELL_SECONDARY_CLASS)}>
-                  {inv.period_start} → {inv.period_end}
+                  {inv.billing_mode === "per_block" && inv.classes_count
+                    ? `${inv.classes_count} classes · ${inv.period_start} → ${inv.period_end}`
+                    : `${inv.period_start} → ${inv.period_end}`}
                 </td>
                 <td className={cn(TABLE_CELL_CLASS, TABLE_CELL_SECONDARY_CLASS)}>
                   {inv.currency} {Number(inv.amount).toFixed(2)}

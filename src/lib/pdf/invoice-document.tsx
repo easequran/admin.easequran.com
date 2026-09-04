@@ -17,6 +17,7 @@ export interface InvoicePdfData {
   totalAmount: number;
   periodStart: string;
   periodEnd: string;
+  classesCount: number | null;
   dueDate: string;
   status: string;
   invoiceNumber: string;
@@ -134,8 +135,9 @@ export function InvoiceDocument({ data }: { data: InvoicePdfData }) {
 
         <View style={styles.metaRow}>
           <View>
-            <Text style={styles.metaLabel}>Billing period</Text>
+            <Text style={styles.metaLabel}>{data.classesCount ? "Classes billed" : "Billing period"}</Text>
             <Text style={styles.metaValue}>
+              {data.classesCount ? `${data.classesCount} classes  ·  ` : ""}
               {formatDate(data.periodStart)} - {formatDate(data.periodEnd)}
             </Text>
           </View>

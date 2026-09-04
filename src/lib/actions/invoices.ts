@@ -7,13 +7,18 @@ import { redirect } from "next/navigation";
 import { DateTime } from "luxon";
 import type { InvoiceStatus } from "@/lib/types/database";
 import { withToast } from "@/lib/toast";
+import { syncAllClassBilling } from "@/lib/billing/sync-class-billing";
 
-/** Generates this month's invoice for every active fee plan that doesn't already have one for the current period. */
+/** Generates this month's invoice for every active *monthly* fee plan that doesn't already have one for the current period. */
 export async function generateMonthlyInvoices() {
   await requireAdmin();
   const supabase = await createClient();
 
-  const { data: plans } = await supabase.from("fee_plans").select("*").eq("active", true);
+  const { data: plans } = await supabase
+    .from("fee_plans")
+    .select("*")
+    .eq("active", true)
+    .eq("billing_mode", "monthly");
   if (!plans || plans.length === 0) return;
 
   const now = DateTime.utc();
@@ -44,6 +49,28 @@ export async function generateMonthlyInvoices() {
   }
 
   revalidatePath("/invoices");
+}
+
+/**
+ * Generates class-block invoices for every active per_block fee plan whose
+ * students have reached a full block since the last run. Normally this happens
+ * automatically when attendance is marked; this button is a manual catch-up.
+ */
+export async function syncClassBlockInvoices() {
+  await requireAdmin();
+  const supabase = await createClient();
+
+  const created = await syncAllClassBilling(supabase);
+
+  revalidatePath("/invoices");
+  redirect(
+    withToast(
+      "/invoices",
+      created > 0
+        ? `${created} class-block invoice${created === 1 ? "" : "s"} generated`
+        : "No new class-block invoices due",
+    ),
+  );
 }
 
 export async function markInvoicePaid(invoiceId: string, formData: FormData) {
