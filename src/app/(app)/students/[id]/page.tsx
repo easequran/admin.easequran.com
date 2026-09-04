@@ -72,29 +72,24 @@ export default async function StudentDetailPage({
   const pastFeePlans = allFeePlans.filter((p) => p.id !== activeFeePlan?.id);
   const allInvoices = invoices ?? [];
 
-  // For a per_block plan, how many billable classes are already banked toward
-  // the next auto-invoice (absent counts, excused doesn't, only since the
-  // plan's "count from" date, and only classes not already on an invoice).
+  // Advance per_block plan: how many classes of the currently-paid set have
+  // been delivered (absent counts, excused doesn't, only since the plan's
+  // "count from" date). When this hits `per`, the next set's invoice fires.
   let blockProgress: { done: number; per: number; remaining: number } | null = null;
   if (activeFeePlan?.billing_mode === "per_block" && activeFeePlan.classes_per_block) {
-    const [{ data: occ }, { data: invoiced }] = await Promise.all([
-      supabase
-        .from("class_occurrences")
-        .select("id, start_at, attendance(status)")
-        .eq("student_id", id)
-        .in("status", ["completed", "no_show"]),
-      supabase.from("invoice_class_occurrences").select("occurrence_id"),
-    ]);
-    const invoicedIds = new Set((invoiced ?? []).map((r) => r.occurrence_id));
+    const { data: occ } = await supabase
+      .from("class_occurrences")
+      .select("start_at, attendance(status)")
+      .eq("student_id", id)
+      .in("status", ["completed", "no_show"]);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const billable = ((occ ?? []) as any[]).filter(
+    const delivered = ((occ ?? []) as any[]).filter(
       (r) =>
-        !invoicedIds.has(r.id) &&
         r.attendance?.status !== "excused" &&
         (!activeFeePlan.block_billing_since || r.start_at.slice(0, 10) >= activeFeePlan.block_billing_since),
     ).length;
     const per = activeFeePlan.classes_per_block as number;
-    const done = billable % per;
+    const done = delivered % per;
     blockProgress = { done, per, remaining: per - done };
   }
 
@@ -251,18 +246,18 @@ export default async function StudentDetailPage({
                 activeFeePlan.billing_mode === "per_block" ? (
                   <div className="mb-3 text-sm text-primary-900">
                     <p>
-                      {activeFeePlan.currency} {Number(activeFeePlan.block_amount).toFixed(2)} every{" "}
-                      {activeFeePlan.classes_per_block} classes · due {activeFeePlan.grace_days} day
-                      {activeFeePlan.grace_days === 1 ? "" : "s"} after the last class ·{" "}
-                      {activeFeePlan.classes_per_week} classes/week
+                      {activeFeePlan.currency} {Number(activeFeePlan.block_amount).toFixed(2)} per{" "}
+                      {activeFeePlan.classes_per_block} classes, paid in advance · due{" "}
+                      {activeFeePlan.grace_days} day{activeFeePlan.grace_days === 1 ? "" : "s"} after each
+                      invoice · {activeFeePlan.classes_per_week} classes/week
                     </p>
                     <p className="mt-1 text-xs text-slate-500">
                       Counting classes since{" "}
                       {DateTime.fromISO(activeFeePlan.block_billing_since).toFormat("d MMM yyyy")}
                       {blockProgress
-                        ? ` · ${blockProgress.done}/${blockProgress.per} banked, ${blockProgress.remaining} more class${
+                        ? ` · ${blockProgress.done}/${blockProgress.per} into the current set, ${blockProgress.remaining} more class${
                             blockProgress.remaining === 1 ? "" : "es"
-                          } until the next invoice`
+                          } until the next invoice is raised`
                         : ""}
                     </p>
                   </div>

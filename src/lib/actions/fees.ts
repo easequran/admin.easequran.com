@@ -92,6 +92,17 @@ export async function createFeePlan(formData: FormData) {
         : `${currency} ${shared.monthly_amount}/mo, billing day ${shared.billing_day}, ${studentIds.length} plan(s) created by ${profile.full_name}`,
   });
 
+  // Advance billing: raise each student's first set invoice right away.
+  if (billing_mode === "per_block") {
+    for (const sid of studentIds) {
+      try {
+        await syncClassBilling(supabase, sid);
+      } catch (err) {
+        console.error("syncClassBilling failed after createFeePlan", err);
+      }
+    }
+  }
+
   revalidatePath("/fees");
   for (const id of studentIds) revalidatePath(`/students/${id}`);
   revalidatePath("/invoices");

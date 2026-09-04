@@ -55,6 +55,7 @@ export async function getInvoicePdfData(invoiceId: string): Promise<InvoicePdfDa
     periodStart: invoice.period_start,
     periodEnd: invoice.period_end,
     classesCount: invoice.billing_mode === "per_block" ? invoice.classes_count ?? null : null,
+    blockIndex: invoice.billing_mode === "per_block" ? invoice.block_index ?? null : null,
     dueDate: invoice.due_date,
     status: invoice.status,
     invoiceNumber: `INV-${monthTag}-${shortId}`,

@@ -184,12 +184,8 @@ export interface Invoice {
   billing_mode: BillingMode;
   /** per_block invoices: how many classes this invoice covers. Null for monthly. */
   classes_count: number | null;
-  created_at: string;
-}
-
-export interface InvoiceClassOccurrence {
-  invoice_id: string;
-  occurrence_id: string;
+  /** per_block invoices: 1-based set number within the fee plan (set 1 = first N classes, paid in advance). */
+  block_index: number | null;
   created_at: string;
 }
 
