@@ -68,7 +68,7 @@ export function FeePlanRowActions({ feePlan, studentName, today }: FeePlanRowAct
                   onChange={(e) => setBillingMode(e.target.value as "monthly" | "per_block")}
                 >
                   <option value="monthly">Monthly (calendar month)</option>
-                  <option value="per_block">Per class-block (every N classes)</option>
+                  <option value="per_block">Fixed fee per set of classes (paid in advance)</option>
                 </Select>
               </div>
 
@@ -108,7 +108,7 @@ export function FeePlanRowActions({ feePlan, studentName, today }: FeePlanRowAct
                 <>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <Label htmlFor={`cpb-${feePlan.id}`}>Classes / block</Label>
+                      <Label htmlFor={`cpb-${feePlan.id}`}>Classes in set</Label>
                       <Input
                         id={`cpb-${feePlan.id}`}
                         name="classes_per_block"
@@ -116,11 +116,11 @@ export function FeePlanRowActions({ feePlan, studentName, today }: FeePlanRowAct
                         min={1}
                         max={60}
                         required
-                        defaultValue={feePlan.classes_per_block ?? 8}
+                        defaultValue={feePlan.classes_per_block ?? 20}
                       />
                     </div>
                     <div>
-                      <Label htmlFor={`block_amount-${feePlan.id}`}>Amount / block</Label>
+                      <Label htmlFor={`block_amount-${feePlan.id}`}>Fixed fee / set</Label>
                       <Input
                         id={`block_amount-${feePlan.id}`}
                         name="block_amount"
@@ -157,8 +157,10 @@ export function FeePlanRowActions({ feePlan, studentName, today }: FeePlanRowAct
                     </div>
                   </div>
                   <p className="text-xs text-slate-400">
-                    Absent classes count toward a block; excused classes don&apos;t. Moving
-                    &quot;count from&quot; to an earlier date will bill already-completed classes.
+                    Fees are collected in advance: switching to this mode raises the first invoice
+                    now. Absent classes count toward finishing a set; excused don&apos;t. Moving
+                    &quot;count from&quot; earlier can raise catch-up invoices for sets already
+                    delivered.
                   </p>
                 </>
               )}

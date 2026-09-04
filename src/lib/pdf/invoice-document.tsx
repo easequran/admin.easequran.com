@@ -18,6 +18,7 @@ export interface InvoicePdfData {
   periodStart: string;
   periodEnd: string;
   classesCount: number | null;
+  blockIndex: number | null;
   dueDate: string;
   status: string;
   invoiceNumber: string;
@@ -135,10 +136,11 @@ export function InvoiceDocument({ data }: { data: InvoicePdfData }) {
 
         <View style={styles.metaRow}>
           <View>
-            <Text style={styles.metaLabel}>{data.classesCount ? "Classes billed" : "Billing period"}</Text>
+            <Text style={styles.metaLabel}>{data.classesCount ? "For" : "Billing period"}</Text>
             <Text style={styles.metaValue}>
-              {data.classesCount ? `${data.classesCount} classes  ·  ` : ""}
-              {formatDate(data.periodStart)} - {formatDate(data.periodEnd)}
+              {data.classesCount
+                ? `${data.classesCount} classes${data.blockIndex ? ` (set ${data.blockIndex})` : ""} · paid in advance`
+                : `${formatDate(data.periodStart)} - ${formatDate(data.periodEnd)}`}
             </Text>
           </View>
           {data.guardianName && (

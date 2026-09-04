@@ -42,32 +42,28 @@ export default async function FeesPage({
   const studentIdsWithPlan = new Set(plans.map((p) => p.student_id));
   const studentsWithoutPlan = (students ?? []).filter((s) => !studentIdsWithPlan.has(s.id));
 
-  // Block-billing progress: how many billable, not-yet-invoiced classes each
-  // per_block student has accumulated toward their next invoice.
+  // Advance block billing: how many classes of the currently-paid set have
+  // been delivered. When this reaches classes_per_block, the next set's
+  // invoice is generated automatically.
   const blockPlans = plans.filter((p) => p.billing_mode === "per_block");
   const progressByPlan = new Map<string, number>();
   if (blockPlans.length > 0) {
     const blockStudentIds = blockPlans.map((p) => p.student_id);
-    const [{ data: occ }, { data: invoiced }] = await Promise.all([
-      supabase
-        .from("class_occurrences")
-        .select("id, student_id, start_at, attendance(status)")
-        .in("student_id", blockStudentIds)
-        .in("status", ["completed", "no_show"]),
-      supabase.from("invoice_class_occurrences").select("occurrence_id"),
-    ]);
-    const invoicedIds = new Set((invoiced ?? []).map((r) => r.occurrence_id));
+    const { data: occ } = await supabase
+      .from("class_occurrences")
+      .select("student_id, start_at, attendance(status)")
+      .in("student_id", blockStudentIds)
+      .in("status", ["completed", "no_show"]);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rows = (occ ?? []) as any[];
     for (const p of blockPlans) {
-      const billable = rows.filter(
+      const delivered = rows.filter(
         (r) =>
           r.student_id === p.student_id &&
-          !invoicedIds.has(r.id) &&
           r.attendance?.status !== "excused" &&
           (!p.block_billing_since || r.start_at.slice(0, 10) >= p.block_billing_since),
       ).length;
-      progressByPlan.set(p.id, p.classes_per_block ? billable % p.classes_per_block : billable);
+      progressByPlan.set(p.id, p.classes_per_block ? delivered % p.classes_per_block : delivered);
     }
   }
 
@@ -163,9 +159,9 @@ export default async function FeesPage({
                         <td className={cn(TABLE_CELL_CLASS, TABLE_CELL_SECONDARY_CLASS)}>
                           {isBlock ? (
                             <span>
-                              Per block · due +{p.grace_days}d
+                              Advance · due +{p.grace_days}d
                               <span className="ml-1 block text-xs text-slate-400">
-                                {progress} / {p.classes_per_block} toward next invoice
+                                {progress} / {p.classes_per_block} classes into current set
                               </span>
                             </span>
                           ) : (

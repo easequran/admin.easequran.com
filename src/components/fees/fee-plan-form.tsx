@@ -56,7 +56,7 @@ export function FeePlanForm({
           onChange={(e) => setMode(e.target.value as "monthly" | "per_block")}
         >
           <option value="monthly">Monthly (calendar month)</option>
-          <option value="per_block">Per class-block (every N classes)</option>
+          <option value="per_block">Fixed fee per set of classes (paid in advance)</option>
         </Select>
       </div>
 
@@ -79,35 +79,36 @@ export function FeePlanForm({
       ) : (
         <>
           <div>
-            <Label htmlFor="classes_per_block">Classes per block</Label>
+            <Label htmlFor="classes_per_block">Number of classes in the set</Label>
             <Input
               id="classes_per_block"
               name="classes_per_block"
               type="number"
               min={1}
               max={60}
-              defaultValue={8}
+              defaultValue={20}
               required
             />
             <p className="mt-1 text-xs text-slate-400">
-              An invoice is generated automatically once this many classes are completed. Absent
-              classes count; excused classes don&apos;t.
+              The first invoice is raised now for this set. The next invoice is generated
+              automatically the moment all of them are completed. Absent classes count; excused
+              classes don&apos;t.
             </p>
           </div>
           <div>
-            <Label htmlFor="block_amount">Amount per block</Label>
+            <Label htmlFor="block_amount">Fixed fee for the set</Label>
             <Input id="block_amount" name="block_amount" type="number" step="0.01" min="0.01" required />
           </div>
           <div>
-            <Label htmlFor="grace_days">Days until due (after last class)</Label>
+            <Label htmlFor="grace_days">Days until due (from invoice date)</Label>
             <Input id="grace_days" name="grace_days" type="number" min={0} max={60} defaultValue={3} required />
           </div>
           <div>
             <Label htmlFor="block_billing_since">Count classes from</Label>
             <Input id="block_billing_since" name="block_billing_since" type="date" defaultValue={today} required />
             <p className="mt-1 text-xs text-slate-400">
-              Only classes on or after this date count. Leave as today so earlier classes aren&apos;t
-              billed again.
+              Only classes on or after this date count toward finishing the current set. Leave as
+              today for a fresh start.
             </p>
           </div>
         </>

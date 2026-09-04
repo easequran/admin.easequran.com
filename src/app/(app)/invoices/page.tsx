@@ -116,8 +116,8 @@ export default async function InvoicesPage() {
                   {inv.students?.full_name}
                 </td>
                 <td className={cn(TABLE_CELL_CLASS, TABLE_CELL_SECONDARY_CLASS)}>
-                  {inv.billing_mode === "per_block" && inv.classes_count
-                    ? `${inv.classes_count} classes · ${inv.period_start} → ${inv.period_end}`
+                  {inv.billing_mode === "per_block"
+                    ? `${inv.block_index ? `Set ${inv.block_index}` : "Set"} · ${inv.classes_count ?? ""} classes (advance)`
                     : `${inv.period_start} → ${inv.period_end}`}
                 </td>
                 <td className={cn(TABLE_CELL_CLASS, TABLE_CELL_SECONDARY_CLASS)}>
