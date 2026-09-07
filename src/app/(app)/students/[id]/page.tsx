@@ -72,6 +72,21 @@ export default async function StudentDetailPage({
   const pastFeePlans = allFeePlans.filter((p) => p.id !== activeFeePlan?.id);
   const allInvoices = invoices ?? [];
 
+  // A sibling plan is one fee_plans row per student sharing a sibling_group_id
+  // (see createFeePlan) -- surface the link so it's clear this student's fee is
+  // managed together with their siblings, not in isolation.
+  let siblingPlanNames: string[] = [];
+  if (activeFeePlan?.sibling_group_id) {
+    const { data: sibs } = await supabase
+      .from("fee_plans")
+      .select("student_id, students(full_name)")
+      .eq("sibling_group_id", activeFeePlan.sibling_group_id)
+      .eq("active", true)
+      .neq("student_id", id);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    siblingPlanNames = ((sibs ?? []) as any[]).map((s) => s.students?.full_name ?? "Student");
+  }
+
   // Advance per_block plan: how many classes of the currently-paid set have
   // been delivered (absent counts, excused doesn't, only since the plan's
   // "count from" date). When this hits `per`, the next set's invoice fires.
@@ -269,6 +284,15 @@ export default async function StudentDetailPage({
                 )
               ) : (
                 <p className="mb-3 text-sm text-slate-500">No active fee plan set.</p>
+              )}
+              {activeFeePlan?.sibling_group_id && (
+                <p className="-mt-1 mb-3 text-xs font-medium text-accent-700">
+                  Shared sibling plan
+                  {siblingPlanNames.length > 0 && (
+                    <span className="font-normal text-slate-500"> · linked with {siblingPlanNames.join(", ")}</span>
+                  )}
+                  . Editing it on the Fees page can update all siblings at once.
+                </p>
               )}
               <Link
                 href={`/fees?student=${id}`}

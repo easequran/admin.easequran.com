@@ -114,6 +114,44 @@ export async function createFeePlan(formData: FormData) {
   );
 }
 
+/**
+ * Resolves which fee_plans rows an edit/deactivate should touch. A plan
+ * created for siblings is one row per student sharing a sibling_group_id
+ * (see createFeePlan) -- when `apply_to_siblings` is set we fan the change
+ * out to the whole group so admin edits "the sibling plan" once, not N
+ * times. Falls back to the single row when the plan isn't in a group.
+ */
+async function resolveFeePlanTargets(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  feePlanId: string,
+  studentId: string,
+  applyToSiblings: boolean,
+): Promise<{ ids: string[]; studentIds: string[] }> {
+  if (!applyToSiblings) return { ids: [feePlanId], studentIds: [studentId] };
+
+  const { data: current } = await supabase
+    .from("fee_plans")
+    .select("sibling_group_id")
+    .eq("id", feePlanId)
+    .single();
+  if (!current?.sibling_group_id) return { ids: [feePlanId], studentIds: [studentId] };
+
+  const { data: groupRows } = await supabase
+    .from("fee_plans")
+    .select("id, student_id")
+    .eq("sibling_group_id", current.sibling_group_id)
+    .eq("active", true);
+  if (!groupRows || groupRows.length === 0) return { ids: [feePlanId], studentIds: [studentId] };
+
+  return {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ids: groupRows.map((r: any) => r.id),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    studentIds: groupRows.map((r: any) => r.student_id),
+  };
+}
+
 export async function updateFeePlan(feePlanId: string, studentId: string, formData: FormData) {
   await requireAdmin();
   const supabase = await createClient();
@@ -121,6 +159,14 @@ export async function updateFeePlan(feePlanId: string, studentId: string, formDa
   const billing_mode =
     String(formData.get("billing_mode") || "monthly") === "per_block" ? "per_block" : "monthly";
   const shared = parseModeFields(billing_mode, formData);
+  const applyToSiblings = formData.get("apply_to_siblings") === "on";
+
+  const { ids, studentIds } = await resolveFeePlanTargets(
+    supabase,
+    feePlanId,
+    studentId,
+    applyToSiblings,
+  );
 
   const { error } = await supabase
     .from("fee_plans")
@@ -130,32 +176,42 @@ export async function updateFeePlan(feePlanId: string, studentId: string, formDa
       billing_mode,
       ...shared,
     })
-    .eq("id", feePlanId);
+    .in("id", ids);
   if (error) throw new Error(error.message);
 
   // Now on per_block: an older "count from" date may mean a block is already
   // complete -- generate it. Never let a billing hiccup fail the plan edit.
   if (billing_mode === "per_block") {
-    try {
-      await syncClassBilling(supabase, studentId);
-    } catch (err) {
-      console.error("syncClassBilling failed after updateFeePlan", err);
+    for (const sid of studentIds) {
+      try {
+        await syncClassBilling(supabase, sid);
+      } catch (err) {
+        console.error("syncClassBilling failed after updateFeePlan", err);
+      }
     }
   }
 
   revalidatePath("/fees");
-  revalidatePath(`/students/${studentId}`);
+  for (const sid of studentIds) revalidatePath(`/students/${sid}`);
   revalidatePath("/invoices");
 }
 
 /** Deactivates rather than deletes so past invoices keep their fee_plan_id reference intact. */
-export async function deactivateFeePlan(feePlanId: string, studentId: string) {
+export async function deactivateFeePlan(feePlanId: string, studentId: string, formData?: FormData) {
   await requireAdmin();
   const supabase = await createClient();
 
-  const { error } = await supabase.from("fee_plans").update({ active: false }).eq("id", feePlanId);
+  const applyToSiblings = formData?.get("apply_to_siblings") === "on";
+  const { ids, studentIds } = await resolveFeePlanTargets(
+    supabase,
+    feePlanId,
+    studentId,
+    applyToSiblings,
+  );
+
+  const { error } = await supabase.from("fee_plans").update({ active: false }).in("id", ids);
   if (error) throw new Error(error.message);
 
   revalidatePath("/fees");
-  revalidatePath(`/students/${studentId}`);
+  for (const sid of studentIds) revalidatePath(`/students/${sid}`);
 }
