@@ -18,6 +18,7 @@ const ACTION_LABELS: Record<string, string> = {
   "student.status_changed": "Changed student status",
   "student.bulk_status_changed": "Bulk-changed student status",
   "teacher.deleted": "Deleted teacher",
+  "fee_plan.create": "Created fee plan",
 };
 
 const ACTION_TONE: Record<string, "danger" | "warning" | "info"> = {

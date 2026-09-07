@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/data/profile";
 import { SectionCard } from "@/components/ui/section-card";
-import { Input, Label, Select } from "@/components/ui/input";
+import { Label, Select } from "@/components/ui/input";
+import { FutureDateTimeInput } from "@/components/ui/future-datetime-input";
 import { TimezoneSelect } from "@/components/ui/timezone-select";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { ConfirmButton } from "@/components/ui/confirm-button";
@@ -92,10 +93,9 @@ export default async function EditTrialPage({
             </div>
             <div>
               <Label htmlFor="start_at_local">Date & time</Label>
-              <Input
+              <FutureDateTimeInput
                 id="start_at_local"
                 name="start_at_local"
-                type="datetime-local"
                 defaultValue={startLocal}
                 required
               />
