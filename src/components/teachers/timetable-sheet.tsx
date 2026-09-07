@@ -22,25 +22,39 @@ export const SLOT_STARTS = Array.from(
  * from the next day used to mislabel classes that genuinely start on the
  * next calendar day (in the teacher's own timezone) as belonging to this
  * one.
+ *
+ * Each class is placed in the 30-minute slot it *starts within* -- a class
+ * that starts at, say, 14:10 shows in the 14:00 row -- so the column always
+ * has exactly SLOT_STARTS.length cells no matter what minute a class starts
+ * on. (The old exact `startMinutes === m` match silently dropped any
+ * off-grid class and returned a short column, which then crashed the
+ * table renderer.)
  */
 export function buildDayColumn(day: TimetableDay | undefined): SheetCell[] {
-  const blocks = day?.busy ?? [];
+  const blocks = [...(day?.busy ?? [])].sort((a, b) => a.startMinutes - b.startMinutes);
+  const slotCount = SLOT_STARTS.length;
+  const cells: SheetCell[] = Array.from({ length: slotCount }, () => ({ kind: "empty" as const }));
 
-  const slots: SheetCell[] = [];
-  for (let m = GRID_START_MIN; m < GRID_END_MIN; m += SLOT_MIN) {
-    const busy = blocks.find((b) => b.startMinutes === m);
-    if (busy) {
-      const clampedEnd = Math.min(busy.endMinutes, GRID_END_MIN);
-      const span = Math.max(1, Math.round((clampedEnd - busy.startMinutes) / SLOT_MIN));
-      slots.push({ kind: "busy", label: busy.label ?? "Booked", span, isTrial: Boolean(busy.isTrial) });
-      for (let i = 1; i < span; i++) slots.push({ kind: "skip" });
-      continue;
+  for (const b of blocks) {
+    const startIdx = Math.floor((b.startMinutes - GRID_START_MIN) / SLOT_MIN);
+    if (startIdx < 0 || startIdx >= slotCount) continue;
+    if (cells[startIdx].kind !== "empty") continue; // overlapping block -- keep the earlier one
+
+    const clampedEnd = Math.min(b.endMinutes, GRID_END_MIN);
+    const endIdx = Math.ceil((clampedEnd - GRID_START_MIN) / SLOT_MIN);
+    let span = Math.min(Math.max(1, endIdx - startIdx), slotCount - startIdx);
+    for (let i = 1; i < span; i++) {
+      if (cells[startIdx + i].kind !== "empty") {
+        span = i; // don't let a rowSpan run over a following block
+        break;
+      }
     }
-    const withinBusy = blocks.some((b) => m > b.startMinutes && m < b.endMinutes);
-    if (withinBusy) continue; // already covered by a rowSpan above
-    slots.push({ kind: "empty" });
+
+    cells[startIdx] = { kind: "busy", label: b.label ?? "Booked", span, isTrial: Boolean(b.isTrial) };
+    for (let i = 1; i < span; i++) cells[startIdx + i] = { kind: "skip" };
   }
-  return slots;
+
+  return cells;
 }
 
 /** Renders the Excel-style "Timing" + day-column sheet shared by the day and week timetable views. */
@@ -74,7 +88,7 @@ export function TimetableSheetTable({
                 {formatMinutes(m)}
               </td>
               {columns.map((col) => {
-                const cell = col.cells[rowIndex];
+                const cell = col.cells[rowIndex] ?? { kind: "empty" as const };
                 if (cell.kind === "skip") return null;
                 if (cell.kind === "busy") {
                   return (
