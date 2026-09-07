@@ -25,6 +25,7 @@ type RawOccurrenceRow = {
   end_at: string;
   status: string;
   is_trial: boolean;
+  recurring_schedule_id: string | null;
   students: { full_name: string } | null;
   teachers: { profiles: { full_name: string } | null } | null;
 };
@@ -82,7 +83,7 @@ export function AdminDashboardLive({
         supabase.from("leads").select("*", { count: "exact", head: true }).not("status", "in", "(converted,lost)"),
         supabase
           .from("class_occurrences")
-          .select("id, start_at, end_at, status, is_trial, students(full_name), teachers(profile_id, profiles(full_name))")
+          .select("id, start_at, end_at, status, is_trial, recurring_schedule_id, students(full_name), teachers(profile_id, profiles(full_name))")
           .gte("start_at", startOfDay)
           .lte("start_at", endOfDay)
           .order("start_at"),
@@ -115,6 +116,7 @@ export function AdminDashboardLive({
             end_at: c.end_at,
             status: c.status,
             is_trial: c.is_trial,
+            isMakeup: !c.is_trial && !c.recurring_schedule_id && Boolean(c.students?.full_name),
             studentName: c.students?.full_name ?? "Trial",
             teacherName: c.teachers?.profiles?.full_name ?? "—",
           })),

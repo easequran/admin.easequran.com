@@ -34,14 +34,14 @@ export async function TeacherDashboardView({
   const [{ data: todayClasses }, { data: upcoming }] = await Promise.all([
     supabase
       .from("class_occurrences")
-      .select("id, start_at, status, is_trial, students(full_name), teachers!inner(profile_id)")
+      .select("id, start_at, status, is_trial, recurring_schedule_id, students(full_name), teachers!inner(profile_id)")
       .eq("teachers.profile_id", profileId)
       .gte("start_at", todayStart.toUTC().toISO()!)
       .lte("start_at", todayEnd.toUTC().toISO()!)
       .order("start_at"),
     supabase
       .from("class_occurrences")
-      .select("id, start_at, status, is_trial, students(full_name), teachers!inner(profile_id)")
+      .select("id, start_at, status, is_trial, recurring_schedule_id, students(full_name), teachers!inner(profile_id)")
       .eq("teachers.profile_id", profileId)
       .gte("start_at", DateTime.utc().toISO()!)
       .order("start_at")
@@ -55,6 +55,8 @@ export async function TeacherDashboardView({
       start_at: c.start_at,
       status: c.status,
       is_trial: c.is_trial,
+      // Non-trial one-off with no recurring parent = makeup class.
+      isMakeup: !c.is_trial && !c.recurring_schedule_id && Boolean(c.students?.full_name),
       studentName: c.students?.full_name ?? "Trial student",
     }));
   const { data: availability } = await supabase

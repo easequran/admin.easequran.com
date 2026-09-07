@@ -133,6 +133,70 @@ export async function removeStudentSchedule(scheduleId: string, studentId: strin
   redirect(withToast(`/students/${studentId}`, "Class removed from schedule"));
 }
 
+/**
+ * Bulk version of removeStudentSchedule: deactivates every active recurring
+ * schedule for a student at once and clears their not-yet-happened
+ * occurrences (and the matching calendar events), leaving past attendance
+ * history untouched -- backs the "Remove all" action on the student's
+ * Weekly schedule card.
+ */
+export async function removeAllStudentSchedules(studentId: string) {
+  await requireAdmin();
+  const supabase = await createClient();
+
+  const { data: schedules } = await supabase
+    .from("recurring_schedules")
+    .select("id, teacher_id")
+    .eq("student_id", studentId)
+    .eq("active", true);
+
+  if (!schedules || schedules.length === 0) {
+    redirect(withToast(`/students/${studentId}`, "No recurring classes to remove"));
+  }
+
+  const scheduleIds = schedules.map((s) => s.id);
+
+  const { error } = await supabase
+    .from("recurring_schedules")
+    .update({ active: false, end_date: new Date().toISOString().slice(0, 10) })
+    .in("id", scheduleIds);
+  if (error) throw new Error(error.message);
+
+  const { data: futureOccurrences } = await supabase
+    .from("class_occurrences")
+    .select("id, calendar_event_id")
+    .in("recurring_schedule_id", scheduleIds)
+    .eq("status", "scheduled")
+    .gte("start_at", new Date().toISOString());
+
+  for (const occurrence of futureOccurrences ?? []) {
+    if (occurrence.calendar_event_id) {
+      await deleteCalendarEvent(occurrence.calendar_event_id).catch(() => {});
+    }
+  }
+
+  if (futureOccurrences && futureOccurrences.length > 0) {
+    await supabase
+      .from("class_occurrences")
+      .delete()
+      .in("id", futureOccurrences.map((o) => o.id));
+  }
+
+  revalidatePath(`/students/${studentId}`);
+  revalidatePath("/schedule");
+  revalidatePath("/dashboard");
+  revalidatePath("/attendance");
+  for (const teacherId of new Set(schedules.map((s) => s.teacher_id).filter(Boolean))) {
+    revalidatePath(`/teachers/${teacherId}`);
+  }
+  redirect(
+    withToast(
+      `/students/${studentId}`,
+      `${scheduleIds.length} recurring class${scheduleIds.length === 1 ? "" : "es"} removed from schedule`,
+    ),
+  );
+}
+
 export async function updateStudent(studentId: string, formData: FormData) {
   await requireAdmin();
   const supabase = await createClient();

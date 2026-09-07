@@ -6,6 +6,7 @@ import { SectionCard } from "@/components/ui/section-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { WeeklyScheduleFields } from "@/components/students/weekly-schedule-fields";
+import { RemoveAllSchedulesButton } from "@/components/students/remove-all-schedules-button";
 import { PageHeader } from "@/components/ui/page-header";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -199,7 +200,16 @@ export default async function StudentDetailPage({
         </div>
 
         <div className="space-y-6">
-          <SectionCard icon={CalendarClock} tone="success" title="Weekly schedule">
+          <SectionCard
+            icon={CalendarClock}
+            tone="success"
+            title="Weekly schedule"
+            actions={
+              schedules && schedules.length > 0 ? (
+                <RemoveAllSchedulesButton studentId={id} count={schedules.length} />
+              ) : undefined
+            }
+          >
               {!schedules || schedules.length === 0 ? (
                 <p className="mb-4 text-sm text-slate-500">No recurring classes yet.</p>
               ) : (

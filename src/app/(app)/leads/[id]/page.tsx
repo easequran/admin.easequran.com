@@ -109,7 +109,11 @@ export default async function LeadDetailPage({
                       ? `/students/${lead.converted_student_id}`
                       : `/leads/${id}/convert`;
                     return (
-                      <a key={s} href={href}>
+                      <a
+                        key={s}
+                        href={href}
+                        className="cursor-pointer rounded-full ring-primary-300 transition hover:ring-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400"
+                      >
                         <Badge tone={lead.status === s ? "accent" : "neutral"}>converted</Badge>
                       </a>
                     );
@@ -121,7 +125,11 @@ export default async function LeadDetailPage({
                   // in that stage with no trial ever having happened.
                   if (s === "trial_scheduled" || s === "trial_completed") {
                     return (
-                      <span key={s} title="Set automatically by booking/completing a trial in Trial classes">
+                      <span
+                        key={s}
+                        className="cursor-default"
+                        title="Set automatically by booking/completing a trial in Trial classes"
+                      >
                         <Badge tone={lead.status === s ? "accent" : "neutral"}>{s.replace("_", " ")}</Badge>
                       </span>
                     );
@@ -133,7 +141,11 @@ export default async function LeadDetailPage({
                   };
                   return (
                     <form key={s} action={boundSet}>
-                      <button type="submit">
+                      <button
+                        type="submit"
+                        title={lead.status === s ? "Current stage" : `Move lead to "${s.replace("_", " ")}"`}
+                        className="cursor-pointer rounded-full ring-primary-300 transition hover:ring-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400"
+                      >
                         <Badge tone={lead.status === s ? "accent" : "neutral"}>{s.replace("_", " ")}</Badge>
                       </button>
                     </form>
