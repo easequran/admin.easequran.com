@@ -17,12 +17,12 @@ import {
 import { cn } from "@/lib/utils/cn";
 import { FOCUS_RING } from "@/lib/utils/focus";
 import { Select } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { SearchInput } from "@/components/ui/search-input";
+import { Button, LinkButton } from "@/components/ui/button";
+import { TableSearch } from "@/components/ui/table-search";
 import { EmptyState } from "@/components/ui/empty-state";
-import { LinkButton } from "@/components/ui/button";
 import { downloadCsv } from "@/lib/utils/csv";
 import { bulkUpdateLeadStatus, bulkAssignLeads } from "@/lib/actions/leads";
+import { exportLeadsCsv } from "@/lib/actions/exports";
 import { toast } from "@/lib/toast";
 import type { Lead, LeadStatus } from "@/lib/types/database";
 
@@ -37,32 +37,43 @@ const STAGES: { key: LeadStatus; label: string; tone: "neutral" | "info" | "warn
   { key: "lost", label: "Lost", tone: "danger", stripe: "border-t-red-400" },
 ];
 
-// "trial_scheduled" / "trial_completed" are excluded from manual status
-// pickers -- they should only move by actually booking/completing a trial
-// in Trial classes, otherwise a lead can sit at "trial completed" with no
-// trial having ever happened (which is exactly what set-by-hand was doing).
 const MANUAL_STAGES = STAGES.filter((s) => s.key !== "trial_scheduled" && s.key !== "trial_completed");
 
-export function LeadsBoard({ leads, assignees }: { leads: Lead[]; assignees: { id: string; full_name: string }[] }) {
+const CSV_COLUMNS = [
+  { key: "full_name", label: "Full name" },
+  { key: "email", label: "Email" },
+  { key: "phone", label: "Phone" },
+  { key: "country", label: "Country" },
+  { key: "source", label: "Source" },
+  { key: "status", label: "Status" },
+  { key: "notes", label: "Notes" },
+  { key: "created_at", label: "Created at" },
+] as const;
+
+export function LeadsBoard({
+  leads,
+  assignees,
+  query = "",
+  totalMatching = 0,
+  totalPages = 1,
+}: {
+  leads: Lead[];
+  assignees: { id: string; full_name: string }[];
+  query?: string;
+  totalMatching?: number;
+  totalPages?: number;
+}) {
   const [view, setView] = useState<View>("table");
-  const [query, setQuery] = useState("");
   const [selectMode, setSelectMode] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkStatus, setBulkStatus] = useState<LeadStatus>("contacted");
   const [bulkAssignee, setBulkAssignee] = useState("");
   const [isPending, startTransition] = useTransition();
+  const [isExporting, startExport] = useTransition();
   const now = DateTime.now();
   const assigneeById = useMemo(() => new Map(assignees.map((a) => [a.id, a.full_name])), [assignees]);
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return leads;
-    return leads.filter((l) =>
-      [l.full_name, l.email, l.phone, l.country, l.source, assigneeById.get(l.assigned_to ?? "")]
-        .filter(Boolean)
-        .some((field) => field!.toLowerCase().includes(q)),
-    );
-  }, [leads, query, assigneeById]);
+  const hasQuery = Boolean(query.trim());
+  const paged = totalPages > 1;
 
   function handleRowStatusChange(leadId: string, status: LeadStatus) {
     startTransition(async () => {
@@ -85,22 +96,21 @@ export function LeadsBoard({ leads, assignees }: { leads: Lead[]; assignees: { i
     setSelected(new Set());
   }
 
-  function handleExportCsv() {
+  function handleExportSelected() {
     const rows = leads.filter((l) => selected.has(l.id));
-    downloadCsv(
-      `leads-${DateTime.now().toFormat("yyyy-LL-dd")}.csv`,
-      [
-        { key: "full_name", label: "Full name" },
-        { key: "email", label: "Email" },
-        { key: "phone", label: "Phone" },
-        { key: "country", label: "Country" },
-        { key: "source", label: "Source" },
-        { key: "status", label: "Status" },
-        { key: "notes", label: "Notes" },
-        { key: "created_at", label: "Created at" },
-      ],
-      rows,
-    );
+    downloadCsv(`leads-selected-${DateTime.now().toFormat("yyyy-LL-dd")}.csv`, [...CSV_COLUMNS], rows);
+  }
+
+  function handleExportAll() {
+    startExport(async () => {
+      try {
+        const rows = await exportLeadsCsv(query);
+        downloadCsv(`leads-${DateTime.now().toFormat("yyyy-LL-dd")}.csv`, [...CSV_COLUMNS], rows);
+        toast.success(`Exported ${rows.length} lead${rows.length === 1 ? "" : "s"}`);
+      } catch {
+        toast.error("Export failed");
+      }
+    });
   }
 
   function handleApplyStatus() {
@@ -122,24 +132,11 @@ export function LeadsBoard({ leads, assignees }: { leads: Lead[]; assignees: { i
     });
   }
 
-  if (leads.length === 0) {
-    return (
-      <Card>
-        <EmptyState
-          icon={UserPlus}
-          title="No leads yet"
-          description="Add a lead to start tracking prospective students."
-          action={<LinkButton href="/leads/new">Add lead</LinkButton>}
-        />
-      </Card>
-    );
-  }
-
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="min-w-0 flex-1">
-          <SearchInput value={query} onChange={setQuery} placeholder="Search leads..." />
+          <TableSearch placeholder="Search leads by name, email, phone, country…" />
         </div>
         <div className="flex items-center gap-3">
           <div className="inline-flex rounded-lg border border-primary-100 p-0.5">
@@ -166,6 +163,10 @@ export function LeadsBoard({ leads, assignees }: { leads: Lead[]; assignees: { i
               <LayoutGrid className="h-3.5 w-3.5" /> Board
             </button>
           </div>
+          <Button size="sm" variant="outline" onClick={handleExportAll} disabled={isExporting}>
+            <Download className="h-4 w-4" />
+            {isExporting ? "Exporting…" : hasQuery ? `Export all matching (${totalMatching})` : "Export all"}
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -208,9 +209,13 @@ export function LeadsBoard({ leads, assignees }: { leads: Lead[]; assignees: { i
             </Button>
           </div>
 
-          <Button size="sm" variant="outline" onClick={handleExportCsv} disabled={selected.size === 0}>
-            <Download className="h-4 w-4" /> Export CSV
+          <Button size="sm" variant="outline" onClick={handleExportSelected} disabled={selected.size === 0}>
+            <Download className="h-4 w-4" /> Export selected
           </Button>
+
+          <span className="w-full text-xs text-slate-500 sm:w-auto">
+            Selection and bulk actions apply only to the leads on this page.
+          </span>
 
           <button type="button" onClick={exitSelectMode} className={`ml-auto rounded-md p-1.5 text-primary-700 hover:bg-primary-100 ${FOCUS_RING}`} aria-label="Close">
             <X className="h-4 w-4" />
@@ -220,76 +225,86 @@ export function LeadsBoard({ leads, assignees }: { leads: Lead[]; assignees: { i
 
       {view === "table" ? (
         <LeadsTable
-          leads={filtered}
+          leads={leads}
           assigneeById={assigneeById}
           selectMode={selectMode}
           selected={selected}
           toggleSelected={toggleSelected}
           onStatusChange={handleRowStatusChange}
           now={now}
-          query={query}
+          hasQuery={hasQuery}
         />
       ) : (
-      <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3">
-        {STAGES.map((stage) => {
-          const items = filtered.filter((l) => l.status === stage.key);
-          return (
-            <Card key={stage.key} className={`flex w-[280px] shrink-0 snap-start flex-col border-t-4 ${stage.stripe}`}>
-              <div className="sticky top-0 z-10 flex items-center justify-between border-b border-primary-100 bg-white px-3 py-2.5 rounded-t-[11px]">
-                <Badge tone={stage.tone}>{stage.label}</Badge>
-                <span className="text-xs font-medium text-slate-400">{items.length}</span>
-              </div>
-              <div className="max-h-[70vh] flex-1 space-y-2 overflow-y-auto p-3">
-                {items.map((l) => {
-                  const overdue = l.next_follow_up_at && DateTime.fromISO(l.next_follow_up_at) < now;
-                  const card = (
-                    <div
-                      className={`rounded-lg border p-3 text-sm shadow-sm transition-shadow hover:shadow-md hover:border-primary-200 ${
-                        overdue ? "border-red-200 bg-red-50" : "border-primary-50 bg-white"
-                      }`}
-                    >
-                      <p className="font-medium text-primary-900">{l.full_name}</p>
-                      <p className="text-xs text-slate-500">{l.country ?? l.email ?? "—"}</p>
-                      {l.next_follow_up_at && (
-                        <p className={`mt-1 text-xs font-medium ${overdue ? "text-red-600" : "text-slate-400"}`}>
-                          {overdue ? "Overdue: " : "Follow up: "}
-                          {DateTime.fromISO(l.next_follow_up_at).toRelative()}
-                        </p>
-                      )}
-                    </div>
-                  );
-                  return (
-                    <div key={l.id} className="flex items-start gap-2">
-                      {selectMode && (
-                        <input
-                          type="checkbox"
-                          className="mt-4 h-4 w-4 shrink-0 rounded border-primary-300"
-                          checked={selected.has(l.id)}
-                          onChange={() => toggleSelected(l.id)}
-                        />
-                      )}
-                      {selectMode ? (
-                        <button type="button" className={`min-w-0 flex-1 rounded text-left ${FOCUS_RING}`} onClick={() => toggleSelected(l.id)}>
-                          {card}
-                        </button>
-                      ) : (
-                        <Link key={l.id} href={`/leads/${l.id}`} prefetch={false} className="min-w-0 flex-1">
-                          {card}
-                        </Link>
-                      )}
-                    </div>
-                  );
-                })}
-                {items.length === 0 && (
-                  <p className="px-1 py-6 text-center text-xs text-slate-400">
-                    {query ? "No matches" : "No leads at this stage"}
-                  </p>
-                )}
-              </div>
-            </Card>
-          );
-        })}
-      </div>
+        <div className="space-y-2">
+          {(paged || hasQuery) && (
+            <p className="rounded-lg bg-primary-50 px-3 py-2 text-xs text-primary-700">
+              Board shows the {leads.length} lead{leads.length === 1 ? "" : "s"} on this page
+              {hasQuery ? " matching your search" : ""}
+              {paged ? ` (of ${totalMatching})` : ""}. Use the table view or pagination below to see the rest.
+            </p>
+          )}
+          <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3">
+            {STAGES.map((stage) => {
+              const items = leads.filter((l) => l.status === stage.key);
+              return (
+                <Card key={stage.key} className={`flex w-[280px] shrink-0 snap-start flex-col border-t-4 ${stage.stripe}`}>
+                  <div className="sticky top-0 z-10 flex items-center justify-between border-b border-primary-100 bg-white px-3 py-2.5 rounded-t-[11px]">
+                    <Badge tone={stage.tone}>{stage.label}</Badge>
+                    <span className="text-xs font-medium text-slate-500">{items.length}</span>
+                  </div>
+                  <div className="max-h-[70vh] flex-1 space-y-2 overflow-y-auto p-3">
+                    {items.map((l) => {
+                      const overdue = l.next_follow_up_at && DateTime.fromISO(l.next_follow_up_at) < now;
+                      const card = (
+                        <div
+                          className={`rounded-lg border p-3 text-sm shadow-sm transition-shadow hover:shadow-md hover:border-primary-200 ${
+                            overdue ? "border-red-200 bg-red-50" : "border-primary-50 bg-white"
+                          }`}
+                        >
+                          <p className="font-medium text-primary-900">{l.full_name}</p>
+                          <p className="text-xs text-slate-500">{l.country ?? l.email ?? "—"}</p>
+                          {l.next_follow_up_at && (
+                            <p className={`mt-1 text-xs font-medium ${overdue ? "text-red-600" : "text-slate-500"}`}>
+                              {overdue ? "Overdue: " : "Follow up: "}
+                              {DateTime.fromISO(l.next_follow_up_at).toRelative()}
+                            </p>
+                          )}
+                        </div>
+                      );
+                      return (
+                        <div key={l.id} className="flex items-start gap-2">
+                          {selectMode && (
+                            <input
+                              type="checkbox"
+                              className="mt-4 h-4 w-4 shrink-0 rounded border-primary-300"
+                              checked={selected.has(l.id)}
+                              onChange={() => toggleSelected(l.id)}
+                              aria-label={`Select ${l.full_name}`}
+                            />
+                          )}
+                          {selectMode ? (
+                            <button type="button" className={`min-w-0 flex-1 rounded text-left ${FOCUS_RING}`} onClick={() => toggleSelected(l.id)}>
+                              {card}
+                            </button>
+                          ) : (
+                            <Link key={l.id} href={`/leads/${l.id}`} prefetch={false} className="min-w-0 flex-1">
+                              {card}
+                            </Link>
+                          )}
+                        </div>
+                      );
+                    })}
+                    {items.length === 0 && (
+                      <p className="px-1 py-6 text-center text-xs text-slate-500">
+                        {hasQuery ? "No matches on this page" : "No leads at this stage"}
+                      </p>
+                    )}
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
       )}
     </div>
   );
@@ -303,7 +318,7 @@ function LeadsTable({
   toggleSelected,
   onStatusChange,
   now,
-  query,
+  hasQuery,
 }: {
   leads: Lead[];
   assigneeById: Map<string, string>;
@@ -312,7 +327,7 @@ function LeadsTable({
   toggleSelected: (id: string) => void;
   onStatusChange: (leadId: string, status: LeadStatus) => void;
   now: DateTime;
-  query: string;
+  hasQuery: boolean;
 }) {
   return (
     <Card className="overflow-hidden">
@@ -342,6 +357,7 @@ function LeadsTable({
                         className="h-4 w-4 rounded border-primary-300"
                         checked={selected.has(l.id)}
                         onChange={() => toggleSelected(l.id)}
+                        aria-label={`Select ${l.full_name}`}
                       />
                     </td>
                   )}
@@ -394,8 +410,14 @@ function LeadsTable({
             })}
             {leads.length === 0 && (
               <tr>
-                <td colSpan={selectMode ? 8 : 7} className="px-4 py-8 text-center text-slate-400">
-                  No leads match &quot;{query}&quot;.
+                <td colSpan={selectMode ? 8 : 7} className="px-4 py-10 text-center">
+                  <EmptyState
+                    compact
+                    icon={UserPlus}
+                    title={hasQuery ? "No leads match your search" : "No leads yet"}
+                    description={hasQuery ? undefined : "Add a lead to start tracking prospective students."}
+                    action={hasQuery ? undefined : <LinkButton href="/leads/new">Add lead</LinkButton>}
+                  />
                 </td>
               </tr>
             )}

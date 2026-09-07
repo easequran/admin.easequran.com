@@ -1,19 +1,19 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import { Users, Download, ListChecks } from "lucide-react";
 import { DateTime } from "luxon";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, LinkButton } from "@/components/ui/button";
 import { Select } from "@/components/ui/input";
-import { SearchInput } from "@/components/ui/search-input";
+import { TableSearch } from "@/components/ui/table-search";
 import { EmptyState } from "@/components/ui/empty-state";
-import { LinkButton } from "@/components/ui/button";
 import { downloadCsv } from "@/lib/utils/csv";
 import { FOCUS_RING } from "@/lib/utils/focus";
 import { bulkUpdateStudentStatus } from "@/lib/actions/students";
+import { exportStudentsCsv } from "@/lib/actions/exports";
 import { toast } from "@/lib/toast";
 import type { EnrollmentStatus, Student } from "@/lib/types/database";
 import {
@@ -34,32 +34,40 @@ const statusTone = {
 } as const;
 
 // "trial" is intentionally excluded -- trial students live in the
-// Trials/Leads pipeline, not the Students list, so offering it here would
-// just make a bulk-selected student disappear from view.
+// Trials/Leads pipeline, not the Students list.
 const STATUSES: EnrollmentStatus[] = ["active", "paused", "inactive"];
+
+const CSV_COLUMNS = [
+  { key: "full_name", label: "Full name" },
+  { key: "timezone", label: "Timezone" },
+  { key: "country", label: "Country" },
+  { key: "enrollment_status", label: "Status" },
+  { key: "guardian_name", label: "Guardian name" },
+  { key: "guardian_email", label: "Guardian email" },
+  { key: "guardian_phone", label: "Guardian phone" },
+  { key: "created_at", label: "Created at" },
+] as const;
 
 export function StudentsTable({
   students,
   teacherByStudent = {},
+  query = "",
+  totalMatching = 0,
 }: {
   students: Student[];
   teacherByStudent?: Record<string, string>;
+  /** Current `?q=` value (server already filtered/paged these `students`). */
+  query?: string;
+  /** Total rows matching the search across all pages. */
+  totalMatching?: number;
 }) {
-  const [query, setQuery] = useState("");
   const [selectMode, setSelectMode] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkStatus, setBulkStatus] = useState<EnrollmentStatus>("active");
   const [isPending, startTransition] = useTransition();
+  const [isExporting, startExport] = useTransition();
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return students;
-    return students.filter((s) =>
-      [s.full_name, s.country, s.guardian_name, s.guardian_email, s.timezone, teacherByStudent[s.id]]
-        .filter(Boolean)
-        .some((field) => field!.toLowerCase().includes(q)),
-    );
-  }, [students, query, teacherByStudent]);
+  const allPageSelected = students.length > 0 && selected.size === students.length;
 
   function toggleSelected(id: string) {
     setSelected((prev) => {
@@ -70,8 +78,8 @@ export function StudentsTable({
     });
   }
 
-  function toggleAll() {
-    setSelected((prev) => (prev.size === filtered.length ? new Set() : new Set(filtered.map((s) => s.id))));
+  function togglePage() {
+    setSelected((prev) => (prev.size === students.length ? new Set() : new Set(students.map((s) => s.id))));
   }
 
   function exitSelectMode() {
@@ -88,46 +96,38 @@ export function StudentsTable({
     });
   }
 
-  function handleExportCsv() {
+  function handleExportSelected() {
     const rows = students.filter((s) => selected.has(s.id));
-    downloadCsv(
-      `students-${DateTime.now().toFormat("yyyy-LL-dd")}.csv`,
-      [
-        { key: "full_name", label: "Full name" },
-        { key: "timezone", label: "Timezone" },
-        { key: "country", label: "Country" },
-        { key: "enrollment_status", label: "Status" },
-        { key: "guardian_name", label: "Guardian name" },
-        { key: "guardian_email", label: "Guardian email" },
-        { key: "guardian_phone", label: "Guardian phone" },
-        { key: "created_at", label: "Created at" },
-      ],
-      rows,
-    );
+    downloadCsv(`students-selected-${DateTime.now().toFormat("yyyy-LL-dd")}.csv`, [...CSV_COLUMNS], rows);
   }
 
-  if (students.length === 0) {
-    return (
-      <Card>
-        <EmptyState
-          icon={Users}
-          title="No students yet"
-          description="Add your first student to start scheduling classes."
-          action={<LinkButton href="/students/new">Add student</LinkButton>}
-        />
-      </Card>
-    );
+  function handleExportAll() {
+    startExport(async () => {
+      try {
+        const rows = await exportStudentsCsv(query);
+        downloadCsv(`students-${DateTime.now().toFormat("yyyy-LL-dd")}.csv`, [...CSV_COLUMNS], rows);
+        toast.success(`Exported ${rows.length} student${rows.length === 1 ? "" : "s"}`);
+      } catch {
+        toast.error("Export failed");
+      }
+    });
   }
+
+  const noneAtAll = students.length === 0 && !query;
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
         <div className="min-w-0 flex-1">
-          <SearchInput value={query} onChange={setQuery} placeholder="Search students..." />
+          <TableSearch placeholder="Search students by name, country, guardian…" />
         </div>
+        <Button size="sm" variant="outline" onClick={handleExportAll} disabled={isExporting}>
+          <Download className="h-4 w-4" />
+          {isExporting ? "Exporting…" : query ? `Export all matching (${totalMatching})` : "Export all"}
+        </Button>
         <Button
-          variant="outline"
           size="sm"
+          variant="outline"
           onClick={() => (selectMode ? exitSelectMode() : setSelectMode(true))}
         >
           <ListChecks className="h-4 w-4" />
@@ -152,14 +152,20 @@ export function StudentsTable({
             </Button>
           </div>
 
-          <Button size="sm" variant="outline" onClick={handleExportCsv} disabled={selected.size === 0}>
-            <Download className="h-4 w-4" /> Export CSV
+          <Button size="sm" variant="outline" onClick={handleExportSelected} disabled={selected.size === 0}>
+            <Download className="h-4 w-4" /> Export selected
           </Button>
 
-          <span className="ml-auto text-xs text-slate-500">
-            <button type="button" onClick={toggleAll} className={`rounded underline hover:text-primary-700 ${FOCUS_RING}`}>
-              {selected.size === filtered.length ? "Deselect all" : "Select all"}
-            </button>
+          <button
+            type="button"
+            onClick={togglePage}
+            className={cn("rounded text-xs font-medium text-primary-700 underline hover:text-primary-900", FOCUS_RING)}
+          >
+            {allPageSelected ? "Deselect page" : "Select this page"}
+          </button>
+
+          <span className="ml-auto w-full text-xs text-slate-500 sm:w-auto">
+            Selection and bulk actions apply only to the students shown on this page.
           </span>
         </Card>
       )}
@@ -179,7 +185,7 @@ export function StudentsTable({
               </tr>
             </thead>
             <tbody>
-              {filtered.map((s, i) => (
+              {students.map((s, i) => (
                 <tr key={s.id} className={tableRowClass(i)}>
                   {selectMode && (
                     <td className={TABLE_CELL_CLASS}>
@@ -188,6 +194,7 @@ export function StudentsTable({
                         className="h-4 w-4 rounded border-primary-300"
                         checked={selected.has(s.id)}
                         onChange={() => toggleSelected(s.id)}
+                        aria-label={`Select ${s.full_name}`}
                       />
                     </td>
                   )}
@@ -211,10 +218,20 @@ export function StudentsTable({
                   <td className={cn(TABLE_CELL_CLASS, TABLE_CELL_SECONDARY_CLASS)}>{s.guardian_name ?? "—"}</td>
                 </tr>
               ))}
-              {filtered.length === 0 && (
+              {students.length === 0 && (
                 <tr>
-                  <td colSpan={selectMode ? 7 : 6} className="px-4 py-8 text-center text-slate-400">
-                    No students match &quot;{query}&quot;.
+                  <td colSpan={selectMode ? 7 : 6} className="px-4 py-10 text-center">
+                    <EmptyState
+                      compact
+                      icon={Users}
+                      title={noneAtAll ? "No students yet" : "No students match your search"}
+                      description={
+                        noneAtAll ? "Add your first student to start scheduling classes." : undefined
+                      }
+                      action={
+                        noneAtAll ? <LinkButton href="/students/new">Add student</LinkButton> : undefined
+                      }
+                    />
                   </td>
                 </tr>
               )}

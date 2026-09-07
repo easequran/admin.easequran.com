@@ -1,11 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
 import Link from "next/link";
 import { GraduationCap } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { SearchInput } from "@/components/ui/search-input";
+import { TableSearch } from "@/components/ui/table-search";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LinkButton } from "@/components/ui/button";
 import {
@@ -28,33 +27,12 @@ export interface TeacherRow {
   active: boolean;
 }
 
-export function TeachersTable({ teachers }: { teachers: TeacherRow[] }) {
-  const [query, setQuery] = useState("");
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return teachers;
-    return teachers.filter((t) =>
-      [t.fullName, t.email, t.timezone].filter(Boolean).some((field) => field!.toLowerCase().includes(q)),
-    );
-  }, [teachers, query]);
-
-  if (teachers.length === 0) {
-    return (
-      <Card>
-        <EmptyState
-          icon={GraduationCap}
-          title="No teachers yet"
-          description="Invite your first teacher to start assigning classes."
-          action={<LinkButton href="/teachers/new">Add teacher</LinkButton>}
-        />
-      </Card>
-    );
-  }
+export function TeachersTable({ teachers, hasQuery = false }: { teachers: TeacherRow[]; hasQuery?: boolean }) {
+  const noneAtAll = teachers.length === 0 && !hasQuery;
 
   return (
     <div className="space-y-4">
-      <SearchInput value={query} onChange={setQuery} placeholder="Search teachers..." />
+      <TableSearch placeholder="Search teachers by name or email…" />
 
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
@@ -69,15 +47,15 @@ export function TeachersTable({ teachers }: { teachers: TeacherRow[] }) {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((t, i) => (
+              {teachers.map((t, i) => (
                 <tr key={t.id} className={tableRowClass(i)}>
                   <td className={TABLE_CELL_CLASS}>
                     <Link href={`/teachers/${t.id}`} prefetch={false} className="font-medium text-primary-900 hover:underline">
                       {t.fullName}
                     </Link>
                   </td>
-                  <td className={cn(TABLE_CELL_CLASS, TABLE_CELL_SECONDARY_CLASS)}>{t.email}</td>
-                  <td className={cn(TABLE_CELL_CLASS, TABLE_CELL_SECONDARY_CLASS)}>{t.timezone}</td>
+                  <td className={cn(TABLE_CELL_CLASS, TABLE_CELL_SECONDARY_CLASS)}>{t.email ?? "—"}</td>
+                  <td className={cn(TABLE_CELL_CLASS, TABLE_CELL_SECONDARY_CLASS)}>{t.timezone ?? "—"}</td>
                   <td className={cn(TABLE_CELL_CLASS, TABLE_CELL_SECONDARY_CLASS)}>
                     {t.hourlyRate ? `${t.currency} ${t.hourlyRate}/hr` : "—"}
                   </td>
@@ -86,10 +64,16 @@ export function TeachersTable({ teachers }: { teachers: TeacherRow[] }) {
                   </td>
                 </tr>
               ))}
-              {filtered.length === 0 && (
+              {teachers.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-slate-400">
-                    No teachers match &quot;{query}&quot;.
+                  <td colSpan={5} className="px-4 py-10 text-center">
+                    <EmptyState
+                      compact
+                      icon={GraduationCap}
+                      title={noneAtAll ? "No teachers yet" : "No teachers match your search"}
+                      description={noneAtAll ? "Invite your first teacher to start assigning classes." : undefined}
+                      action={noneAtAll ? <LinkButton href="/teachers/new">Add teacher</LinkButton> : undefined}
+                    />
                   </td>
                 </tr>
               )}
