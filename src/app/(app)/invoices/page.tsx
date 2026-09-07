@@ -2,13 +2,18 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/data/profile";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { generateMonthlyInvoices, markInvoicePaid, syncClassBlockInvoices } from "@/lib/actions/invoices";
 import { InvoiceRowActions } from "@/components/invoices/invoice-row-actions";
 import { PageHeader } from "@/components/ui/page-header";
 import { PrintInvoicesButton } from "@/components/invoices/print-invoices-button";
 import { StatCard } from "@/components/ui/stat-card";
 import { SectionCard } from "@/components/ui/section-card";
+import { Pagination } from "@/components/ui/pagination";
+import { parsePageParam, pageRange, pageCount } from "@/lib/utils/pagination";
 import { CheckCircle2, Clock, AlertTriangle, XCircle, Receipt } from "lucide-react";
+
+const INVOICES_PER_PAGE = 50;
 import {
   TABLE_ELEMENT_CLASS,
   TABLE_HEAD_CLASS,
@@ -22,21 +27,33 @@ import { INVOICE_STATUS_TONE } from "@/lib/utils/invoice-status";
 
 const statusTone = INVOICE_STATUS_TONE;
 
-export default async function InvoicesPage() {
+export default async function InvoicesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
   const profile = await getCurrentProfile();
   const supabase = await createClient();
 
+  const { page: pageParam } = await searchParams;
+  const page = parsePageParam(pageParam);
+  const { from, to } = pageRange(page, INVOICES_PER_PAGE);
+
   let query = supabase
     .from("invoices")
-    .select(profile.role === "student" ? "*, students!inner(full_name, profile_id)" : "*, students(full_name)")
+    .select(
+      profile.role === "student" ? "*, students!inner(full_name, profile_id)" : "*, students(full_name)",
+      { count: "exact" },
+    )
     .order("due_date", { ascending: false })
-    .limit(50);
+    .range(from, to);
 
   if (profile.role === "student") {
     query = query.eq("students.profile_id", profile.id);
   }
 
-  const { data: invoices } = await query;
+  const { data: invoices, count } = await query;
+  const totalPages = pageCount(count ?? 0, INVOICES_PER_PAGE);
 
   // Totals by status, in whichever currency dominates the list -- summed
   // per-currency so a mixed-currency academy doesn't get a misleading total.
@@ -67,14 +84,14 @@ export default async function InvoicesPage() {
             {profile.role === "admin" && (
               <>
                 <form action={syncClassBlockInvoices}>
-                  <Button type="submit" variant="outline">
+                  <SubmitButton variant="outline" pendingText="Syncing…">
                     Sync class-block invoices
-                  </Button>
+                  </SubmitButton>
                 </form>
                 <form action={generateMonthlyInvoices}>
-                  <Button type="submit" variant="accent">
+                  <SubmitButton variant="accent" pendingText="Generating…">
                     Generate this month&apos;s invoices
-                  </Button>
+                  </SubmitButton>
                 </form>
               </>
             )}
@@ -93,7 +110,7 @@ export default async function InvoicesPage() {
         icon={Receipt}
         tone="info"
         title="All invoices"
-        description="Most recent 50 billing periods."
+        description="Sorted by due date, newest first."
         id="invoices-print-area"
         contentClassName="p-0"
       >
@@ -132,9 +149,9 @@ export default async function InvoicesPage() {
                     <div className="flex justify-end gap-2">
                       {inv.status !== "paid" && (
                         <form action={markInvoicePaid.bind(null, inv.id)}>
-                          <Button type="submit" size="sm" variant="outline">
+                          <SubmitButton size="sm" variant="outline" pendingText="Marking…">
                             Mark paid
-                          </Button>
+                          </SubmitButton>
                         </form>
                       )}
                       <a href={`/api/invoices/${inv.id}/pdf`} target="_blank" rel="noreferrer">
@@ -150,8 +167,8 @@ export default async function InvoicesPage() {
             ))}
             {(!invoices || invoices.length === 0) && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-slate-400">
-                  No invoices yet.
+                <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
+                  {page > 1 ? "No more invoices." : "No invoices yet."}
                 </td>
               </tr>
             )}
@@ -159,6 +176,14 @@ export default async function InvoicesPage() {
         </table>
         </div>
       </SectionCard>
+
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        totalItems={count ?? undefined}
+        basePath="/invoices"
+        itemLabel="invoices"
+      />
     </div>
   );
 }

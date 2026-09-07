@@ -3,7 +3,7 @@
 import { X } from "lucide-react";
 import { Input, Label } from "@/components/ui/input";
 import { TimezoneSelect } from "@/components/ui/timezone-select";
-import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { toast } from "@/lib/toast";
@@ -29,7 +29,7 @@ export function AvailabilityEditor({
 }: {
   teacherTimezone: string;
   availability: TeacherAvailability[];
-  onAdd: (formData: FormData) => void;
+  onAdd: (formData: FormData) => void | Promise<void>;
   onRemove: (availabilityId: string) => void | Promise<void>;
 }) {
   const groups = DAY_NAMES.map((name, dayOfWeek) => ({
@@ -93,7 +93,7 @@ export function AvailabilityEditor({
       </div>
 
       <form
-        action={(formData) => {
+        action={async (formData) => {
           const start = String(formData.get("local_start_time") || "");
           const end = String(formData.get("local_end_time") || "");
           // An inverted range (end <= start) isn't rejected server-side --
@@ -103,7 +103,7 @@ export function AvailabilityEditor({
             toast.error("End time must be after start time.");
             return;
           }
-          onAdd(formData);
+          await onAdd(formData);
         }}
         className="space-y-3 rounded-lg border border-primary-100 p-4"
       >
@@ -138,9 +138,9 @@ export function AvailabilityEditor({
           <Label htmlFor="timezone">Timezone</Label>
           <TimezoneSelect name="timezone" defaultValue={teacherTimezone} required />
         </div>
-        <Button type="submit" size="sm" className="w-full">
+        <SubmitButton size="sm" className="w-full" pendingText="Adding…">
           Add availability
-        </Button>
+        </SubmitButton>
       </form>
     </div>
   );

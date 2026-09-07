@@ -3,8 +3,8 @@ import { requireAdmin } from "@/lib/data/profile";
 import { StudentForm } from "@/components/students/student-form";
 import { updateStudent, deleteStudent, addStudentSchedule, removeStudentSchedule } from "@/lib/actions/students";
 import { SectionCard } from "@/components/ui/section-card";
-import { Button } from "@/components/ui/button";
 import { ConfirmButton } from "@/components/ui/confirm-button";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { Badge } from "@/components/ui/badge";
 import { WeeklyScheduleFields } from "@/components/students/weekly-schedule-fields";
 import { PageHeader } from "@/components/ui/page-header";
@@ -258,9 +258,9 @@ export default async function StudentDetailPage({
                 </summary>
                 <form action={boundAddSchedule} className="mt-3 space-y-3">
                   <WeeklyScheduleFields teachers={teacherOptions} />
-                  <Button type="submit" size="sm">
+                  <SubmitButton size="sm" pendingText="Adding…">
                     Add to schedule
-                  </Button>
+                  </SubmitButton>
                 </form>
               </details>
           </SectionCard>

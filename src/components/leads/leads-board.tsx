@@ -15,6 +15,7 @@ import {
   tableRowClass,
 } from "@/lib/utils/table-styles";
 import { cn } from "@/lib/utils/cn";
+import { FOCUS_RING } from "@/lib/utils/focus";
 import { Select } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/ui/search-input";
@@ -146,7 +147,8 @@ export function LeadsBoard({ leads, assignees }: { leads: Lead[]; assignees: { i
               type="button"
               onClick={() => setView("table")}
               title="Table view"
-              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+              aria-pressed={view === "table"}
+              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${FOCUS_RING} ${
                 view === "table" ? "bg-accent-500 text-primary-900" : "text-primary-700 hover:bg-primary-50"
               }`}
             >
@@ -156,7 +158,8 @@ export function LeadsBoard({ leads, assignees }: { leads: Lead[]; assignees: { i
               type="button"
               onClick={() => setView("board")}
               title="Board view"
-              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+              aria-pressed={view === "board"}
+              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${FOCUS_RING} ${
                 view === "board" ? "bg-accent-500 text-primary-900" : "text-primary-700 hover:bg-primary-50"
               }`}
             >
@@ -204,7 +207,7 @@ export function LeadsBoard({ leads, assignees }: { leads: Lead[]; assignees: { i
             <Download className="h-4 w-4" /> Export CSV
           </Button>
 
-          <button type="button" onClick={exitSelectMode} className="ml-auto rounded-md p-1.5 text-primary-700 hover:bg-primary-100" aria-label="Close">
+          <button type="button" onClick={exitSelectMode} className={`ml-auto rounded-md p-1.5 text-primary-700 hover:bg-primary-100 ${FOCUS_RING}`} aria-label="Close">
             <X className="h-4 w-4" />
           </button>
         </Card>
@@ -261,7 +264,7 @@ export function LeadsBoard({ leads, assignees }: { leads: Lead[]; assignees: { i
                         />
                       )}
                       {selectMode ? (
-                        <button type="button" className="min-w-0 flex-1 text-left" onClick={() => toggleSelected(l.id)}>
+                        <button type="button" className={`min-w-0 flex-1 rounded text-left ${FOCUS_RING}`} onClick={() => toggleSelected(l.id)}>
                           {card}
                         </button>
                       ) : (
@@ -339,7 +342,7 @@ function LeadsTable({
                   )}
                   <td className={TABLE_CELL_CLASS}>
                     {selectMode ? (
-                      <button type="button" className="font-medium text-primary-900 hover:underline" onClick={() => toggleSelected(l.id)}>
+                      <button type="button" className={`rounded font-medium text-primary-900 hover:underline ${FOCUS_RING}`} onClick={() => toggleSelected(l.id)}>
                         {l.full_name}
                       </button>
                     ) : (

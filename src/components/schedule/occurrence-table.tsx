@@ -5,7 +5,8 @@ import Link from "next/link";
 import { DateTime } from "luxon";
 import { Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button, LinkButton } from "@/components/ui/button";
+import { LinkButton } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { formatInZone } from "@/lib/utils/timezone";
 import { formatCountdown } from "@/lib/utils/countdown";
@@ -119,14 +120,14 @@ export function OccurrenceTable({
                   {showStatusActions && o.status === "scheduled" ? (
                     <div className="flex flex-wrap items-center gap-1.5">
                       <form action={updateOccurrenceStatus.bind(null, o.id, "completed")}>
-                        <Button type="submit" size="sm" variant="outline">
+                        <SubmitButton size="sm" variant="outline" pendingText="Saving…">
                           Completed
-                        </Button>
+                        </SubmitButton>
                       </form>
                       <form action={updateOccurrenceStatus.bind(null, o.id, "no_show")}>
-                        <Button type="submit" size="sm" variant="outline">
+                        <SubmitButton size="sm" variant="outline" pendingText="Saving…">
                           Didn&apos;t show
-                        </Button>
+                        </SubmitButton>
                       </form>
                       <ConfirmButton
                         action={updateOccurrenceStatus.bind(null, o.id, "cancelled")}

@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/data/profile";
 import { convertLeadWithAssignment } from "@/lib/actions/leads";
 import { WeeklyScheduleFields } from "@/components/students/weekly-schedule-fields";
-import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { PageHeader } from "@/components/ui/page-header";
 import { notFound } from "next/navigation";
 import { UserCheck } from "lucide-react";
@@ -54,9 +54,9 @@ export default async function ConvertLeadPage({
 
         <WeeklyScheduleFields teachers={teacherOptions} />
 
-        <Button type="submit" className="w-full">
+        <SubmitButton className="w-full" pendingText="Converting…">
           Convert to student
-        </Button>
+        </SubmitButton>
       </form>
     </div>
   );

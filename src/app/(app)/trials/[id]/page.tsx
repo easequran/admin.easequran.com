@@ -3,7 +3,7 @@ import { requireAdmin } from "@/lib/data/profile";
 import { SectionCard } from "@/components/ui/section-card";
 import { Input, Label, Select } from "@/components/ui/input";
 import { TimezoneSelect } from "@/components/ui/timezone-select";
-import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { updateTrialClass, cancelTrialClass } from "@/lib/actions/schedule";
 import { DeleteTrialButton } from "@/components/schedule/delete-trial-button";
@@ -111,7 +111,7 @@ export default async function EditTrialPage({
                 <option value="60">60 minutes</option>
               </Select>
             </div>
-            <Button type="submit">Save changes</Button>
+            <SubmitButton pendingText="Saving…">Save changes</SubmitButton>
           </form>
       </SectionCard>
     </div>

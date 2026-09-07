@@ -9,6 +9,8 @@ import { Textarea } from "@/components/ui/input";
 import { Input, Label, Select } from "@/components/ui/input";
 import { TimezoneSelect } from "@/components/ui/timezone-select";
 import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
+import { FOCUS_RING } from "@/lib/utils/focus";
 import { toast } from "@/lib/toast";
 import { CalendarPlus } from "lucide-react";
 import type { AttendanceStatus } from "@/lib/types/database";
@@ -74,7 +76,7 @@ export function AttendanceRow({
             <button
               type="button"
               onClick={() => setEditingStatus(true)}
-              className="text-xs text-slate-500 hover:text-primary-700 hover:underline"
+              className={`rounded text-xs text-slate-500 hover:text-primary-700 hover:underline ${FOCUS_RING}`}
             >
               Change
             </button>
@@ -105,7 +107,7 @@ export function AttendanceRow({
                   type="submit"
                   name="status"
                   value={o.value}
-                  className={`rounded-md border px-2 py-1 text-xs font-medium ${
+                  className={`rounded-md border px-2 py-1 text-xs font-medium ${FOCUS_RING} ${
                     o.value === currentStatus
                       ? "border-primary-400 bg-primary-50 text-primary-900"
                       : "border-primary-200 text-primary-700 hover:bg-primary-50"
@@ -118,7 +120,7 @@ export function AttendanceRow({
                 <button
                   type="button"
                   onClick={() => setEditingStatus(false)}
-                  className="rounded-md border border-primary-200 px-2 py-1 text-xs font-medium text-slate-500 hover:bg-primary-50"
+                  className={`rounded-md border border-primary-200 px-2 py-1 text-xs font-medium text-slate-500 hover:bg-primary-50 ${FOCUS_RING}`}
                 >
                   Cancel
                 </button>
@@ -139,15 +141,15 @@ export function AttendanceRow({
             className="flex flex-wrap items-start gap-2 pl-1"
           >
             <Textarea name="notes" rows={2} defaultValue={currentNotes ?? ""} className="w-full sm:w-80" />
-            <Button type="submit" size="sm">
+            <SubmitButton size="sm" pendingText="Saving…">
               Save
-            </Button>
+            </SubmitButton>
           </form>
         ) : (
           <button
             type="button"
             onClick={() => setEditingNote(true)}
-            className="pl-1 text-left text-xs text-slate-500 hover:text-primary-700 hover:underline"
+            className={`rounded pl-1 text-left text-xs text-slate-500 hover:text-primary-700 hover:underline ${FOCUS_RING}`}
           >
             {currentNotes ? currentNotes : "+ Add teacher comment"}
           </button>
@@ -183,9 +185,9 @@ export function AttendanceRow({
                   <option value="60">60 minutes</option>
                 </Select>
               </div>
-              <Button type="submit" size="sm">
+              <SubmitButton size="sm" pendingText="Booking…">
                 Book makeup class
-              </Button>
+              </SubmitButton>
               <Button type="button" size="sm" variant="ghost" onClick={() => setSchedulingMakeup(false)}>
                 Cancel
               </Button>
@@ -194,7 +196,7 @@ export function AttendanceRow({
             <button
               type="button"
               onClick={() => setSchedulingMakeup(true)}
-              className="flex items-center gap-1.5 text-xs font-medium text-primary-700 hover:underline"
+              className={`flex items-center gap-1.5 rounded text-xs font-medium text-primary-700 hover:underline ${FOCUS_RING}`}
             >
               <CalendarPlus className="h-3.5 w-3.5" /> Schedule makeup class
             </button>

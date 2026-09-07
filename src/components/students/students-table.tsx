@@ -12,6 +12,7 @@ import { SearchInput } from "@/components/ui/search-input";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LinkButton } from "@/components/ui/button";
 import { downloadCsv } from "@/lib/utils/csv";
+import { FOCUS_RING } from "@/lib/utils/focus";
 import { bulkUpdateStudentStatus } from "@/lib/actions/students";
 import { toast } from "@/lib/toast";
 import type { EnrollmentStatus, Student } from "@/lib/types/database";
@@ -151,7 +152,7 @@ export function StudentsTable({
           </Button>
 
           <span className="ml-auto text-xs text-slate-500">
-            <button type="button" onClick={toggleAll} className="underline hover:text-primary-700">
+            <button type="button" onClick={toggleAll} className={`rounded underline hover:text-primary-700 ${FOCUS_RING}`}>
               {selected.size === filtered.length ? "Deselect all" : "Select all"}
             </button>
           </span>
@@ -187,7 +188,7 @@ export function StudentsTable({
                   )}
                   <td className={TABLE_CELL_CLASS}>
                     {selectMode ? (
-                      <button type="button" className="font-medium text-primary-900 hover:underline" onClick={() => toggleSelected(s.id)}>
+                      <button type="button" className={`rounded font-medium text-primary-900 hover:underline ${FOCUS_RING}`} onClick={() => toggleSelected(s.id)}>
                         {s.full_name}
                       </button>
                     ) : (

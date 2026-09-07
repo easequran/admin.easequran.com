@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/data/profile";
 import { Input, Label, Select } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { bookTrialClass } from "@/lib/actions/schedule";
 import { PageHeader } from "@/components/ui/page-header";
 import { LeadTimezoneFields } from "@/components/trials/lead-timezone-fields";
@@ -48,7 +48,7 @@ export default async function NewTrialPage({
             <option value="60">60 minutes</option>
           </Select>
         </div>
-        <Button type="submit">Book trial</Button>
+        <SubmitButton pendingText="Booking…">Book trial</SubmitButton>
       </form>
     </div>
   );

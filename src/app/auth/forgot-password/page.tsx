@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { requestPasswordReset } from "@/lib/actions/auth";
 import { Input, Label } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 export default async function ForgotPasswordPage({
   searchParams,
@@ -36,9 +36,9 @@ export default async function ForgotPasswordPage({
               <Label htmlFor="email">Email</Label>
               <Input id="email" name="email" type="email" required placeholder="you@example.com" />
             </div>
-            <Button type="submit" className="w-full">
+            <SubmitButton className="w-full" pendingText="Sending…">
               Send reset link
-            </Button>
+            </SubmitButton>
             <a href="/login" className="block text-center text-sm font-medium text-primary-700 hover:underline">
               Back to sign in
             </a>

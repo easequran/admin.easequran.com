@@ -4,16 +4,20 @@ import { SectionCard } from "@/components/ui/section-card";
 import { AttendanceRow } from "@/components/attendance/attendance-row";
 import { AttendanceTeacherFilter } from "@/components/attendance/attendance-teacher-filter";
 import { PageHeader } from "@/components/ui/page-header";
+import { Pagination } from "@/components/ui/pagination";
+import { parsePageParam, pageRange, pageCount, DEFAULT_PAGE_SIZE } from "@/lib/utils/pagination";
 import { DateTime } from "luxon";
 import { ClipboardCheck } from "lucide-react";
 
 export default async function AttendancePage({
   searchParams,
 }: {
-  searchParams: Promise<{ teacherId?: string }>;
+  searchParams: Promise<{ teacherId?: string; page?: string }>;
 }) {
   const profile = await getCurrentProfile();
-  const { teacherId } = await searchParams;
+  const { teacherId, page: pageParam } = await searchParams;
+  const page = parsePageParam(pageParam);
+  const { from, to } = pageRange(page);
   const supabase = await createClient();
 
   // Trial classes only have a `lead_id` (no `student_id` yet — that gets
@@ -25,10 +29,11 @@ export default async function AttendancePage({
       profile.role === "teacher"
         ? "id, start_at, is_trial, student_id, teacher_id, students(full_name, timezone), leads(full_name), attendance(status, notes), teachers!inner(profile_id)"
         : "id, start_at, is_trial, student_id, teacher_id, students(full_name, timezone), leads(full_name), attendance(status, notes), teachers(id, profiles(full_name))",
+      { count: "exact" },
     )
     .lte("start_at", DateTime.utc().toISO()!)
     .order("start_at", { ascending: false })
-    .limit(30);
+    .range(from, to);
 
   if (profile.role === "teacher") {
     query = query.eq("teachers.profile_id", profile.id);
@@ -36,7 +41,7 @@ export default async function AttendancePage({
     query = query.eq("teacher_id", teacherId);
   }
 
-  const [{ data: occurrences }, { data: teachers }] = await Promise.all([
+  const [{ data: occurrences, count }, { data: teachers }] = await Promise.all([
     query,
     profile.role === "admin"
       ? supabase.from("teachers").select("id, profiles(full_name)").eq("active", true)
@@ -81,10 +86,21 @@ export default async function AttendancePage({
             />
           ))}
           {(!occurrences || occurrences.length === 0) && (
-            <p className="py-4 text-sm text-slate-500">No past classes yet.</p>
+            <p className="py-4 text-sm text-slate-500">
+              {page > 1 ? "No more classes." : "No past classes yet."}
+            </p>
           )}
         </ul>
       </SectionCard>
+
+      <Pagination
+        page={page}
+        totalPages={pageCount(count ?? 0, DEFAULT_PAGE_SIZE)}
+        totalItems={count ?? undefined}
+        basePath="/attendance"
+        baseParams={{ teacherId }}
+        itemLabel="classes"
+      />
     </div>
   );
 }

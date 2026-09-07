@@ -1,8 +1,10 @@
 import { requireAdmin } from "@/lib/data/profile";
-import { getAuditLog } from "@/lib/actions/audit";
+import { getAuditLogPage } from "@/lib/actions/audit";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/page-header";
+import { Pagination } from "@/components/ui/pagination";
+import { parsePageParam, pageRange, pageCount, DEFAULT_PAGE_SIZE } from "@/lib/utils/pagination";
 import { DateTime } from "luxon";
 import { History } from "lucide-react";
 
@@ -23,9 +25,17 @@ const ACTION_TONE: Record<string, "danger" | "warning" | "info"> = {
   "teacher.deleted": "danger",
 };
 
-export default async function AuditLogPage() {
+export default async function AuditLogPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
   const profile = await requireAdmin();
-  const entries = await getAuditLog(200);
+  const { page: pageParam } = await searchParams;
+  const page = parsePageParam(pageParam);
+  const { from, to } = pageRange(page);
+  const { entries, total } = await getAuditLogPage(from, to);
+  const totalPages = pageCount(total, DEFAULT_PAGE_SIZE);
 
   return (
     <div className="space-y-6">
@@ -39,7 +49,9 @@ export default async function AuditLogPage() {
       <Card>
         <CardContent className="p-0">
           {entries.length === 0 ? (
-            <p className="p-6 text-sm text-slate-500">No audit entries yet.</p>
+            <p className="p-6 text-sm text-slate-500">
+              {page > 1 ? "No more entries." : "No audit entries yet."}
+            </p>
           ) : (
             <ul className="divide-y divide-primary-50">
               {entries.map((entry) => (
@@ -62,6 +74,14 @@ export default async function AuditLogPage() {
           )}
         </CardContent>
       </Card>
+
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        totalItems={total}
+        basePath="/settings/audit-log"
+        itemLabel="entries"
+      />
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils/cn";
@@ -19,16 +20,25 @@ export function StatCard({
   hint,
   icon: Icon,
   tone = "neutral",
+  href,
 }: {
   label: string;
   value: string | number;
   hint?: string;
   icon: LucideIcon;
   tone?: StatTone;
+  /** When set, the card becomes a link and gets a hover/focus affordance. Static otherwise. */
+  href?: string;
 }) {
   const classes = STAT_TONE_CLASSES[tone];
-  return (
-    <Card className="transition-shadow hover:shadow-md">
+
+  const card = (
+    <Card
+      className={cn(
+        "h-full",
+        href && "transition-shadow hover:border-primary-200 hover:shadow-md",
+      )}
+    >
       <CardContent className="flex items-start gap-3">
         <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-lg", classes.bg)}>
           <Icon className={cn("h-5 w-5", classes.icon)} />
@@ -40,5 +50,16 @@ export function StatCard({
         </div>
       </CardContent>
     </Card>
+  );
+
+  if (!href) return card;
+
+  return (
+    <Link
+      href={href}
+      className="block rounded-xl outline-none transition-shadow focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-offset-2"
+    >
+      {card}
+    </Link>
   );
 }

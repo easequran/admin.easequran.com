@@ -4,6 +4,7 @@ import { useState } from "react";
 import { DateTime } from "luxon";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { TimetableDay } from "@/lib/scheduling";
+import { FOCUS_RING } from "@/lib/utils/focus";
 import { WeeklyTimetableGrid } from "@/components/teachers/weekly-timetable-grid";
 import { TimetableSheetTable, TimetableLegend, buildDayColumn } from "@/components/teachers/timetable-sheet";
 import { DAY_NAMES, currentDayOfWeek } from "@/lib/utils/timetable-grid";
@@ -67,7 +68,7 @@ function MonthView({
               key={date.toISODate()}
               type="button"
               onClick={() => onSelectDay(dayOfWeek)}
-              className={`flex h-16 flex-col items-start p-1.5 text-left text-xs transition-colors ${
+              className={`flex h-16 flex-col items-start p-1.5 text-left text-xs transition-colors focus-visible:outline focus-visible:-outline-offset-2 focus-visible:outline-2 focus-visible:outline-primary-500 ${
                 inMonth ? "bg-white hover:bg-accent-200/40" : "bg-slate-50 text-slate-300"
               } ${isToday ? "ring-2 ring-inset ring-accent-400" : ""}`}
             >
@@ -104,7 +105,8 @@ export function TimetableViewSwitcher({ days, timezone }: { days: TimetableDay[]
               key={v}
               type="button"
               onClick={() => setView(v)}
-              className={`rounded-md px-3 py-1.5 text-xs font-medium capitalize transition-colors ${
+              aria-pressed={view === v}
+              className={`rounded-md px-3 py-1.5 text-xs font-medium capitalize transition-colors ${FOCUS_RING} ${
                 view === v ? "bg-accent-500 text-primary-900" : "text-primary-700 hover:bg-primary-50"
               }`}
             >
@@ -118,7 +120,7 @@ export function TimetableViewSwitcher({ days, timezone }: { days: TimetableDay[]
             <button
               type="button"
               onClick={() => setSelectedDay((d) => (d + 6) % 7)}
-              className="rounded-md border border-primary-100 p-1.5 text-primary-700 hover:bg-primary-50"
+              className={`rounded-md border border-primary-100 p-1.5 text-primary-700 hover:bg-primary-50 ${FOCUS_RING}`}
               aria-label="Previous day"
             >
               <ChevronLeft className="h-4 w-4" />
@@ -127,7 +129,7 @@ export function TimetableViewSwitcher({ days, timezone }: { days: TimetableDay[]
             <button
               type="button"
               onClick={() => setSelectedDay((d) => (d + 1) % 7)}
-              className="rounded-md border border-primary-100 p-1.5 text-primary-700 hover:bg-primary-50"
+              className={`rounded-md border border-primary-100 p-1.5 text-primary-700 hover:bg-primary-50 ${FOCUS_RING}`}
               aria-label="Next day"
             >
               <ChevronRight className="h-4 w-4" />
@@ -140,7 +142,7 @@ export function TimetableViewSwitcher({ days, timezone }: { days: TimetableDay[]
             <button
               type="button"
               onClick={() => setMonthAnchor((a) => a.minus({ months: 1 }))}
-              className="rounded-md border border-primary-100 p-1.5 text-primary-700 hover:bg-primary-50"
+              className={`rounded-md border border-primary-100 p-1.5 text-primary-700 hover:bg-primary-50 ${FOCUS_RING}`}
               aria-label="Previous month"
             >
               <ChevronLeft className="h-4 w-4" />
@@ -149,7 +151,7 @@ export function TimetableViewSwitcher({ days, timezone }: { days: TimetableDay[]
             <button
               type="button"
               onClick={() => setMonthAnchor((a) => a.plus({ months: 1 }))}
-              className="rounded-md border border-primary-100 p-1.5 text-primary-700 hover:bg-primary-50"
+              className={`rounded-md border border-primary-100 p-1.5 text-primary-700 hover:bg-primary-50 ${FOCUS_RING}`}
               aria-label="Next month"
             >
               <ChevronRight className="h-4 w-4" />

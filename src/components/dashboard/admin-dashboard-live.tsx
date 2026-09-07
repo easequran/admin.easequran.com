@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { DateTime } from "luxon";
-import Link from "next/link";
 import { GraduationCap, Users, Target, Clock, CreditCard } from "lucide-react";
 import { StatCard } from "@/components/ui/stat-card";
 import { TodayClassesBoard, type OccurrenceRow } from "@/components/dashboard/today-classes-widget";
@@ -138,20 +137,20 @@ export function AdminDashboardLive({
         <StatCard label="Active students" value={stats.studentCount} icon={Users} tone="info" />
         <StatCard label="Active teachers" value={stats.teacherCount} icon={GraduationCap} tone="success" />
         <StatCard label="Open leads" value={stats.activeLeads} icon={Target} tone="accent" />
-        <Link href="/leads/follow-ups">
-          <StatCard
-            label="Overdue follow-ups"
-            value={stats.overdueFollowUps}
-            icon={Clock}
-            tone={stats.overdueFollowUps > 0 ? "danger" : "neutral"}
-          />
-        </Link>
+        <StatCard
+          label="Overdue follow-ups"
+          value={stats.overdueFollowUps}
+          icon={Clock}
+          tone={stats.overdueFollowUps > 0 ? "danger" : "neutral"}
+          href="/leads/follow-ups"
+        />
         <StatCard
           label="Overdue invoices"
           value={stats.overdueInvoicesCount}
           hint={stats.overdueTotal > 0 ? `$${stats.overdueTotal.toFixed(2)} outstanding` : undefined}
           icon={CreditCard}
           tone={stats.overdueInvoicesCount > 0 ? "danger" : "neutral"}
+          href="/invoices"
         />
       </div>
 

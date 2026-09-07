@@ -3,8 +3,9 @@ import { requireAdmin } from "@/lib/data/profile";
 import { SectionCard } from "@/components/ui/section-card";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { TimezoneSelect } from "@/components/ui/timezone-select";
-import { Button, LinkButton } from "@/components/ui/button";
+import { LinkButton } from "@/components/ui/button";
 import { ConfirmButton } from "@/components/ui/confirm-button";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { Badge } from "@/components/ui/badge";
 import { AvailabilityEditor } from "@/components/teachers/availability-editor";
 import { updateTeacher, deleteTeacher, addAvailability, removeAvailability } from "@/lib/actions/teachers";
@@ -130,9 +131,9 @@ export default async function TeacherDetailPage({
                   Active
                 </Label>
               </div>
-              <Button type="submit" className="w-full">
+              <SubmitButton className="w-full" pendingText="Saving…">
                 Save changes
-              </Button>
+              </SubmitButton>
             </form>
         </SectionCard>
 

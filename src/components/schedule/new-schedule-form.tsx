@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Input, Label, Select } from "@/components/ui/input";
 import { TimezoneSelect } from "@/components/ui/timezone-select";
-import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { createRecurringSchedule } from "@/lib/actions/schedule";
 
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -82,9 +82,9 @@ export function NewScheduleForm({
           <option value="60">60 minutes</option>
         </Select>
       </div>
-      <Button type="submit" className="col-span-2">
+      <SubmitButton className="col-span-2" pendingText="Scheduling…">
         Schedule weekly class
-      </Button>
+      </SubmitButton>
     </form>
   );
 }

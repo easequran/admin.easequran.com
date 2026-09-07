@@ -1,5 +1,5 @@
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 const OUTCOMES = [
   { value: "", label: "— No specific outcome —" },
@@ -50,9 +50,9 @@ export function LogContactForm({ action }: { action: (formData: FormData) => voi
         </p>
       </div>
 
-      <Button type="submit" size="sm">
+      <SubmitButton size="sm" pendingText="Logging…">
         Log contact
-      </Button>
+      </SubmitButton>
     </form>
   );
 }

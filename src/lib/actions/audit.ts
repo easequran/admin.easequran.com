@@ -53,3 +53,17 @@ export async function getAuditLog(limit = 200): Promise<AuditLogEntry[]> {
     .limit(limit);
   return (data as AuditLogEntry[] | null) ?? [];
 }
+
+/** Paged variant for the Audit Log page. */
+export async function getAuditLogPage(
+  from: number,
+  to: number,
+): Promise<{ entries: AuditLogEntry[]; total: number }> {
+  const supabase = await createClient();
+  const { data, count } = await supabase
+    .from("audit_log")
+    .select("*", { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range(from, to);
+  return { entries: (data as AuditLogEntry[] | null) ?? [], total: count ?? 0 };
+}

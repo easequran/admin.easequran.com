@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils/cn";
+import { FOCUS_RING } from "@/lib/utils/focus";
 import type { UserRole } from "@/lib/types/database";
 import {
   LayoutDashboard,
@@ -112,7 +113,7 @@ export function Sidebar({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md p-1 text-primary-100 hover:bg-primary-500/40 md:hidden"
+            className={cn("rounded-md p-1 text-primary-100 hover:bg-primary-500/40 md:hidden", FOCUS_RING, "focus-visible:outline-accent-300")}
             aria-label="Close menu"
           >
             <X className="h-5 w-5" />
@@ -125,6 +126,8 @@ export function Sidebar({
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           className={cn(
             "mx-3 mb-2 hidden items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-primary-100 hover:bg-primary-500/40 hover:text-white md:inline-flex",
+            FOCUS_RING,
+            "focus-visible:outline-accent-300",
             collapsed && "justify-center px-0",
           )}
         >
@@ -152,8 +155,11 @@ export function Sidebar({
                       href={href}
                       onClick={onClose}
                       title={collapsed ? label : undefined}
+                      aria-current={active ? "page" : undefined}
                       className={cn(
                         "flex items-center gap-3 rounded-lg border-l-[3px] border-transparent py-2 pl-[9px] pr-3 text-sm font-medium text-primary-100 transition-all duration-150 hover:translate-x-0.5 hover:bg-primary-500/40 hover:text-white",
+                        FOCUS_RING,
+                        "focus-visible:outline-accent-300",
                         active &&
                           "border-accent-300 bg-accent-500 text-primary-900 hover:translate-x-0 hover:bg-accent-500 hover:text-primary-900",
                         collapsed && "md:justify-center md:border-l-0 md:px-0",

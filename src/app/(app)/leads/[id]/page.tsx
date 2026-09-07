@@ -2,8 +2,9 @@ import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/data/profile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button, LinkButton } from "@/components/ui/button";
+import { LinkButton } from "@/components/ui/button";
 import { ConfirmButton } from "@/components/ui/confirm-button";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { PhoneCountryTimezoneField } from "@/components/leads/phone-country-timezone-field";
 import { FollowUpBadge } from "@/components/leads/follow-up-badge";
@@ -246,7 +247,7 @@ export default async function LeadDetailPage({
                 <Label htmlFor="notes">Notes</Label>
                 <Textarea id="notes" name="notes" rows={3} defaultValue={lead.notes ?? ""} />
               </div>
-              <Button type="submit">Save changes</Button>
+              <SubmitButton pendingText="Saving…">Save changes</SubmitButton>
             </form>
           </CardContent>
         </Card>
