@@ -52,7 +52,7 @@ export function PhoneCountryTimezoneField({
           </p>
         )}
         {!guess && phone.length > 3 && (
-          <p className="mt-1 text-xs text-slate-400">Couldn&apos;t detect a country from this number.</p>
+          <p className="mt-1 text-xs text-slate-500">Couldn&apos;t detect a country from this number.</p>
         )}
       </div>
 
@@ -86,7 +86,7 @@ export function PhoneCountryTimezoneField({
             </option>
           ))}
         </Select>
-        <p className="mt-1 text-xs text-slate-400">
+        <p className="mt-1 text-xs text-slate-500">
           Country and timezone are pre-filled from the phone number — edit either if the guess is wrong.
         </p>
       </div>

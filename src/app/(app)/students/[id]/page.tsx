@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/data/profile";
 import { StudentForm } from "@/components/students/student-form";
-import { updateStudent, deleteStudent, addStudentSchedule, removeStudentSchedule } from "@/lib/actions/students";
+import { deleteStudent, addStudentSchedule, removeStudentSchedule } from "@/lib/actions/students";
+import { updateStudentAction } from "@/lib/actions/form-actions";
 import { SectionCard } from "@/components/ui/section-card";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { SubmitButton } from "@/components/ui/submit-button";
@@ -120,7 +121,7 @@ export default async function StudentDetailPage({
   const prevMonth = selectedMonth.minus({ months: 1 }).toFormat("yyyy-LL");
   const nextMonth = selectedMonth.plus({ months: 1 }).toFormat("yyyy-LL");
 
-  const boundUpdate = updateStudent.bind(null, id);
+  const boundUpdate = updateStudentAction.bind(null, id);
   const boundDelete = deleteStudent.bind(null, id);
   const boundAddSchedule = addStudentSchedule.bind(null, id);
 

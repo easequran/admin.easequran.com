@@ -150,7 +150,7 @@ export default async function FeesPage({
           )}
 
           {studentsWithoutPlan.length > 0 && (
-            <p className="mt-3 text-xs text-slate-400">
+            <p className="mt-3 text-xs text-slate-500">
               {studentsWithoutPlan.length} confirmed student{studentsWithoutPlan.length === 1 ? "" : "s"} without a
               fee plan yet.
             </p>
@@ -215,7 +215,7 @@ export default async function FeesPage({
                             ? `${p.currency} ${Number(p.block_amount).toFixed(2)} / ${p.classes_per_block} classes`
                             : `${p.currency} ${Number(p.monthly_amount).toFixed(2)} / month`}
                           {p.sibling_group_id && (
-                            <span className="mt-0.5 block text-xs text-slate-400">
+                            <span className="mt-0.5 block text-xs text-slate-500">
                               this student&apos;s share of {p.currency} {familyTotal.toFixed(2)} family fee
                             </span>
                           )}
@@ -224,7 +224,7 @@ export default async function FeesPage({
                           {isBlock ? (
                             <span>
                               Advance · due +{p.grace_days}d
-                              <span className="ml-1 block text-xs text-slate-400">
+                              <span className="ml-1 block text-xs text-slate-500">
                                 {progress} / {p.classes_per_block} classes into current set
                               </span>
                             </span>

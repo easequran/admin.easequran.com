@@ -57,7 +57,7 @@ export function Topbar({
         >
           <Search className="h-4 w-4 shrink-0" />
           <span className="hidden sm:inline">Search…</span>
-          <kbd className="hidden rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium text-slate-400 sm:inline">
+          <kbd className="hidden rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium text-slate-500 sm:inline">
             Ctrl K
           </kbd>
         </button>

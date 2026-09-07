@@ -46,7 +46,7 @@ export function LogContactForm({ action }: { action: (formData: FormData) => voi
       <div>
         <Label htmlFor="next_follow_up_at">Next follow-up (optional)</Label>
         <FutureDateTimeInput id="next_follow_up_at" name="next_follow_up_at" />
-        <p className="mt-1 text-xs text-slate-400">
+        <p className="mt-1 text-xs text-slate-500">
           Leave blank to keep the current follow-up date, or set a new one here.
         </p>
       </div>

@@ -57,9 +57,9 @@ export function TodayClassesBoard({
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
           <CardTitle className="text-lg">Today&apos;s classes ({timezone})</CardTitle>
-          <p className="text-sm text-slate-400">Local date: {now.toFormat("LLL d, yyyy")}</p>
+          <p className="text-sm text-slate-500">Local date: {now.toFormat("LLL d, yyyy")}</p>
         </div>
-        <span className="text-sm text-slate-400">{refreshLabel}</span>
+        <span className="text-sm text-slate-500">{refreshLabel}</span>
       </CardHeader>
       <CardContent>
         {classes.length === 0 ? (
@@ -79,7 +79,7 @@ export function TodayClassesBoard({
                   </div>
                   <ul className="max-h-[420px] divide-y divide-primary-50 overflow-y-auto">
                     {rows.length === 0 ? (
-                      <li className="px-4 py-4 text-sm text-slate-400">
+                      <li className="px-4 py-4 text-sm text-slate-500">
                         {bucket === "ongoing" ? "No ongoing classes." : "None"}
                       </li>
                     ) : (

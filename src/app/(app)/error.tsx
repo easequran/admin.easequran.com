@@ -25,7 +25,7 @@ export default function AppSectionError({
         <p className="mt-1 text-sm text-slate-500">
           Something failed while loading this screen. Your data is safe — try again.
         </p>
-        {error.digest && <p className="mt-1 text-xs text-slate-400">Reference: {error.digest}</p>}
+        {error.digest && <p className="mt-1 text-xs text-slate-500">Reference: {error.digest}</p>}
       </div>
       <div className="flex gap-2">
         <Button type="button" onClick={reset}>

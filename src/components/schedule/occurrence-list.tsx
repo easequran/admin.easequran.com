@@ -3,11 +3,12 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { DateTime } from "luxon";
-import { User, GraduationCap, Clock } from "lucide-react";
+import { User, GraduationCap, Clock, CalendarClock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { LinkButton } from "@/components/ui/button";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { ConfirmButton } from "@/components/ui/confirm-button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { formatInZone } from "@/lib/utils/timezone";
 import { formatCountdown } from "@/lib/utils/countdown";
 import { updateOccurrenceStatus, deleteTrialClass } from "@/lib/actions/schedule";
@@ -53,7 +54,7 @@ export function OccurrenceList({
   }, []);
 
   if (occurrences.length === 0) {
-    return <p className="text-sm text-slate-500">No classes scheduled.</p>;
+    return <EmptyState compact icon={CalendarClock} title="No classes scheduled" />;
   }
 
   return (

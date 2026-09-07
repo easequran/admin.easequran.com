@@ -24,7 +24,7 @@ export default function GlobalRouteError({
           You can try again, or head back to the dashboard. Nothing you&apos;ve saved is affected.
         </p>
         {error.digest && (
-          <p className="mt-2 text-xs text-slate-400">Reference: {error.digest}</p>
+          <p className="mt-2 text-xs text-slate-500">Reference: {error.digest}</p>
         )}
         <div className="mt-6 flex justify-center gap-2">
           <Button type="button" onClick={reset}>

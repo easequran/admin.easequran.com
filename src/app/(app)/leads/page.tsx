@@ -8,8 +8,9 @@ import { LeadsBoard } from "@/components/leads/leads-board";
 import { FollowUpsButton } from "@/components/leads/follow-ups-button";
 import { Pagination } from "@/components/ui/pagination";
 import { parsePageParam, pageRange, pageCount, DEFAULT_PAGE_SIZE } from "@/lib/utils/pagination";
-import { sanitizeSearch } from "@/lib/utils/search";
+import { buildIlikeOr } from "@/lib/utils/search";
 import type { Lead } from "@/lib/types/database";
+import { redirect } from "next/navigation";
 import { DateTime } from "luxon";
 import { Users, Target, CheckCircle2, Clock } from "lucide-react";
 
@@ -22,21 +23,18 @@ export default async function LeadsPage({
   const supabase = await createClient();
 
   const { q: rawQ, page: pageParam } = await searchParams;
-  const q = sanitizeSearch(rawQ);
+  const q = (rawQ ?? "").trim();
   const page = parsePageParam(pageParam);
   const { from, to } = pageRange(page);
   const nowIso = DateTime.utc().toISO()!;
+  const orFilter = buildIlikeOr(q, ["full_name", "email", "phone", "country", "source"]);
 
   let listQuery = supabase
     .from("leads")
     .select("*", { count: "exact" })
     .order("created_at", { ascending: false })
     .range(from, to);
-  if (q) {
-    listQuery = listQuery.or(
-      `full_name.ilike.%${q}%,email.ilike.%${q}%,phone.ilike.%${q}%,country.ilike.%${q}%,source.ilike.%${q}%`,
-    );
-  }
+  if (orFilter) listQuery = listQuery.or(orFilter);
 
   // Stat cards are global counts (independent of the search filter).
   const [
@@ -62,6 +60,12 @@ export default async function LeadsPage({
 
   const rows = (leads as Lead[] | null) ?? [];
   const totalPages = pageCount(count ?? 0, DEFAULT_PAGE_SIZE);
+  if (page > totalPages) {
+    const sp = new URLSearchParams();
+    if (q) sp.set("q", q);
+    if (totalPages > 1) sp.set("page", String(totalPages));
+    redirect(sp.toString() ? `/leads?${sp}` : "/leads");
+  }
 
   return (
     <div className="space-y-6">
@@ -94,7 +98,7 @@ export default async function LeadsPage({
       <LeadsBoard
         leads={rows}
         assignees={assignees ?? []}
-        query={rawQ ?? ""}
+        query={q}
         totalMatching={count ?? 0}
         totalPages={totalPages}
       />
@@ -104,7 +108,7 @@ export default async function LeadsPage({
         totalPages={totalPages}
         totalItems={count ?? undefined}
         basePath="/leads"
-        baseParams={{ q: rawQ }}
+        baseParams={{ q }}
         itemLabel="leads"
       />
     </div>

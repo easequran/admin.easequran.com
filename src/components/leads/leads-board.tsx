@@ -412,7 +412,7 @@ function LeadsTable({
                         {DateTime.fromISO(l.next_follow_up_at).toRelative()}
                       </span>
                     ) : (
-                      <span className="text-slate-400">—</span>
+                      <span className="text-slate-500">—</span>
                     )}
                   </td>
                 </tr>

@@ -171,13 +171,25 @@ export async function bookTrialClass(formData: FormData) {
   const startAt = DateTime.fromISO(startAtLocal, { zone: timezone });
   const endAt = startAt.plus({ minutes: durationMinutes });
 
+  // Booking a trial is a future-only action -- back the client `min` up with
+  // a server check (2-minute grace for clock skew). Editing an existing
+  // trial is a separate action and stays unrestricted.
+  if (!startAt.isValid) {
+    throw new Error("Enter a valid date and time for the trial.");
+  }
+  if (startAt.toUTC() < DateTime.utc().minus({ minutes: 2 })) {
+    throw new Error("That time is in the past — pick a future date and time.");
+  }
+
   const conflict = await hasConflict({
     teacherId,
     startAt: startAt.toUTC().toISO()!,
     endAt: endAt.toUTC().toISO()!,
   });
+  // Surface the clash inline (so the booking form keeps its values) rather
+  // than redirecting away with a query-string error.
   if (conflict) {
-    redirect(`/trials?error=${encodeURIComponent("Teacher already has a class at that time.")}`);
+    throw new Error("That teacher already has a class at that time.");
   }
 
   const { data: occurrence, error } = await supabase
@@ -361,6 +373,15 @@ export async function scheduleMakeupClass(
   const { DateTime } = await import("luxon");
   const startAt = DateTime.fromISO(startAtLocal, { zone: timezone });
   const endAt = startAt.plus({ minutes: durationMinutes });
+
+  // A makeup class is scheduled forward only -- server backstop for the
+  // client `min` (2-minute grace for clock skew).
+  if (!startAt.isValid) {
+    throw new Error("Enter a valid date and time for the makeup class.");
+  }
+  if (startAt.toUTC() < DateTime.utc().minus({ minutes: 2 })) {
+    throw new Error("That time is in the past — pick a future date and time.");
+  }
 
   const conflict = await hasConflict({
     teacherId,

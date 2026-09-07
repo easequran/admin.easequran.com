@@ -71,7 +71,7 @@ export function NewScheduleForm({
             setManuallyEditedTimezone(true);
           }}
         />
-        <p className="mt-1 text-xs text-slate-400">
+        <p className="mt-1 text-xs text-slate-500">
           Pre-filled from the student&apos;s saved timezone — edit if it&apos;s wrong.
         </p>
       </div>

@@ -46,7 +46,7 @@ export function StatCard({
         <div className="min-w-0">
           <p className="text-sm text-slate-500">{label}</p>
           <p className={cn("text-2xl font-semibold", classes.value)}>{value}</p>
-          {hint && <p className="mt-1 text-xs text-slate-400">{hint}</p>}
+          {hint && <p className="mt-1 text-xs text-slate-500">{hint}</p>}
         </div>
       </CardContent>
     </Card>

@@ -19,7 +19,8 @@ import { cn } from "@/lib/utils/cn";
 import { MonthPicker } from "@/components/finance/month-picker";
 import Link from "next/link";
 import { DateTime } from "luxon";
-import { Wallet, TrendingUp, TrendingDown, PiggyBank, Landmark } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Wallet, TrendingUp, TrendingDown, PiggyBank, Landmark, Inbox } from "lucide-react";
 
 const PARTNER_LABEL: Record<string, string> = { umair: "Muhammad Umair", shah_zaib: "Shah Zaib" };
 
@@ -292,7 +293,7 @@ function FinanceTable({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   renderRow: (row: any) => string[];
 }) {
-  if (rows.length === 0) return <p className="text-sm text-slate-500">No entries yet.</p>;
+  if (rows.length === 0) return <EmptyState compact icon={Inbox} title="No entries yet" />;
 
   return (
     <div className="overflow-x-auto rounded-lg">

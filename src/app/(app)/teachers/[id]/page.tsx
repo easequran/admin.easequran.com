@@ -8,7 +8,9 @@ import { ConfirmButton } from "@/components/ui/confirm-button";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { Badge } from "@/components/ui/badge";
 import { AvailabilityEditor } from "@/components/teachers/availability-editor";
-import { updateTeacher, deleteTeacher, addAvailability, removeAvailability } from "@/lib/actions/teachers";
+import { deleteTeacher, addAvailability, removeAvailability } from "@/lib/actions/teachers";
+import { updateTeacherAction } from "@/lib/actions/form-actions";
+import { ActionForm } from "@/components/ui/action-form";
 import { PageHeader } from "@/components/ui/page-header";
 import { notFound } from "next/navigation";
 import { User, CalendarClock } from "lucide-react";
@@ -32,7 +34,7 @@ export default async function TeacherDetailPage({
   const profile = (teacher as any).profiles;
   const teacherTimezone = profile?.timezone ?? "UTC";
 
-  const boundUpdate = updateTeacher.bind(null, id, teacher.profile_id);
+  const boundUpdate = updateTeacherAction.bind(null, id, teacher.profile_id);
   const boundDelete = deleteTeacher.bind(null, id, teacher.profile_id);
   const boundAdd = addAvailability.bind(null, id, `/teachers/${id}`);
   const boundRemove = async (availabilityId: string) => {
@@ -83,7 +85,7 @@ export default async function TeacherDetailPage({
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <SectionCard icon={User} tone="info" title="Profile">
-            <form action={boundUpdate} className="space-y-4">
+            <ActionForm action={boundUpdate} className="space-y-4">
               <div>
                 <Label htmlFor="full_name">Full name</Label>
                 <Input id="full_name" name="full_name" required defaultValue={profile?.full_name ?? ""} />
@@ -91,7 +93,7 @@ export default async function TeacherDetailPage({
               <div>
                 <Label htmlFor="email">Email</Label>
                 <Input id="email" name="email" type="email" required defaultValue={profile?.email ?? ""} />
-                <p className="mt-1 text-xs text-slate-400">
+                <p className="mt-1 text-xs text-slate-500">
                   Changing this updates their login email too.
                 </p>
               </div>
@@ -134,7 +136,7 @@ export default async function TeacherDetailPage({
               <SubmitButton className="w-full" pendingText="Saving…">
                 Save changes
               </SubmitButton>
-            </form>
+            </ActionForm>
         </SectionCard>
 
         <SectionCard icon={CalendarClock} tone="success" title={`Weekly availability (${teacherTimezone})`}>

@@ -7,8 +7,9 @@ import { SectionHeading } from "@/components/ui/section-heading";
 import { StudentsTable } from "@/components/students/students-table";
 import { Pagination } from "@/components/ui/pagination";
 import { parsePageParam, pageRange, pageCount, DEFAULT_PAGE_SIZE } from "@/lib/utils/pagination";
-import { sanitizeSearch } from "@/lib/utils/search";
+import { buildIlikeOr } from "@/lib/utils/search";
 import type { Student } from "@/lib/types/database";
+import { redirect } from "next/navigation";
 import { Users, UserCheck, PauseCircle } from "lucide-react";
 
 export default async function StudentsPage({
@@ -20,9 +21,10 @@ export default async function StudentsPage({
   const supabase = await createClient();
 
   const { q: rawQ, page: pageParam } = await searchParams;
-  const q = sanitizeSearch(rawQ);
+  const q = (rawQ ?? "").trim();
   const page = parsePageParam(pageParam);
   const { from, to } = pageRange(page);
+  const orFilter = buildIlikeOr(q, ["full_name", "country", "guardian_name", "guardian_email"]);
 
   // Trial students live in the Trials/Leads pipeline, not here.
   let listQuery = supabase
@@ -31,11 +33,7 @@ export default async function StudentsPage({
     .neq("enrollment_status", "trial")
     .order("created_at", { ascending: false })
     .range(from, to);
-  if (q) {
-    listQuery = listQuery.or(
-      `full_name.ilike.%${q}%,country.ilike.%${q}%,guardian_name.ilike.%${q}%,guardian_email.ilike.%${q}%`,
-    );
-  }
+  if (orFilter) listQuery = listQuery.or(orFilter);
 
   // Stat-card totals are global (not affected by the search filter); the
   // pagination line below the table reflects the filtered result.
@@ -50,6 +48,16 @@ export default async function StudentsPage({
     supabase.from("students").select("*", { count: "exact", head: true }).eq("enrollment_status", "active"),
     supabase.from("students").select("*", { count: "exact", head: true }).eq("enrollment_status", "paused"),
   ]);
+
+  const totalPages = pageCount(count ?? 0, DEFAULT_PAGE_SIZE);
+  // A stale bookmark / manual URL past the last page is a dead end -- send it
+  // to the last valid page instead of an empty table with no way back.
+  if (page > totalPages) {
+    const sp = new URLSearchParams();
+    if (q) sp.set("q", q);
+    if (totalPages > 1) sp.set("page", String(totalPages));
+    redirect(sp.toString() ? `/students?${sp}` : "/students");
+  }
 
   const rows = (students as Student[] | null) ?? [];
 
@@ -91,16 +99,16 @@ export default async function StudentsPage({
       <StudentsTable
         students={rows}
         teacherByStudent={Object.fromEntries(teacherByStudent)}
-        query={rawQ ?? ""}
+        query={q}
         totalMatching={count ?? 0}
       />
 
       <Pagination
         page={page}
-        totalPages={pageCount(count ?? 0, DEFAULT_PAGE_SIZE)}
+        totalPages={totalPages}
         totalItems={count ?? undefined}
         basePath="/students"
-        baseParams={{ q: rawQ }}
+        baseParams={{ q }}
         itemLabel="students"
       />
     </div>

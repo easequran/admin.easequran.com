@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/data/profile";
-import { sanitizeSearch } from "@/lib/utils/search";
+import { buildIlikeOr } from "@/lib/utils/search";
 
 /**
  * Read-only "export every matching row" actions for the list pages, so CSV
@@ -24,7 +24,6 @@ export interface StudentExportRow {
 export async function exportStudentsCsv(query?: string): Promise<StudentExportRow[]> {
   await requireAdmin();
   const supabase = await createClient();
-  const q = sanitizeSearch(query);
 
   let sel = supabase
     .from("students")
@@ -32,11 +31,8 @@ export async function exportStudentsCsv(query?: string): Promise<StudentExportRo
     .neq("enrollment_status", "trial")
     .order("created_at", { ascending: false });
 
-  if (q) {
-    sel = sel.or(
-      `full_name.ilike.%${q}%,country.ilike.%${q}%,guardian_name.ilike.%${q}%,guardian_email.ilike.%${q}%`,
-    );
-  }
+  const orFilter = buildIlikeOr(query, ["full_name", "country", "guardian_name", "guardian_email"]);
+  if (orFilter) sel = sel.or(orFilter);
 
   const { data, error } = await sel;
   if (error) throw new Error(error.message);
@@ -57,18 +53,14 @@ export interface LeadExportRow {
 export async function exportLeadsCsv(query?: string): Promise<LeadExportRow[]> {
   await requireAdmin();
   const supabase = await createClient();
-  const q = sanitizeSearch(query);
 
   let sel = supabase
     .from("leads")
     .select("full_name, email, phone, country, source, status, notes, created_at")
     .order("created_at", { ascending: false });
 
-  if (q) {
-    sel = sel.or(
-      `full_name.ilike.%${q}%,email.ilike.%${q}%,phone.ilike.%${q}%,country.ilike.%${q}%,source.ilike.%${q}%`,
-    );
-  }
+  const orFilter = buildIlikeOr(query, ["full_name", "email", "phone", "country", "source"]);
+  if (orFilter) sel = sel.or(orFilter);
 
   const { data, error } = await sel;
   if (error) throw new Error(error.message);

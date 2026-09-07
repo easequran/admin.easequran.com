@@ -9,13 +9,16 @@ import { Input, Label, Textarea } from "@/components/ui/input";
 import { PhoneCountryTimezoneField } from "@/components/leads/phone-country-timezone-field";
 import { FollowUpBadge } from "@/components/leads/follow-up-badge";
 import { LogContactForm } from "@/components/leads/log-contact-form";
-import { updateLead, updateLeadStatus, logLeadContact, deleteLead } from "@/lib/actions/leads";
+import { updateLeadStatus, logLeadContact, deleteLead } from "@/lib/actions/leads";
+import { updateLeadAction } from "@/lib/actions/form-actions";
+import { ActionForm } from "@/components/ui/action-form";
 import { PageHeader } from "@/components/ui/page-header";
 import { cn } from "@/lib/utils/cn";
 import { notFound } from "next/navigation";
 import type { LeadStatus } from "@/lib/types/database";
 import { DateTime } from "luxon";
-import { Target } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Target, Clock } from "lucide-react";
 
 // Clickable pipeline-stage chips: real pointer + hover ring + keyboard focus
 // ring so it's obvious they're actionable; the current stage also carries a
@@ -59,7 +62,7 @@ export default async function LeadDetailPage({
   if (!lead) notFound();
 
   const boundLogContact = logLeadContact.bind(null, id);
-  const boundUpdate = updateLead.bind(null, id);
+  const boundUpdate = updateLeadAction.bind(null, id);
   const boundDelete = deleteLead.bind(null, id);
 
   return (
@@ -111,7 +114,7 @@ export default async function LeadDetailPage({
       <div className="flex flex-wrap items-center gap-3">
         <FollowUpBadge nextFollowUpAt={lead.next_follow_up_at} />
         {lead.last_contacted_at && (
-          <span className="text-xs text-slate-400">
+          <span className="text-xs text-slate-500">
             Last contacted {DateTime.fromISO(lead.last_contacted_at).toRelative()}
           </span>
         )}
@@ -207,13 +210,15 @@ export default async function LeadDetailPage({
                       {a.outcome && <Badge tone="accent">{OUTCOME_LABELS[a.outcome] ?? a.outcome}</Badge>}
                     </div>
                     {a.content && <p className="mt-1 text-primary-800">{a.content}</p>}
-                    <p className="mt-1 text-xs text-slate-400">
+                    <p className="mt-1 text-xs text-slate-500">
                       {a.profiles?.full_name ?? "System"} · {DateTime.fromISO(a.created_at).toRelative()}
                     </p>
                   </li>
                 ))}
                 {(!activities || activities.length === 0) && (
-                  <p className="text-sm text-slate-500">No activity yet.</p>
+                  <li>
+                    <EmptyState compact icon={Clock} title="No activity yet" />
+                  </li>
                 )}
               </ul>
             </CardContent>
@@ -225,7 +230,7 @@ export default async function LeadDetailPage({
             <CardTitle>Details</CardTitle>
           </CardHeader>
           <CardContent>
-            <form action={boundUpdate} className="space-y-4">
+            <ActionForm action={boundUpdate} className="space-y-4">
               <div>
                 <Label htmlFor="full_name">Full name</Label>
                 <Input id="full_name" name="full_name" required defaultValue={lead.full_name} />
@@ -248,7 +253,7 @@ export default async function LeadDetailPage({
                 <Textarea id="notes" name="notes" rows={3} defaultValue={lead.notes ?? ""} />
               </div>
               <SubmitButton pendingText="Saving…">Save changes</SubmitButton>
-            </form>
+            </ActionForm>
           </CardContent>
         </Card>
       </div>

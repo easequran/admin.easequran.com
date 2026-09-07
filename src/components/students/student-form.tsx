@@ -1,6 +1,8 @@
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { PhoneTimezoneField } from "@/components/students/phone-timezone-field";
 import { SubmitButton } from "@/components/ui/submit-button";
+import { ActionForm } from "@/components/ui/action-form";
+import type { ActionState } from "@/lib/types/action-state";
 import type { Student } from "@/lib/types/database";
 
 export function StudentForm({
@@ -9,11 +11,11 @@ export function StudentForm({
   children,
 }: {
   student?: Student;
-  action: (formData: FormData) => void;
+  action: (prev: ActionState, formData: FormData) => Promise<ActionState>;
   children?: React.ReactNode;
 }) {
   return (
-    <form action={action} className="max-w-xl space-y-4">
+    <ActionForm action={action} className="max-w-xl space-y-4">
       <div>
         <Label htmlFor="full_name">Full name</Label>
         <Input id="full_name" name="full_name" required defaultValue={student?.full_name} />
@@ -68,6 +70,6 @@ export function StudentForm({
       <SubmitButton pendingText={student ? "Saving..." : "Adding..."}>
         {student ? "Save changes" : "Add student"}
       </SubmitButton>
-    </form>
+    </ActionForm>
   );
 }

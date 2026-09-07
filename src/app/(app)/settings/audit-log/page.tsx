@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/page-header";
 import { Pagination } from "@/components/ui/pagination";
+import { EmptyState } from "@/components/ui/empty-state";
 import { parsePageParam, pageRange, pageCount, DEFAULT_PAGE_SIZE } from "@/lib/utils/pagination";
 import { DateTime } from "luxon";
 import { History } from "lucide-react";
@@ -49,9 +50,16 @@ export default async function AuditLogPage({
       <Card>
         <CardContent className="p-0">
           {entries.length === 0 ? (
-            <p className="p-6 text-sm text-slate-500">
-              {page > 1 ? "No more entries." : "No audit entries yet."}
-            </p>
+            <EmptyState
+              compact
+              icon={History}
+              title={page > 1 ? "No more entries" : "No audit entries yet"}
+              description={
+                page > 1
+                  ? undefined
+                  : "Deletions, status changes and bulk actions across the portal will show up here."
+              }
+            />
           ) : (
             <ul className="divide-y divide-primary-50">
               {entries.map((entry) => (
@@ -64,7 +72,7 @@ export default async function AuditLogPage({
                       {entry.entity_label && <span className="font-medium text-primary-900">{entry.entity_label}</span>}
                     </div>
                     {entry.details && <p className="mt-1 text-slate-600">{entry.details}</p>}
-                    <p className="mt-1 text-xs text-slate-400">
+                    <p className="mt-1 text-xs text-slate-500">
                       {entry.actor_name ?? "Unknown"} · {DateTime.fromISO(entry.created_at).setZone(profile.timezone).toFormat("MMM d, yyyy h:mm a")}
                     </p>
                   </div>

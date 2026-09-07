@@ -7,7 +7,8 @@ import { SectionHeading } from "@/components/ui/section-heading";
 import { TeachersTable, type TeacherRow } from "@/components/teachers/teachers-table";
 import { Pagination } from "@/components/ui/pagination";
 import { parsePageParam, pageRange, pageCount, DEFAULT_PAGE_SIZE } from "@/lib/utils/pagination";
-import { sanitizeSearch } from "@/lib/utils/search";
+import { buildIlikeOr } from "@/lib/utils/search";
+import { redirect } from "next/navigation";
 import { GraduationCap, UserCheck, UserX } from "lucide-react";
 
 export default async function TeachersPage({
@@ -19,19 +20,20 @@ export default async function TeachersPage({
   const supabase = await createClient();
 
   const { q: rawQ, page: pageParam } = await searchParams;
-  const q = sanitizeSearch(rawQ);
+  const q = (rawQ ?? "").trim();
   const page = parsePageParam(pageParam);
   const { from, to } = pageRange(page);
 
   // Name/email live on `profiles`, so a search resolves to profile ids first,
   // then the teacher rows are paged over that set.
   let matchingProfileIds: string[] | null = null;
-  if (q) {
+  const profileOr = buildIlikeOr(q, ["full_name", "email"]);
+  if (profileOr) {
     const { data: profs } = await supabase
       .from("profiles")
       .select("id")
       .eq("role", "teacher")
-      .or(`full_name.ilike.%${q}%,email.ilike.%${q}%`);
+      .or(profileOr);
     matchingProfileIds = (profs ?? []).map((p) => p.id as string);
   }
 
@@ -41,7 +43,11 @@ export default async function TeachersPage({
     .order("created_at", { ascending: false })
     .range(from, to);
   if (matchingProfileIds) {
-    listQuery = listQuery.in("profile_id", matchingProfileIds.length > 0 ? matchingProfileIds : ["00000000-0000-0000-0000-000000000000"]);
+    // sentinel keeps an empty match returning 0 rows rather than "no filter"
+    listQuery = listQuery.in(
+      "profile_id",
+      matchingProfileIds.length > 0 ? matchingProfileIds : ["00000000-0000-0000-0000-000000000000"],
+    );
   }
 
   const [{ data: teachers, count }, { count: totalCount }, { count: activeCount }] = await Promise.all([
@@ -49,6 +55,14 @@ export default async function TeachersPage({
     supabase.from("teachers").select("*", { count: "exact", head: true }),
     supabase.from("teachers").select("*", { count: "exact", head: true }).eq("active", true),
   ]);
+
+  const totalPages = pageCount(count ?? 0, DEFAULT_PAGE_SIZE);
+  if (page > totalPages) {
+    const sp = new URLSearchParams();
+    if (q) sp.set("q", q);
+    if (totalPages > 1) sp.set("page", String(totalPages));
+    redirect(sp.toString() ? `/teachers?${sp}` : "/teachers");
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rows: TeacherRow[] = ((teachers ?? []) as any[]).map((t) => ({
@@ -79,14 +93,14 @@ export default async function TeachersPage({
       </div>
 
       <SectionHeading icon={GraduationCap} title="Teacher directory" description="Search by name or email; manage profiles, rates and active status." />
-      <TeachersTable teachers={rows} hasQuery={Boolean(rawQ?.trim())} />
+      <TeachersTable teachers={rows} hasQuery={q.length > 0} />
 
       <Pagination
         page={page}
-        totalPages={pageCount(count ?? 0, DEFAULT_PAGE_SIZE)}
+        totalPages={totalPages}
         totalItems={count ?? undefined}
         basePath="/teachers"
-        baseParams={{ q: rawQ }}
+        baseParams={{ q }}
         itemLabel="teachers"
       />
     </div>

@@ -82,7 +82,7 @@ export function FeePlanForm({
             </Label>
             <Input id="monthly_amount" name="monthly_amount" type="number" step="0.01" min="0.01" required />
             {isSiblingGroup && (
-              <p className="mt-1 text-xs text-slate-400">
+              <p className="mt-1 text-xs text-slate-500">
                 Split evenly across the {selectedCount} selected siblings.
               </p>
             )}
@@ -105,7 +105,7 @@ export function FeePlanForm({
               defaultValue={20}
               required
             />
-            <p className="mt-1 text-xs text-slate-400">
+            <p className="mt-1 text-xs text-slate-500">
               The first invoice is raised now for this set. The next invoice is generated
               automatically the moment all of them are completed. Absent classes count; excused
               classes don&apos;t.
@@ -117,7 +117,7 @@ export function FeePlanForm({
             </Label>
             <Input id="block_amount" name="block_amount" type="number" step="0.01" min="0.01" required />
             {isSiblingGroup && (
-              <p className="mt-1 text-xs text-slate-400">
+              <p className="mt-1 text-xs text-slate-500">
                 Split evenly across the {selectedCount} selected siblings.
               </p>
             )}
@@ -129,7 +129,7 @@ export function FeePlanForm({
           <div>
             <Label htmlFor="block_billing_since">Count classes from</Label>
             <Input id="block_billing_since" name="block_billing_since" type="date" defaultValue={today} required />
-            <p className="mt-1 text-xs text-slate-400">
+            <p className="mt-1 text-xs text-slate-500">
               Only classes on or after this date count toward finishing the current set. Leave as
               today for a fresh start.
             </p>

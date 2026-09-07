@@ -1,6 +1,6 @@
 import { StudentForm } from "@/components/students/student-form";
 import { WeeklyScheduleFields } from "@/components/students/weekly-schedule-fields";
-import { createStudent } from "@/lib/actions/students";
+import { createStudentAction } from "@/lib/actions/form-actions";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/data/profile";
 import { PageHeader } from "@/components/ui/page-header";
@@ -25,7 +25,7 @@ export default async function NewStudentPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Add student" icon={UserPlus} tone="info" backHref="/students" backLabel="Back to Students" />
-      <StudentForm action={createStudent}>
+      <StudentForm action={createStudentAction}>
         <WeeklyScheduleFields teachers={teacherOptions} />
       </StudentForm>
     </div>
