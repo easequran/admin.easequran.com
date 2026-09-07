@@ -4,6 +4,7 @@ import { StudentForm } from "@/components/students/student-form";
 import { updateStudent, deleteStudent, addStudentSchedule, removeStudentSchedule } from "@/lib/actions/students";
 import { SectionCard } from "@/components/ui/section-card";
 import { Button } from "@/components/ui/button";
+import { ConfirmButton } from "@/components/ui/confirm-button";
 import { Badge } from "@/components/ui/badge";
 import { WeeklyScheduleFields } from "@/components/students/weekly-schedule-fields";
 import { PageHeader } from "@/components/ui/page-header";
@@ -109,11 +110,23 @@ export default async function StudentDetailPage({
         backHref="/students"
         backLabel="Back to Students"
         actions={
-          <form action={boundDelete}>
-            <Button type="submit" variant="danger" size="sm">
-              Delete student
-            </Button>
-          </form>
+          <ConfirmButton
+            action={boundDelete}
+            title="Delete this student?"
+            confirmText="Delete student"
+            typeToConfirm={student.full_name}
+            errorToast="Failed to delete student"
+            body={
+              <>
+                <strong className="font-semibold text-primary-900">{student.full_name}</strong> and
+                everything tied to them will be permanently removed: their fee plans, all invoices,
+                every recurring class and scheduled occurrence, and attendance history. This cannot be
+                undone.
+              </>
+            }
+          >
+            Delete student
+          </ConfirmButton>
         }
       />
 
@@ -217,11 +230,22 @@ export default async function StudentDetailPage({
                             {s.local_start_time} ({s.timezone}) · {s.duration_minutes}m
                           </p>
                         </div>
-                        <form action={boundRemove}>
-                          <Button type="submit" variant="danger" size="sm">
-                            Remove
-                          </Button>
-                        </form>
+                        <ConfirmButton
+                          action={boundRemove}
+                          title="Remove this weekly class?"
+                          confirmText="Remove"
+                          confirmingText="Removing…"
+                          errorToast="Failed to remove class"
+                          body={
+                            <>
+                              Upcoming, not-yet-happened occurrences of this class are cleared from
+                              the schedule (and any calendar invites cancelled). Past attendance is
+                              kept.
+                            </>
+                          }
+                        >
+                          Remove
+                        </ConfirmButton>
                       </li>
                     );
                   })}

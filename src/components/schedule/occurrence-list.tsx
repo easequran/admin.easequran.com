@@ -6,6 +6,7 @@ import { DateTime } from "luxon";
 import { User, GraduationCap, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button, LinkButton } from "@/components/ui/button";
+import { ConfirmButton } from "@/components/ui/confirm-button";
 import { formatInZone } from "@/lib/utils/timezone";
 import { formatCountdown } from "@/lib/utils/countdown";
 import { updateOccurrenceStatus, deleteTrialClass } from "@/lib/actions/schedule";
@@ -129,11 +130,17 @@ export function OccurrenceList({
                       Didn&apos;t show
                     </Button>
                   </form>
-                  <form action={updateOccurrenceStatus.bind(null, o.id, "cancelled")}>
-                    <Button type="submit" size="sm" variant="danger">
-                      Cancel
-                    </Button>
-                  </form>
+                  <ConfirmButton
+                    action={updateOccurrenceStatus.bind(null, o.id, "cancelled")}
+                    title="Cancel this trial?"
+                    confirmText="Cancel trial"
+                    confirmingText="Cancelling…"
+                    successToast="Trial cancelled"
+                    errorToast="Failed to cancel trial"
+                    body="The booking is marked cancelled and its calendar invite removed. Unless the lead is already converted, they're moved to the 'lost' stage."
+                  >
+                    Cancel
+                  </ConfirmButton>
                 </div>
               ) : o.status === "completed" && o.leadId && !o.leadConverted ? (
                 <div className="flex items-center gap-2">
@@ -145,16 +152,15 @@ export function OccurrenceList({
               ) : showStatusActions && (o.status === "cancelled" || o.status === "no_show") ? (
                 <div className="flex items-center gap-2">
                   <Badge tone={statusTone[o.status]}>{o.status.replace("_", " ")}</Badge>
-                  <form
+                  <ConfirmButton
                     action={deleteTrialClass.bind(null, o.id)}
-                    onSubmit={(e) => {
-                      if (!confirm("Permanently delete this trial? This can't be undone.")) e.preventDefault();
-                    }}
+                    title="Delete this trial permanently?"
+                    confirmText="Delete trial"
+                    errorToast="Failed to delete trial"
+                    body="This removes the trial booking from the list entirely, along with its calendar invite. This can't be undone."
                   >
-                    <Button type="submit" size="sm" variant="danger">
-                      Delete
-                    </Button>
-                  </form>
+                    Delete
+                  </ConfirmButton>
                 </div>
               ) : (
                 <Badge tone={statusTone[o.status]}>{o.status.replace("_", " ")}</Badge>

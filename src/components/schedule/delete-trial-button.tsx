@@ -1,19 +1,18 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { ConfirmButton } from "@/components/ui/confirm-button";
 import { deleteTrialClass } from "@/lib/actions/schedule";
 
 export function DeleteTrialButton({ occurrenceId }: { occurrenceId: string }) {
   return (
-    <form
+    <ConfirmButton
       action={deleteTrialClass.bind(null, occurrenceId)}
-      onSubmit={(e) => {
-        if (!confirm("Permanently delete this trial? This can't be undone.")) e.preventDefault();
-      }}
+      title="Delete this trial permanently?"
+      confirmText="Delete trial"
+      errorToast="Failed to delete trial"
+      body="This removes the trial booking from the list entirely, along with its calendar invite. This can't be undone."
     >
-      <Button type="submit" variant="danger" size="sm">
-        Delete trial
-      </Button>
-    </form>
+      Delete trial
+    </ConfirmButton>
   );
 }

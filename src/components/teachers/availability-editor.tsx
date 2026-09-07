@@ -1,9 +1,11 @@
 "use client";
 
+import { X } from "lucide-react";
 import { Input, Label } from "@/components/ui/input";
 import { TimezoneSelect } from "@/components/ui/timezone-select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ConfirmButton } from "@/components/ui/confirm-button";
 import { toast } from "@/lib/toast";
 import type { TeacherAvailability } from "@/lib/types/database";
 
@@ -28,7 +30,7 @@ export function AvailabilityEditor({
   teacherTimezone: string;
   availability: TeacherAvailability[];
   onAdd: (formData: FormData) => void;
-  onRemove: (formData: FormData) => void;
+  onRemove: (availabilityId: string) => void | Promise<void>;
 }) {
   const groups = DAY_NAMES.map((name, dayOfWeek) => ({
     dayOfWeek,
@@ -49,24 +51,42 @@ export function AvailabilityEditor({
               {g.name}
             </Badge>
             <div className="flex flex-1 flex-wrap gap-2">
-              {g.windows.map((a) => (
-                <span
-                  key={a.id}
-                  className="inline-flex items-center gap-2 rounded-full border border-primary-200 bg-white px-2.5 py-1 text-xs text-primary-800"
-                >
-                  {a.local_start_time.slice(0, 5)}–{a.local_end_time.slice(0, 5)} ({a.timezone})
-                  <form action={onRemove}>
-                    <input type="hidden" name="availability_id" value={a.id} />
-                    <button
-                      type="submit"
-                      className="font-semibold text-red-500 hover:text-red-700"
-                      aria-label={`Remove ${g.name} ${a.local_start_time.slice(0, 5)}–${a.local_end_time.slice(0, 5)}`}
+              {g.windows.map((a) => {
+                const range = `${a.local_start_time.slice(0, 5)}–${a.local_end_time.slice(0, 5)}`;
+                return (
+                  <span
+                    key={a.id}
+                    className="inline-flex items-center gap-2 rounded-full border border-primary-200 bg-white px-2.5 py-1 text-xs text-primary-800"
+                  >
+                    {range} ({a.timezone})
+                    <ConfirmButton
+                      action={() => onRemove(a.id)}
+                      title="Remove this availability window?"
+                      confirmText="Remove"
+                      confirmingText="Removing…"
+                      errorToast="Failed to remove availability"
+                      body={
+                        <>
+                          Removes <strong className="font-semibold text-primary-900">{g.name} {range}</strong> (
+                          {a.timezone}). Classes already booked in this window are not affected.
+                        </>
+                      }
+                      trigger={(open) => (
+                        <button
+                          type="button"
+                          onClick={open}
+                          aria-label={`Remove ${g.name} ${range}`}
+                          className="-mr-1 flex h-6 w-6 items-center justify-center rounded-full text-red-500 transition-colors hover:bg-red-50 hover:text-red-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-red-400"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      )}
                     >
-                      ×
-                    </button>
-                  </form>
-                </span>
-              ))}
+                      Remove
+                    </ConfirmButton>
+                  </span>
+                );
+              })}
             </div>
           </div>
         ))}
@@ -93,14 +113,14 @@ export function AvailabilityEditor({
             {DAYS.map((d) => (
               <label
                 key={d.value}
-                className="relative cursor-pointer rounded-full border border-primary-200 px-3 py-1.5 text-sm font-medium text-primary-700 transition-colors hover:bg-primary-50 has-[:checked]:border-accent-500 has-[:checked]:bg-accent-500 has-[:checked]:text-primary-900"
+                className="relative cursor-pointer rounded-full border border-primary-200 px-3 py-1.5 text-sm font-medium text-primary-700 transition-colors hover:bg-primary-50 has-[:checked]:border-accent-500 has-[:checked]:bg-accent-500 has-[:checked]:text-primary-900 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-primary-400"
               >
                 <input type="checkbox" name="day_of_week" value={d.value} className="sr-only" />
                 {d.label}
               </label>
             ))}
           </div>
-          <p className="mt-1 text-xs text-slate-400">
+          <p className="mt-1 text-xs text-slate-500">
             Select every day this time range applies to — add them all in one go.
           </p>
         </div>

@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
+import { Modal } from "@/components/ui/modal";
+import { ConfirmButton } from "@/components/ui/confirm-button";
 import { Input, Label, Select } from "@/components/ui/input";
 import { CurrencySelect } from "@/components/ui/currency-select";
 import { updateFeePlan, deactivateFeePlan } from "@/lib/actions/fees";
@@ -26,7 +29,7 @@ interface FeePlanRowActionsProps {
 }
 
 export function FeePlanRowActions({ feePlan, studentName, today }: FeePlanRowActionsProps) {
-  const [mode, setMode] = useState<"idle" | "editing" | "confirmingDeactivate">("idle");
+  const [editing, setEditing] = useState(false);
   const [billingMode, setBillingMode] = useState<"monthly" | "per_block">(feePlan.billing_mode);
 
   const boundUpdate = updateFeePlan.bind(null, feePlan.id, feePlan.student_id);
@@ -34,195 +37,175 @@ export function FeePlanRowActions({ feePlan, studentName, today }: FeePlanRowAct
 
   return (
     <div className="flex justify-end gap-2">
-      <Button type="button" size="sm" variant="outline" onClick={() => setMode("editing")}>
+      <Button type="button" size="sm" variant="outline" onClick={() => setEditing(true)}>
         Edit
       </Button>
-      <Button type="button" size="sm" variant="danger" onClick={() => setMode("confirmingDeactivate")}>
+
+      <ConfirmButton
+        action={boundDeactivate}
+        title="Deactivate this fee plan?"
+        confirmText="Deactivate"
+        confirmingText="Deactivating…"
+        successToast="Fee plan deactivated"
+        errorToast="Failed to deactivate fee plan"
+        body={
+          <>
+            {studentName ? `${studentName}'s fee plan` : "This fee plan"} will stop generating new
+            invoices. Past invoices are kept, and you can set a new fee plan for this student
+            afterwards.
+          </>
+        }
+      >
         Deactivate
-      </Button>
+      </ConfirmButton>
 
-      {mode === "editing" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary-950/40 p-4">
-          <div className="max-h-[90vh] w-full max-w-sm overflow-y-auto rounded-xl bg-white p-5 shadow-xl">
-            <h3 className="text-base font-semibold text-primary-900">
-              Edit fee{studentName ? ` — ${studentName}` : ""}
-            </h3>
-            <form
-              action={async (formData) => {
-                try {
-                  await boundUpdate(formData);
-                  toast.success("Fee plan updated");
-                  setMode("idle");
-                } catch (err) {
-                  toast.error(err instanceof Error ? err.message : "Failed to update fee plan");
-                }
-              }}
-              className="mt-4 space-y-4"
+      <Modal
+        open={editing}
+        onClose={() => setEditing(false)}
+        title={`Edit fee${studentName ? ` — ${studentName}` : ""}`}
+        size="sm"
+      >
+        <form
+          action={async (formData) => {
+            try {
+              await boundUpdate(formData);
+              toast.success("Fee plan updated");
+              setEditing(false);
+            } catch (err) {
+              toast.error(err instanceof Error ? err.message : "Failed to update fee plan");
+            }
+          }}
+          className="space-y-4"
+        >
+          <div>
+            <Label htmlFor={`billing_mode-${feePlan.id}`}>Billing type</Label>
+            <Select
+              id={`billing_mode-${feePlan.id}`}
+              name="billing_mode"
+              value={billingMode}
+              onChange={(e) => setBillingMode(e.target.value as "monthly" | "per_block")}
             >
-              <div>
-                <Label htmlFor={`billing_mode-${feePlan.id}`}>Billing type</Label>
-                <Select
-                  id={`billing_mode-${feePlan.id}`}
-                  name="billing_mode"
-                  value={billingMode}
-                  onChange={(e) => setBillingMode(e.target.value as "monthly" | "per_block")}
-                >
-                  <option value="monthly">Monthly (calendar month)</option>
-                  <option value="per_block">Fixed fee per set of classes (paid in advance)</option>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor={`currency-${feePlan.id}`}>Currency</Label>
-                <CurrencySelect id={`currency-${feePlan.id}`} name="currency" defaultValue={feePlan.currency} />
-              </div>
-
-              {billingMode === "monthly" ? (
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label htmlFor={`amount-${feePlan.id}`}>Fee / month</Label>
-                    <Input
-                      id={`amount-${feePlan.id}`}
-                      name="monthly_amount"
-                      type="number"
-                      step="0.01"
-                      min="0.01"
-                      required
-                      defaultValue={feePlan.monthly_amount ?? undefined}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor={`billing_day-${feePlan.id}`}>Fee date (day)</Label>
-                    <Input
-                      id={`billing_day-${feePlan.id}`}
-                      name="billing_day"
-                      type="number"
-                      min={1}
-                      max={28}
-                      required
-                      defaultValue={feePlan.billing_day}
-                    />
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label htmlFor={`cpb-${feePlan.id}`}>Classes in set</Label>
-                      <Input
-                        id={`cpb-${feePlan.id}`}
-                        name="classes_per_block"
-                        type="number"
-                        min={1}
-                        max={60}
-                        required
-                        defaultValue={feePlan.classes_per_block ?? 20}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor={`block_amount-${feePlan.id}`}>Fixed fee / set</Label>
-                      <Input
-                        id={`block_amount-${feePlan.id}`}
-                        name="block_amount"
-                        type="number"
-                        step="0.01"
-                        min="0.01"
-                        required
-                        defaultValue={feePlan.block_amount ?? undefined}
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label htmlFor={`grace-${feePlan.id}`}>Days until due</Label>
-                      <Input
-                        id={`grace-${feePlan.id}`}
-                        name="grace_days"
-                        type="number"
-                        min={0}
-                        max={60}
-                        required
-                        defaultValue={feePlan.grace_days}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor={`since-${feePlan.id}`}>Count classes from</Label>
-                      <Input
-                        id={`since-${feePlan.id}`}
-                        name="block_billing_since"
-                        type="date"
-                        required
-                        defaultValue={feePlan.block_billing_since ?? today}
-                      />
-                    </div>
-                  </div>
-                  <p className="text-xs text-slate-400">
-                    Fees are collected in advance: switching to this mode raises the first invoice
-                    now. Absent classes count toward finishing a set; excused don&apos;t. Moving
-                    &quot;count from&quot; earlier can raise catch-up invoices for sets already
-                    delivered.
-                  </p>
-                </>
-              )}
-
-              <div>
-                <Label htmlFor={`classes-${feePlan.id}`}>Classes/week</Label>
-                <Select
-                  id={`classes-${feePlan.id}`}
-                  name="classes_per_week"
-                  defaultValue={String(feePlan.classes_per_week)}
-                >
-                  <option value="1">1</option>
-                  <option value="2">2</option>
-                  <option value="3">3</option>
-                  <option value="5">5</option>
-                </Select>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2">
-                <Button type="button" size="sm" variant="outline" onClick={() => setMode("idle")}>
-                  Cancel
-                </Button>
-                <Button type="submit" size="sm">
-                  Save changes
-                </Button>
-              </div>
-            </form>
+              <option value="monthly">Monthly (calendar month)</option>
+              <option value="per_block">Fixed fee per set of classes (paid in advance)</option>
+            </Select>
           </div>
-        </div>
-      )}
 
-      {mode === "confirmingDeactivate" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary-950/40 p-4">
-          <div className="w-full max-w-sm rounded-xl bg-white p-5 shadow-xl">
-            <h3 className="text-base font-semibold text-primary-900">Deactivate this fee plan?</h3>
-            <p className="mt-2 text-sm text-slate-500">
-              {studentName ? `${studentName}'s fee plan` : "This fee plan"} will stop generating new invoices. Past
-              invoices are kept. You can set a new fee plan for this student afterwards.
-            </p>
-            <div className="mt-4 flex justify-end gap-2">
-              <Button type="button" size="sm" variant="outline" onClick={() => setMode("idle")}>
-                Cancel
-              </Button>
-              <form
-                action={async () => {
-                  try {
-                    await boundDeactivate();
-                    toast.success("Fee plan deactivated");
-                    setMode("idle");
-                  } catch (err) {
-                    toast.error(err instanceof Error ? err.message : "Failed to deactivate fee plan");
-                  }
-                }}
-              >
-                <Button type="submit" size="sm" variant="danger">
-                  Deactivate
-                </Button>
-              </form>
+          <div>
+            <Label htmlFor={`currency-${feePlan.id}`}>Currency</Label>
+            <CurrencySelect id={`currency-${feePlan.id}`} name="currency" defaultValue={feePlan.currency} />
+          </div>
+
+          {billingMode === "monthly" ? (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor={`amount-${feePlan.id}`}>Fee / month</Label>
+                <Input
+                  id={`amount-${feePlan.id}`}
+                  name="monthly_amount"
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  required
+                  defaultValue={feePlan.monthly_amount ?? undefined}
+                />
+              </div>
+              <div>
+                <Label htmlFor={`billing_day-${feePlan.id}`}>Fee date (day)</Label>
+                <Input
+                  id={`billing_day-${feePlan.id}`}
+                  name="billing_day"
+                  type="number"
+                  min={1}
+                  max={28}
+                  required
+                  defaultValue={feePlan.billing_day}
+                />
+              </div>
             </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor={`cpb-${feePlan.id}`}>Classes in set</Label>
+                  <Input
+                    id={`cpb-${feePlan.id}`}
+                    name="classes_per_block"
+                    type="number"
+                    min={1}
+                    max={60}
+                    required
+                    defaultValue={feePlan.classes_per_block ?? 20}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor={`block_amount-${feePlan.id}`}>Fixed fee / set</Label>
+                  <Input
+                    id={`block_amount-${feePlan.id}`}
+                    name="block_amount"
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    required
+                    defaultValue={feePlan.block_amount ?? undefined}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor={`grace-${feePlan.id}`}>Days until due</Label>
+                  <Input
+                    id={`grace-${feePlan.id}`}
+                    name="grace_days"
+                    type="number"
+                    min={0}
+                    max={60}
+                    required
+                    defaultValue={feePlan.grace_days}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor={`since-${feePlan.id}`}>Count classes from</Label>
+                  <Input
+                    id={`since-${feePlan.id}`}
+                    name="block_billing_since"
+                    type="date"
+                    required
+                    defaultValue={feePlan.block_billing_since ?? today}
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-slate-500">
+                Fees are collected in advance: switching to this mode raises the first invoice now.
+                Absent classes count toward finishing a set; excused don&apos;t. Moving &quot;count
+                from&quot; earlier can raise catch-up invoices for sets already delivered.
+              </p>
+            </>
+          )}
+
+          <div>
+            <Label htmlFor={`classes-${feePlan.id}`}>Classes/week</Label>
+            <Select
+              id={`classes-${feePlan.id}`}
+              name="classes_per_week"
+              defaultValue={String(feePlan.classes_per_week)}
+            >
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="5">5</option>
+            </Select>
           </div>
-        </div>
-      )}
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" size="sm" variant="outline" onClick={() => setEditing(false)}>
+              Cancel
+            </Button>
+            <SubmitButton size="sm" pendingText="Saving…">
+              Save changes
+            </SubmitButton>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

@@ -6,7 +6,7 @@ import { StatCard } from "@/components/ui/stat-card";
 import { SectionCard } from "@/components/ui/section-card";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { SubmitButton } from "@/components/ui/submit-button";
-import { Button } from "@/components/ui/button";
+import { ConfirmButton } from "@/components/ui/confirm-button";
 import {
   TABLE_ELEMENT_CLASS,
   TABLE_HEAD_CLASS,
@@ -316,11 +316,16 @@ function FinanceTable({
                 </td>
               ))}
               <td className={TABLE_CELL_CLASS}>
-                <form action={deleteFinanceEntry.bind(null, table, row.id)}>
-                  <Button type="submit" size="sm" variant="danger">
-                    Delete
-                  </Button>
-                </form>
+                <ConfirmButton
+                  action={deleteFinanceEntry.bind(null, table, row.id)}
+                  title="Delete this entry?"
+                  confirmText="Delete"
+                  confirmingText="Deleting…"
+                  errorToast="Failed to delete entry"
+                  body="This entry is removed and the balance, net profit and partner profit-split figures recalculate. This can't be undone."
+                >
+                  Delete
+                </ConfirmButton>
               </td>
             </tr>
           ))}

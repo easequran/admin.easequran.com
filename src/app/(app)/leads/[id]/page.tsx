@@ -3,16 +3,25 @@ import { requireAdmin } from "@/lib/data/profile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button, LinkButton } from "@/components/ui/button";
+import { ConfirmButton } from "@/components/ui/confirm-button";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { PhoneCountryTimezoneField } from "@/components/leads/phone-country-timezone-field";
 import { FollowUpBadge } from "@/components/leads/follow-up-badge";
 import { LogContactForm } from "@/components/leads/log-contact-form";
 import { updateLead, updateLeadStatus, logLeadContact, deleteLead } from "@/lib/actions/leads";
 import { PageHeader } from "@/components/ui/page-header";
+import { cn } from "@/lib/utils/cn";
 import { notFound } from "next/navigation";
 import type { LeadStatus } from "@/lib/types/database";
 import { DateTime } from "luxon";
 import { Target } from "lucide-react";
+
+// Clickable pipeline-stage chips: real pointer + hover ring + keyboard focus
+// ring so it's obvious they're actionable; the current stage also carries a
+// permanent accent ring and aria-current.
+const STAGE_INTERACTIVE =
+  "cursor-pointer rounded-full outline-none transition hover:ring-2 hover:ring-primary-300 focus-visible:ring-2 focus-visible:ring-primary-500";
+const STAGE_CURRENT = "ring-2 ring-accent-500 ring-offset-1";
 
 const STATUS_FLOW: LeadStatus[] = [
   "new",
@@ -77,11 +86,23 @@ export default async function LeadDetailPage({
                 </LinkButton>
               )
             )}
-            <form action={boundDelete}>
-              <Button type="submit" variant="danger">
-                Delete lead
-              </Button>
-            </form>
+            <ConfirmButton
+              action={boundDelete}
+              size="md"
+              title="Delete this lead?"
+              confirmText="Delete lead"
+              errorToast="Failed to delete lead"
+              body={
+                <>
+                  <strong className="font-semibold text-primary-900">{lead.full_name}</strong> and
+                  their full contact history (calls, messages, notes, status changes) will be
+                  permanently removed. Any trial classes already booked for them are kept. This
+                  cannot be undone.
+                </>
+              }
+            >
+              Delete lead
+            </ConfirmButton>
           </>
         }
       />
@@ -102,15 +123,24 @@ export default async function LeadDetailPage({
               <CardTitle>Pipeline stage</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2" role="group" aria-label="Lead pipeline stage">
                 {STATUS_FLOW.map((s) => {
+                  const isCurrent = lead.status === s;
+                  const label = s.replace("_", " ");
+
                   if (s === "converted") {
                     const href = lead.converted_student_id
                       ? `/students/${lead.converted_student_id}`
                       : `/leads/${id}/convert`;
                     return (
-                      <a key={s} href={href}>
-                        <Badge tone={lead.status === s ? "accent" : "neutral"}>converted</Badge>
+                      <a
+                        key={s}
+                        href={href}
+                        aria-current={isCurrent ? "step" : undefined}
+                        title={isCurrent ? "Current stage — open the student record" : "Convert this lead to a student"}
+                        className={cn(STAGE_INTERACTIVE, isCurrent && STAGE_CURRENT)}
+                      >
+                        <Badge tone={isCurrent ? "accent" : "neutral"}>converted</Badge>
                       </a>
                     );
                   }
@@ -121,8 +151,13 @@ export default async function LeadDetailPage({
                   // in that stage with no trial ever having happened.
                   if (s === "trial_scheduled" || s === "trial_completed") {
                     return (
-                      <span key={s} title="Set automatically by booking/completing a trial in Trial classes">
-                        <Badge tone={lead.status === s ? "accent" : "neutral"}>{s.replace("_", " ")}</Badge>
+                      <span
+                        key={s}
+                        aria-current={isCurrent ? "step" : undefined}
+                        title="Set automatically when a trial is booked or completed in Trial classes"
+                        className={cn("cursor-default rounded-full", isCurrent ? STAGE_CURRENT : "opacity-70")}
+                      >
+                        <Badge tone={isCurrent ? "accent" : "neutral"}>{label}</Badge>
                       </span>
                     );
                   }
@@ -133,8 +168,14 @@ export default async function LeadDetailPage({
                   };
                   return (
                     <form key={s} action={boundSet}>
-                      <button type="submit">
-                        <Badge tone={lead.status === s ? "accent" : "neutral"}>{s.replace("_", " ")}</Badge>
+                      <button
+                        type="submit"
+                        aria-current={isCurrent ? "step" : undefined}
+                        aria-label={isCurrent ? `Current stage: ${label}` : `Move lead to ${label}`}
+                        title={isCurrent ? "Current stage" : `Move lead to "${label}"`}
+                        className={cn(STAGE_INTERACTIVE, isCurrent && STAGE_CURRENT)}
+                      >
+                        <Badge tone={isCurrent ? "accent" : "neutral"}>{label}</Badge>
                       </button>
                     </form>
                   );

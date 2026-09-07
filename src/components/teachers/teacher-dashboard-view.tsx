@@ -64,9 +64,9 @@ export async function TeacherDashboardView({
     .order("day_of_week");
 
   const boundAdd = addAvailability.bind(null, teacherId, returnPath);
-  const boundRemove = async (formData: FormData) => {
+  const boundRemove = async (availabilityId: string) => {
     "use server";
-    await removeAvailability(teacherId, String(formData.get("availability_id")), returnPath);
+    await removeAvailability(teacherId, availabilityId, returnPath);
   };
 
   return (

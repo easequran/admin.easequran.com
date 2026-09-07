@@ -4,6 +4,7 @@ import { SectionCard } from "@/components/ui/section-card";
 import { Input, Label, Select } from "@/components/ui/input";
 import { TimezoneSelect } from "@/components/ui/timezone-select";
 import { Button } from "@/components/ui/button";
+import { ConfirmButton } from "@/components/ui/confirm-button";
 import { updateTrialClass, cancelTrialClass } from "@/lib/actions/schedule";
 import { DeleteTrialButton } from "@/components/schedule/delete-trial-button";
 import { PageHeader } from "@/components/ui/page-header";
@@ -52,11 +53,22 @@ export default async function EditTrialPage({
         backLabel="Back to Trial classes"
         actions={
           occurrence.status === "scheduled" ? (
-            <form action={boundCancel}>
-              <Button type="submit" variant="danger" size="sm">
-                Cancel trial
-              </Button>
-            </form>
+            <ConfirmButton
+              action={boundCancel}
+              title="Cancel this trial class?"
+              confirmText="Cancel trial"
+              confirmingText="Cancelling…"
+              errorToast="Failed to cancel trial"
+              body={
+                <>
+                  The booking is marked cancelled and its calendar invite is removed. Unless the lead
+                  is already converted, they&apos;re moved to the &quot;lost&quot; stage. You can
+                  book a new trial for them afterwards.
+                </>
+              }
+            >
+              Cancel trial
+            </ConfirmButton>
           ) : (
             <DeleteTrialButton occurrenceId={id} />
           )

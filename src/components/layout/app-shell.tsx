@@ -42,7 +42,9 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    // The shell is exactly one viewport tall and never scrolls itself, so the
+    // topbar and sidebar stay pinned and `main` is the one real scroll area.
+    <div className="flex h-dvh overflow-hidden bg-slate-50">
       <Sidebar
         role={profile.role}
         open={mobileOpen}
@@ -50,7 +52,7 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
         collapsed={collapsed}
         onToggleCollapse={toggleCollapsed}
       />
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <Topbar profile={profile} onMenuClick={() => setMobileOpen(true)} onOpenSearch={() => setSearchOpen(true)} />
         <main className="flex-1 overflow-y-auto p-4 sm:p-6">{children}</main>
       </div>

@@ -6,6 +6,7 @@ import { DateTime } from "luxon";
 import { Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button, LinkButton } from "@/components/ui/button";
+import { ConfirmButton } from "@/components/ui/confirm-button";
 import { formatInZone } from "@/lib/utils/timezone";
 import { formatCountdown } from "@/lib/utils/countdown";
 import { updateOccurrenceStatus } from "@/lib/actions/schedule";
@@ -127,11 +128,17 @@ export function OccurrenceTable({
                           Didn&apos;t show
                         </Button>
                       </form>
-                      <form action={updateOccurrenceStatus.bind(null, o.id, "cancelled")}>
-                        <Button type="submit" size="sm" variant="danger">
-                          Cancel
-                        </Button>
-                      </form>
+                      <ConfirmButton
+                        action={updateOccurrenceStatus.bind(null, o.id, "cancelled")}
+                        title="Cancel this trial?"
+                        confirmText="Cancel trial"
+                        confirmingText="Cancelling…"
+                        successToast="Trial cancelled"
+                        errorToast="Failed to cancel trial"
+                        body="The booking is marked cancelled and its calendar invite removed. Unless the lead is already converted, they're moved to the 'lost' stage."
+                      >
+                        Cancel
+                      </ConfirmButton>
                     </div>
                   ) : o.status === "completed" && o.leadId && !o.leadConverted ? (
                     <div className="flex items-center gap-2">

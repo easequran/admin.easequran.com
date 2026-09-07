@@ -9,12 +9,13 @@ import type { ComponentProps } from "react";
 export function SubmitButton({
   children,
   pendingText,
+  disabled,
   ...props
 }: ComponentProps<typeof Button> & { pendingText?: string }) {
   const { pending } = useFormStatus();
 
   return (
-    <Button type="submit" disabled={pending} {...props}>
+    <Button type="submit" disabled={pending || disabled} aria-busy={pending} {...props}>
       {pending && <Loader2 className="h-4 w-4 animate-spin" />}
       {pending ? (pendingText ?? children) : children}
     </Button>

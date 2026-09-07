@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
+import { Modal } from "@/components/ui/modal";
+import { ConfirmButton } from "@/components/ui/confirm-button";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { updateInvoice, deleteInvoice } from "@/lib/actions/invoices";
 import { toast } from "@/lib/toast";
@@ -19,129 +22,109 @@ interface InvoiceRowActionsProps {
 }
 
 export function InvoiceRowActions({ invoice, studentName }: InvoiceRowActionsProps) {
-  const [mode, setMode] = useState<"idle" | "editing" | "confirmingDelete">("idle");
+  const [editing, setEditing] = useState(false);
 
   const boundUpdate = updateInvoice.bind(null, invoice.id);
   const boundDelete = deleteInvoice.bind(null, invoice.id);
 
   return (
     <div className="flex justify-end gap-2">
-      <Button type="button" size="sm" variant="outline" onClick={() => setMode("editing")}>
+      <Button type="button" size="sm" variant="outline" onClick={() => setEditing(true)}>
         Edit
       </Button>
-      <Button type="button" size="sm" variant="danger" onClick={() => setMode("confirmingDelete")}>
+
+      <ConfirmButton
+        action={boundDelete}
+        title="Delete this invoice?"
+        confirmText="Delete invoice"
+        confirmingText="Deleting…"
+        successToast="Invoice deleted"
+        errorToast="Failed to delete invoice"
+        body={
+          <>
+            {studentName ? `${studentName}'s invoice` : "This invoice"} for {invoice.currency}{" "}
+            {Number(invoice.amount).toFixed(2)} will be permanently removed. This can&apos;t be undone.
+          </>
+        }
+      >
         Delete
-      </Button>
+      </ConfirmButton>
 
-      {mode === "editing" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary-950/40 p-4">
-          <div className="w-full max-w-sm rounded-xl bg-white p-5 shadow-xl">
-            <h3 className="text-base font-semibold text-primary-900">
-              Edit invoice{studentName ? ` — ${studentName}` : ""}
-            </h3>
-            <form
-              action={async (formData) => {
-                try {
-                  await boundUpdate(formData);
-                  toast.success("Invoice updated");
-                  setMode("idle");
-                } catch (err) {
-                  toast.error(err instanceof Error ? err.message : "Failed to update invoice");
-                }
-              }}
-              className="mt-4 space-y-4"
-            >
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label htmlFor={`amount-${invoice.id}`}>Amount</Label>
-                  <Input
-                    id={`amount-${invoice.id}`}
-                    name="amount"
-                    type="number"
-                    step="0.01"
-                    min="0.01"
-                    required
-                    defaultValue={invoice.amount}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor={`currency-${invoice.id}`}>Currency</Label>
-                  <Input id={`currency-${invoice.id}`} name="currency" defaultValue={invoice.currency} />
-                </div>
-              </div>
-              <div>
-                <Label htmlFor={`due_date-${invoice.id}`}>Due date</Label>
-                <Input
-                  id={`due_date-${invoice.id}`}
-                  name="due_date"
-                  type="date"
-                  required
-                  defaultValue={invoice.due_date}
-                />
-              </div>
-              <div>
-                <Label htmlFor={`status-${invoice.id}`}>Status</Label>
-                <Select id={`status-${invoice.id}`} name="status" defaultValue={invoice.status}>
-                  <option value="pending">Pending</option>
-                  <option value="paid">Paid</option>
-                  <option value="overdue">Overdue</option>
-                  <option value="cancelled">Cancelled</option>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor={`notes-${invoice.id}`}>Notes / instructions</Label>
-                <Textarea
-                  id={`notes-${invoice.id}`}
-                  name="notes"
-                  rows={3}
-                  placeholder="Shown on the PDF -- e.g. this month's payment link, bank details, or any instructions."
-                  defaultValue={invoice.notes ?? ""}
-                />
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <Button type="button" size="sm" variant="outline" onClick={() => setMode("idle")}>
-                  Cancel
-                </Button>
-                <Button type="submit" size="sm">
-                  Save changes
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {mode === "confirmingDelete" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary-950/40 p-4">
-          <div className="w-full max-w-sm rounded-xl bg-white p-5 shadow-xl">
-            <h3 className="text-base font-semibold text-primary-900">Delete this invoice?</h3>
-            <p className="mt-2 text-sm text-slate-500">
-              {studentName ? `${studentName}'s invoice` : "This invoice"} for {invoice.currency}{" "}
-              {Number(invoice.amount).toFixed(2)} will be permanently removed. This can&apos;t be undone.
-            </p>
-            <div className="mt-4 flex justify-end gap-2">
-              <Button type="button" size="sm" variant="outline" onClick={() => setMode("idle")}>
-                Cancel
-              </Button>
-              <form
-                action={async () => {
-                  try {
-                    await boundDelete();
-                    toast.success("Invoice deleted");
-                    setMode("idle");
-                  } catch (err) {
-                    toast.error(err instanceof Error ? err.message : "Failed to delete invoice");
-                  }
-                }}
-              >
-                <Button type="submit" size="sm" variant="danger">
-                  Delete invoice
-                </Button>
-              </form>
+      <Modal
+        open={editing}
+        onClose={() => setEditing(false)}
+        title={`Edit invoice${studentName ? ` — ${studentName}` : ""}`}
+        size="sm"
+      >
+        <form
+          action={async (formData) => {
+            try {
+              await boundUpdate(formData);
+              toast.success("Invoice updated");
+              setEditing(false);
+            } catch (err) {
+              toast.error(err instanceof Error ? err.message : "Failed to update invoice");
+            }
+          }}
+          className="space-y-4"
+        >
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label htmlFor={`amount-${invoice.id}`}>Amount</Label>
+              <Input
+                id={`amount-${invoice.id}`}
+                name="amount"
+                type="number"
+                step="0.01"
+                min="0.01"
+                required
+                defaultValue={invoice.amount}
+              />
+            </div>
+            <div>
+              <Label htmlFor={`currency-${invoice.id}`}>Currency</Label>
+              <Input id={`currency-${invoice.id}`} name="currency" defaultValue={invoice.currency} />
             </div>
           </div>
-        </div>
-      )}
+          <div>
+            <Label htmlFor={`due_date-${invoice.id}`}>Due date</Label>
+            <Input
+              id={`due_date-${invoice.id}`}
+              name="due_date"
+              type="date"
+              required
+              defaultValue={invoice.due_date}
+            />
+          </div>
+          <div>
+            <Label htmlFor={`status-${invoice.id}`}>Status</Label>
+            <Select id={`status-${invoice.id}`} name="status" defaultValue={invoice.status}>
+              <option value="pending">Pending</option>
+              <option value="paid">Paid</option>
+              <option value="overdue">Overdue</option>
+              <option value="cancelled">Cancelled</option>
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor={`notes-${invoice.id}`}>Notes / instructions</Label>
+            <Textarea
+              id={`notes-${invoice.id}`}
+              name="notes"
+              rows={3}
+              placeholder="Shown on the PDF -- e.g. this month's payment link, bank details, or any instructions."
+              defaultValue={invoice.notes ?? ""}
+            />
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" size="sm" variant="outline" onClick={() => setEditing(false)}>
+              Cancel
+            </Button>
+            <SubmitButton size="sm" pendingText="Saving…">
+              Save changes
+            </SubmitButton>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

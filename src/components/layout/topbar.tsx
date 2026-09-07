@@ -26,7 +26,7 @@ export function Topbar({
   onOpenSearch: () => void;
 }) {
   return (
-    <header className="flex h-16 items-center justify-between gap-2 border-b-2 border-accent-500 bg-white px-3 shadow-sm sm:px-6">
+    <header className="flex h-16 shrink-0 items-center justify-between gap-2 border-b-2 border-accent-500 bg-white px-3 shadow-sm sm:px-6">
       <div className="flex min-w-0 items-center gap-3">
         <button
           type="button"

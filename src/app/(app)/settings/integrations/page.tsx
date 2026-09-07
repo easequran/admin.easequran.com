@@ -1,7 +1,9 @@
 import { getCurrentProfile } from "@/lib/data/profile";
 import { getCalendarConnection } from "@/lib/google/calendar";
+import { disconnectCalendarAction } from "@/lib/actions/integrations";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button, LinkButton } from "@/components/ui/button";
+import { LinkButton } from "@/components/ui/button";
+import { ConfirmButton } from "@/components/ui/confirm-button";
 import { PageHeader } from "@/components/ui/page-header";
 import { redirect } from "next/navigation";
 import { Plug } from "lucide-react";
@@ -44,11 +46,17 @@ export default async function IntegrationsPage({
                 Class bookings, reschedules, and cancellations automatically sync to this Google
                 Calendar, with the teacher and student added as attendees.
               </p>
-              <form action="/api/google/disconnect" method="POST">
-                <Button type="submit" variant="danger" size="sm">
-                  Disconnect
-                </Button>
-              </form>
+              <ConfirmButton
+                action={disconnectCalendarAction}
+                title="Disconnect Google Calendar?"
+                confirmText="Disconnect"
+                confirmingText="Disconnecting…"
+                successToast="Google Calendar disconnected"
+                errorToast="Failed to disconnect"
+                body="New class bookings, reschedules and cancellations will stop syncing to Google Calendar, and Meet links will no longer be created. Calendar events that already exist are left in place. You can reconnect any time."
+              >
+                Disconnect
+              </ConfirmButton>
             </>
           ) : (
             <>

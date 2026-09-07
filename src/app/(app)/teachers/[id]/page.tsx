@@ -4,6 +4,7 @@ import { SectionCard } from "@/components/ui/section-card";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { TimezoneSelect } from "@/components/ui/timezone-select";
 import { Button, LinkButton } from "@/components/ui/button";
+import { ConfirmButton } from "@/components/ui/confirm-button";
 import { Badge } from "@/components/ui/badge";
 import { AvailabilityEditor } from "@/components/teachers/availability-editor";
 import { updateTeacher, deleteTeacher, addAvailability, removeAvailability } from "@/lib/actions/teachers";
@@ -33,9 +34,9 @@ export default async function TeacherDetailPage({
   const boundUpdate = updateTeacher.bind(null, id, teacher.profile_id);
   const boundDelete = deleteTeacher.bind(null, id, teacher.profile_id);
   const boundAdd = addAvailability.bind(null, id, `/teachers/${id}`);
-  const boundRemove = async (formData: FormData) => {
+  const boundRemove = async (availabilityId: string) => {
     "use server";
-    await removeAvailability(id, String(formData.get("availability_id")), `/teachers/${id}`);
+    await removeAvailability(id, availabilityId, `/teachers/${id}`);
   };
 
   return (
@@ -58,11 +59,23 @@ export default async function TeacherDetailPage({
             <LinkButton href={`/teachers/${id}/timetable`} variant="outline" size="sm">
               View timetable
             </LinkButton>
-            <form action={boundDelete}>
-              <Button type="submit" variant="danger" size="sm">
-                Delete teacher
-              </Button>
-            </form>
+            <ConfirmButton
+              action={boundDelete}
+              title="Delete this teacher?"
+              confirmText="Delete teacher"
+              typeToConfirm={profile?.full_name ?? undefined}
+              errorToast="Failed to delete teacher"
+              body={
+                <>
+                  <strong className="font-semibold text-primary-900">{profile?.full_name ?? "This teacher"}</strong>{" "}
+                  and their login are permanently deleted, along with their availability, every
+                  recurring class assigned to them and its scheduled occurrences. Students taught only
+                  by this teacher will be left with no teacher. This cannot be undone.
+                </>
+              }
+            >
+              Delete teacher
+            </ConfirmButton>
           </>
         }
       />

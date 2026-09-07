@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { Input, Label, Select } from "@/components/ui/input";
 import { CurrencySelect } from "@/components/ui/currency-select";
 import { createFeePlan } from "@/lib/actions/fees";
@@ -22,12 +22,15 @@ export function FeePlanForm({
   today: string;
 }) {
   const [mode, setMode] = useState<"monthly" | "per_block">("monthly");
+  const [selectedCount, setSelectedCount] = useState(
+    students.filter((s) => s.id === highlightStudentId).length,
+  );
 
   return (
     <form action={createFeePlan} className="space-y-3">
       <div>
         <Label>Student(s)</Label>
-        <p className="mb-1.5 text-xs text-slate-400">
+        <p className="mb-1.5 text-xs text-slate-500">
           Select more than one for siblings -- this permanently links them so their future invoices
           are always combined into one PDF, even if you edit each plan separately later.
         </p>
@@ -39,12 +42,16 @@ export function FeePlanForm({
                 name="student_id"
                 value={s.id}
                 defaultChecked={s.id === highlightStudentId}
+                onChange={(e) => setSelectedCount((c) => c + (e.target.checked ? 1 : -1))}
                 className="h-4 w-4 rounded border-primary-300"
               />
               {s.full_name}
             </label>
           ))}
         </div>
+        {selectedCount === 0 && (
+          <p className="mt-1 text-xs text-red-600">Select at least one student.</p>
+        )}
       </div>
 
       <div>
@@ -124,9 +131,9 @@ export function FeePlanForm({
         </Select>
       </div>
 
-      <Button type="submit" className="w-full">
+      <SubmitButton className="w-full" pendingText="Saving…" disabled={selectedCount === 0}>
         Save fee
-      </Button>
+      </SubmitButton>
     </form>
   );
 }
