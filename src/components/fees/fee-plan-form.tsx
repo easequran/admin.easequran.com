@@ -22,15 +22,19 @@ export function FeePlanForm({
   today: string;
 }) {
   const [mode, setMode] = useState<"monthly" | "per_block">("monthly");
+  const [selectedCount, setSelectedCount] = useState(
+    students.filter((s) => s.id === highlightStudentId).length,
+  );
+  const isSiblingGroup = selectedCount > 1;
 
   return (
     <form action={createFeePlan} className="space-y-3">
       <div>
         <Label>Student(s)</Label>
         <p className="mb-1.5 text-xs text-slate-400">
-          Select more than one for siblings -- this creates one plan per student, permanently linked
-          as a sibling group: they show together below, edit or deactivate in one step, and their
-          invoices are always combined into one PDF.
+          Select more than one for siblings -- one plan per student, permanently linked as a sibling
+          group: the fee below is the whole family&apos;s and is split evenly between them, they show
+          and are edited together, and their invoices combine into one PDF.
         </p>
         <div className="max-h-40 space-y-1.5 overflow-y-auto rounded-lg border border-primary-200 p-2">
           {students.map((s) => (
@@ -40,6 +44,7 @@ export function FeePlanForm({
                 name="student_id"
                 value={s.id}
                 defaultChecked={s.id === highlightStudentId}
+                onChange={(e) => setSelectedCount((c) => c + (e.target.checked ? 1 : -1))}
                 className="h-4 w-4 rounded border-primary-300"
               />
               {s.full_name}
@@ -69,8 +74,15 @@ export function FeePlanForm({
       {mode === "monthly" ? (
         <>
           <div>
-            <Label htmlFor="monthly_amount">Fee amount / month</Label>
+            <Label htmlFor="monthly_amount">
+              {isSiblingGroup ? "Total fee / month (whole family)" : "Fee amount / month"}
+            </Label>
             <Input id="monthly_amount" name="monthly_amount" type="number" step="0.01" min="0.01" required />
+            {isSiblingGroup && (
+              <p className="mt-1 text-xs text-slate-400">
+                Split evenly across the {selectedCount} selected siblings.
+              </p>
+            )}
           </div>
           <div>
             <Label htmlFor="billing_day">Fee date (day of month)</Label>
@@ -97,8 +109,15 @@ export function FeePlanForm({
             </p>
           </div>
           <div>
-            <Label htmlFor="block_amount">Fixed fee for the set</Label>
+            <Label htmlFor="block_amount">
+              {isSiblingGroup ? "Total fee for the set (whole family)" : "Fixed fee for the set"}
+            </Label>
             <Input id="block_amount" name="block_amount" type="number" step="0.01" min="0.01" required />
+            {isSiblingGroup && (
+              <p className="mt-1 text-xs text-slate-400">
+                Split evenly across the {selectedCount} selected siblings.
+              </p>
+            )}
           </div>
           <div>
             <Label htmlFor="grace_days">Days until due (from invoice date)</Label>

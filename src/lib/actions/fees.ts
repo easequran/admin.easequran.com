@@ -46,13 +46,30 @@ function parseModeFields(mode: "monthly" | "per_block", formData: FormData) {
 }
 
 /**
- * Creates one fee plan per selected student, all with the same
- * amount/currency/billing day/classes-per-week -- covers siblings or any
- * group of students who share one fee arrangement. When more than one
- * student is selected, every resulting row is durably tagged with the same
- * sibling_group_id (not just a one-time convenience insert), so their
- * invoices can always be found and combined into one PDF later, even if
- * each plan is edited separately afterwards.
+ * Splits a whole-group fee evenly across `parts` siblings, working in minor
+ * units so the shares always sum back to exactly `total` (any rounding
+ * remainder is spread one penny at a time onto the first siblings).
+ * e.g. 64 / 2 -> [32, 32]; 64 / 3 -> [21.34, 21.33, 21.33].
+ */
+function splitAmountEvenly(total: number, parts: number): number[] {
+  if (parts <= 1) return [Math.round(total * 100) / 100];
+  const cents = Math.round(total * 100);
+  const base = Math.floor(cents / parts);
+  const remainder = cents - base * parts;
+  const shares = Array.from({ length: parts }, (_, i) => (base + (i < remainder ? 1 : 0)) / 100);
+  if (shares.some((s) => s <= 0)) {
+    throw new Error(`Fee of ${total} is too small to split across ${parts} siblings`);
+  }
+  return shares;
+}
+
+/**
+ * Creates one fee plan per selected student. A single student gets one plan
+ * with the amount as entered. When several students are selected they're a
+ * sibling group: every row is durably tagged with the same sibling_group_id,
+ * the entered amount is treated as the WHOLE family's fee and split evenly
+ * across the siblings (see splitAmountEvenly), and from then on the group is
+ * always edited/deactivated together and its invoices combine into one PDF.
  */
 export async function createFeePlan(formData: FormData) {
   const profile = await requireAdmin();
@@ -64,18 +81,29 @@ export async function createFeePlan(formData: FormData) {
   const currency = String(formData.get("currency") || "USD");
   const classes_per_week = Number(formData.get("classes_per_week") || 2);
   const billing_mode = String(formData.get("billing_mode") || "monthly") === "per_block" ? "per_block" : "monthly";
-  const siblingGroupId = studentIds.length > 1 ? crypto.randomUUID() : null;
+  const isSiblingGroup = studentIds.length > 1;
+  const siblingGroupId = isSiblingGroup ? crypto.randomUUID() : null;
 
   const shared = parseModeFields(billing_mode, formData);
+  const amountField = billing_mode === "per_block" ? "block_amount" : "monthly_amount";
+  const enteredAmount = Number(shared[amountField]);
+
+  // Sibling groups: the entered amount is the whole family's fee -> split it
+  // evenly so each child's own invoice/record carries their share and the
+  // parts add back up to exactly what was entered.
+  const shares = isSiblingGroup
+    ? splitAmountEvenly(enteredAmount, studentIds.length)
+    : [enteredAmount];
 
   const { error } = await supabase.from("fee_plans").insert(
-    studentIds.map((student_id) => ({
+    studentIds.map((student_id, idx) => ({
       student_id,
       currency,
       classes_per_week,
       billing_mode,
       sibling_group_id: siblingGroupId,
       ...shared,
+      [amountField]: shares[idx],
     })),
   );
   if (error) throw new Error(error.message);
@@ -84,12 +112,11 @@ export async function createFeePlan(formData: FormData) {
     action: "fee_plan.create",
     entityType: "fee_plan",
     entityId: siblingGroupId,
-    entityLabel:
-      studentIds.length > 1 ? `${studentIds.length} students (sibling group)` : undefined,
+    entityLabel: isSiblingGroup ? `${studentIds.length} students (sibling group)` : undefined,
     details:
       billing_mode === "per_block"
-        ? `${currency} ${shared.block_amount} per ${shared.classes_per_block} classes, due +${shared.grace_days}d, counting from ${shared.block_billing_since}, ${studentIds.length} plan(s) created by ${profile.full_name}`
-        : `${currency} ${shared.monthly_amount}/mo, billing day ${shared.billing_day}, ${studentIds.length} plan(s) created by ${profile.full_name}`,
+        ? `${currency} ${enteredAmount}${isSiblingGroup ? ` family total (split ${shares.join("/")})` : ""} per ${shared.classes_per_block} classes, due +${shared.grace_days}d, counting from ${shared.block_billing_since}, ${studentIds.length} plan(s) created by ${profile.full_name}`
+        : `${currency} ${enteredAmount}${isSiblingGroup ? ` family total (split ${shares.join("/")})` : ""}/mo, billing day ${shared.billing_day}, ${studentIds.length} plan(s) created by ${profile.full_name}`,
   });
 
   // Advance billing: raise each student's first set invoice right away.
@@ -115,21 +142,18 @@ export async function createFeePlan(formData: FormData) {
 }
 
 /**
- * Resolves which fee_plans rows an edit/deactivate should touch. A plan
- * created for siblings is one row per student sharing a sibling_group_id
- * (see createFeePlan) -- when `apply_to_siblings` is set we fan the change
- * out to the whole group so admin edits "the sibling plan" once, not N
- * times. Falls back to the single row when the plan isn't in a group.
+ * Resolves which fee_plans rows an edit/deactivate should touch. A sibling
+ * plan is one row per student sharing a sibling_group_id (see createFeePlan)
+ * and is always managed as a unit -- so every active row in the group is
+ * returned, in a stable order (by student_id) so the amount split lines up
+ * run to run. A non-sibling plan just returns its own single row.
  */
 async function resolveFeePlanTargets(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: any,
   feePlanId: string,
   studentId: string,
-  applyToSiblings: boolean,
 ): Promise<{ ids: string[]; studentIds: string[] }> {
-  if (!applyToSiblings) return { ids: [feePlanId], studentIds: [studentId] };
-
   const { data: current } = await supabase
     .from("fee_plans")
     .select("sibling_group_id")
@@ -141,7 +165,8 @@ async function resolveFeePlanTargets(
     .from("fee_plans")
     .select("id, student_id")
     .eq("sibling_group_id", current.sibling_group_id)
-    .eq("active", true);
+    .eq("active", true)
+    .order("student_id");
   if (!groupRows || groupRows.length === 0) return { ids: [feePlanId], studentIds: [studentId] };
 
   return {
@@ -159,25 +184,30 @@ export async function updateFeePlan(feePlanId: string, studentId: string, formDa
   const billing_mode =
     String(formData.get("billing_mode") || "monthly") === "per_block" ? "per_block" : "monthly";
   const shared = parseModeFields(billing_mode, formData);
-  const applyToSiblings = formData.get("apply_to_siblings") === "on";
+  const amountField = billing_mode === "per_block" ? "block_amount" : "monthly_amount";
+  const enteredAmount = Number(shared[amountField]);
 
-  const { ids, studentIds } = await resolveFeePlanTargets(
-    supabase,
-    feePlanId,
-    studentId,
-    applyToSiblings,
-  );
+  const { ids, studentIds } = await resolveFeePlanTargets(supabase, feePlanId, studentId);
 
-  const { error } = await supabase
-    .from("fee_plans")
-    .update({
-      currency: String(formData.get("currency") || "USD"),
-      classes_per_week: Number(formData.get("classes_per_week") || 2),
-      billing_mode,
-      ...shared,
-    })
-    .in("id", ids);
-  if (error) throw new Error(error.message);
+  // For a sibling group the amount entered is the whole family's fee -> split
+  // it evenly across the group's rows; a lone plan takes the amount as-is.
+  const shares =
+    ids.length > 1 ? splitAmountEvenly(enteredAmount, ids.length) : [enteredAmount];
+
+  const base = {
+    currency: String(formData.get("currency") || "USD"),
+    classes_per_week: Number(formData.get("classes_per_week") || 2),
+    billing_mode,
+    ...shared,
+  };
+
+  for (let i = 0; i < ids.length; i++) {
+    const { error } = await supabase
+      .from("fee_plans")
+      .update({ ...base, [amountField]: shares[i] })
+      .eq("id", ids[i]);
+    if (error) throw new Error(error.message);
+  }
 
   // Now on per_block: an older "count from" date may mean a block is already
   // complete -- generate it. Never let a billing hiccup fail the plan edit.
@@ -196,18 +226,12 @@ export async function updateFeePlan(feePlanId: string, studentId: string, formDa
   revalidatePath("/invoices");
 }
 
-/** Deactivates rather than deletes so past invoices keep their fee_plan_id reference intact. */
-export async function deactivateFeePlan(feePlanId: string, studentId: string, formData?: FormData) {
+/** Deactivates rather than deletes so past invoices keep their fee_plan_id reference intact. Sibling plans deactivate as a group. */
+export async function deactivateFeePlan(feePlanId: string, studentId: string) {
   await requireAdmin();
   const supabase = await createClient();
 
-  const applyToSiblings = formData?.get("apply_to_siblings") === "on";
-  const { ids, studentIds } = await resolveFeePlanTargets(
-    supabase,
-    feePlanId,
-    studentId,
-    applyToSiblings,
-  );
+  const { ids, studentIds } = await resolveFeePlanTargets(supabase, feePlanId, studentId);
 
   const { error } = await supabase.from("fee_plans").update({ active: false }).in("id", ids);
   if (error) throw new Error(error.message);

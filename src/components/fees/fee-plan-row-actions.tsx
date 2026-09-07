@@ -26,13 +26,26 @@ interface FeePlanRowActionsProps {
   today: string;
   /** Other students sharing this plan's sibling_group_id (excludes this row's student). */
   siblingNames?: string[];
+  /** Whole-family fee for the group (sum of every sibling row's amount) -- shown as the amount to edit for a sibling plan. */
+  siblingGroupAmount?: number;
 }
 
-export function FeePlanRowActions({ feePlan, studentName, today, siblingNames = [] }: FeePlanRowActionsProps) {
+export function FeePlanRowActions({
+  feePlan,
+  studentName,
+  today,
+  siblingNames = [],
+  siblingGroupAmount,
+}: FeePlanRowActionsProps) {
   const [mode, setMode] = useState<"idle" | "editing" | "confirmingDeactivate">("idle");
   const [billingMode, setBillingMode] = useState<"monthly" | "per_block">(feePlan.billing_mode);
   const inSiblingGroup = Boolean(feePlan.sibling_group_id) && siblingNames.length > 0;
   const siblingGroupSize = siblingNames.length + 1;
+  const allSiblingNames = [studentName, ...siblingNames].filter(Boolean).join(", ");
+  // A sibling plan is edited as one unit: the amount field carries the whole
+  // family's fee and is split evenly across the children on save.
+  const monthlyDefault = inSiblingGroup ? siblingGroupAmount : feePlan.monthly_amount ?? undefined;
+  const blockDefault = inSiblingGroup ? siblingGroupAmount : feePlan.block_amount ?? undefined;
 
   const boundUpdate = updateFeePlan.bind(null, feePlan.id, feePlan.student_id);
   const boundDeactivate = deactivateFeePlan.bind(null, feePlan.id, feePlan.student_id);
@@ -50,8 +63,16 @@ export function FeePlanRowActions({ feePlan, studentName, today, siblingNames = 
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary-950/40 p-4">
           <div className="max-h-[90vh] w-full max-w-sm overflow-y-auto rounded-xl bg-white p-5 shadow-xl">
             <h3 className="text-base font-semibold text-primary-900">
-              Edit fee{studentName ? ` — ${studentName}` : ""}
+              {inSiblingGroup
+                ? `Edit sibling fee — ${siblingGroupSize} students`
+                : `Edit fee${studentName ? ` — ${studentName}` : ""}`}
             </h3>
+            {inSiblingGroup && (
+              <p className="mt-1 text-xs text-slate-500">
+                Applies to {allSiblingNames}. The amount below is the whole family&apos;s fee; it&apos;s split
+                evenly across all {siblingGroupSize}.
+              </p>
+            )}
             <form
               action={async (formData) => {
                 try {
@@ -85,7 +106,9 @@ export function FeePlanRowActions({ feePlan, studentName, today, siblingNames = 
               {billingMode === "monthly" ? (
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label htmlFor={`amount-${feePlan.id}`}>Fee / month</Label>
+                    <Label htmlFor={`amount-${feePlan.id}`}>
+                      {inSiblingGroup ? "Total fee / month" : "Fee / month"}
+                    </Label>
                     <Input
                       id={`amount-${feePlan.id}`}
                       name="monthly_amount"
@@ -93,7 +116,7 @@ export function FeePlanRowActions({ feePlan, studentName, today, siblingNames = 
                       step="0.01"
                       min="0.01"
                       required
-                      defaultValue={feePlan.monthly_amount ?? undefined}
+                      defaultValue={monthlyDefault}
                     />
                   </div>
                   <div>
@@ -125,7 +148,9 @@ export function FeePlanRowActions({ feePlan, studentName, today, siblingNames = 
                       />
                     </div>
                     <div>
-                      <Label htmlFor={`block_amount-${feePlan.id}`}>Fixed fee / set</Label>
+                      <Label htmlFor={`block_amount-${feePlan.id}`}>
+                        {inSiblingGroup ? "Total fee / set" : "Fixed fee / set"}
+                      </Label>
                       <Input
                         id={`block_amount-${feePlan.id}`}
                         name="block_amount"
@@ -133,7 +158,7 @@ export function FeePlanRowActions({ feePlan, studentName, today, siblingNames = 
                         step="0.01"
                         min="0.01"
                         required
-                        defaultValue={feePlan.block_amount ?? undefined}
+                        defaultValue={blockDefault}
                       />
                     </div>
                   </div>
@@ -184,23 +209,6 @@ export function FeePlanRowActions({ feePlan, studentName, today, siblingNames = 
                 </Select>
               </div>
 
-              {inSiblingGroup && (
-                <label className="flex items-start gap-2 rounded-lg bg-accent-50 p-2.5 text-sm text-primary-900">
-                  <input
-                    type="checkbox"
-                    name="apply_to_siblings"
-                    defaultChecked
-                    className="mt-0.5 h-4 w-4 rounded border-primary-300"
-                  />
-                  <span>
-                    Apply to all {siblingGroupSize} sibling plans
-                    <span className="mt-0.5 block text-xs text-slate-500">
-                      Also updates {siblingNames.join(", ")}. Uncheck to change only {studentName ?? "this student"}.
-                    </span>
-                  </span>
-                </label>
-              )}
-
               <div className="flex justify-end gap-2 pt-2">
                 <Button type="button" size="sm" variant="outline" onClick={() => setMode("idle")}>
                   Cancel
@@ -217,38 +225,26 @@ export function FeePlanRowActions({ feePlan, studentName, today, siblingNames = 
       {mode === "confirmingDeactivate" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary-950/40 p-4">
           <div className="w-full max-w-sm rounded-xl bg-white p-5 shadow-xl">
-            <h3 className="text-base font-semibold text-primary-900">Deactivate this fee plan?</h3>
+            <h3 className="text-base font-semibold text-primary-900">
+              {inSiblingGroup ? "Deactivate this sibling fee plan?" : "Deactivate this fee plan?"}
+            </h3>
             <p className="mt-2 text-sm text-slate-500">
-              {studentName ? `${studentName}'s fee plan` : "This fee plan"} will stop generating new invoices. Past
-              invoices are kept. You can set a new fee plan for this student afterwards.
+              {inSiblingGroup
+                ? `The sibling plan for all ${siblingGroupSize} students (${allSiblingNames}) will stop generating new invoices.`
+                : `${studentName ? `${studentName}'s fee plan` : "This fee plan"} will stop generating new invoices.`}{" "}
+              Past invoices are kept. You can set a new fee plan afterwards.
             </p>
             <form
-              action={async (formData) => {
+              action={async () => {
                 try {
-                  await boundDeactivate(formData);
-                  toast.success("Fee plan deactivated");
+                  await boundDeactivate();
+                  toast.success(inSiblingGroup ? "Sibling fee plan deactivated" : "Fee plan deactivated");
                   setMode("idle");
                 } catch (err) {
                   toast.error(err instanceof Error ? err.message : "Failed to deactivate fee plan");
                 }
               }}
             >
-              {inSiblingGroup && (
-                <label className="mt-3 flex items-start gap-2 rounded-lg bg-accent-50 p-2.5 text-sm text-primary-900">
-                  <input
-                    type="checkbox"
-                    name="apply_to_siblings"
-                    defaultChecked
-                    className="mt-0.5 h-4 w-4 rounded border-primary-300"
-                  />
-                  <span>
-                    Deactivate all {siblingGroupSize} sibling plans
-                    <span className="mt-0.5 block text-xs text-slate-500">
-                      Also stops {siblingNames.join(", ")}. Uncheck to deactivate only {studentName ?? "this student"}.
-                    </span>
-                  </span>
-                </label>
-              )}
               <div className="mt-4 flex justify-end gap-2">
                 <Button type="button" size="sm" variant="outline" onClick={() => setMode("idle")}>
                   Cancel
