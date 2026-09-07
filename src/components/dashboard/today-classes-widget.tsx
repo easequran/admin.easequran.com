@@ -12,6 +12,8 @@ export type OccurrenceRow = {
   end_at: string;
   status: string;
   is_trial: boolean;
+  /** One-off makeup class (rescheduled from an excused absence). */
+  isMakeup?: boolean;
   studentName: string;
   teacherName: string;
 };
@@ -91,6 +93,11 @@ export function TodayClassesBoard({
                               {c.is_trial && (
                                 <Badge tone="accent" className="ml-0.5">
                                   Trial
+                                </Badge>
+                              )}
+                              {c.isMakeup && (
+                                <Badge tone="warning" className="ml-0.5">
+                                  Makeup
                                 </Badge>
                               )}
                             </div>

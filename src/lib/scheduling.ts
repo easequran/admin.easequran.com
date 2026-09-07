@@ -275,41 +275,63 @@ export async function loadTeacherTimetable(
 ): Promise<TimetableDay[]> {
   const supabase = client ?? (await createClient());
 
-  const [{ data: availability }, { data: bookedSchedules }, { data: trialOccurrences }] = await Promise.all([
-    supabase.from("teacher_availability").select("*").eq("teacher_id", teacherId).order("day_of_week"),
-    supabase
-      .from("recurring_schedules")
-      .select("day_of_week, local_start_time, duration_minutes, timezone, students(full_name, enrollment_status)")
-      .eq("teacher_id", teacherId)
-      .eq("active", true),
-    // One-off trial bookings aren't recurring_schedules rows, so they need
-    // to be pulled in separately -- only upcoming/undecided ones (status
-    // still "scheduled") show, so a completed/cancelled/no-show trial drops
-    // off the grid on its own once its outcome is set.
-    supabase
-      .from("class_occurrences")
-      .select("start_at, end_at, leads(full_name)")
-      .eq("teacher_id", teacherId)
-      .eq("is_trial", true)
-      .eq("status", "scheduled")
-      .gte("start_at", DateTime.utc().toISO()!)
-      .lte("start_at", DateTime.utc().plus({ days: 7 }).toISO()!),
-  ]);
+  const [{ data: availability }, { data: bookedSchedules }, { data: trialOccurrences }, { data: makeupOccurrences }] =
+    await Promise.all([
+      supabase.from("teacher_availability").select("*").eq("teacher_id", teacherId).order("day_of_week"),
+      supabase
+        .from("recurring_schedules")
+        .select("day_of_week, local_start_time, duration_minutes, timezone, students(full_name, enrollment_status)")
+        .eq("teacher_id", teacherId)
+        .eq("active", true),
+      // One-off trial bookings aren't recurring_schedules rows, so they need
+      // to be pulled in separately -- only upcoming/undecided ones (status
+      // still "scheduled") show, so a completed/cancelled/no-show trial drops
+      // off the grid on its own once its outcome is set.
+      supabase
+        .from("class_occurrences")
+        .select("start_at, end_at, leads(full_name)")
+        .eq("teacher_id", teacherId)
+        .eq("is_trial", true)
+        .eq("status", "scheduled")
+        .gte("start_at", DateTime.utc().toISO()!)
+        .lte("start_at", DateTime.utc().plus({ days: 7 }).toISO()!),
+      // Makeup classes are one-off non-trial occurrences with no parent
+      // recurring schedule (scheduleMakeupClass). Same as trials, they aren't
+      // recurring_schedules rows, so without this they never appear on the
+      // teacher's weekly grid. Only upcoming, still-scheduled ones show.
+      supabase
+        .from("class_occurrences")
+        .select("start_at, end_at, students(full_name)")
+        .eq("teacher_id", teacherId)
+        .eq("is_trial", false)
+        .is("recurring_schedule_id", null)
+        .eq("status", "scheduled")
+        .gte("start_at", DateTime.utc().toISO()!)
+        .lte("start_at", DateTime.utc().plus({ days: 7 }).toISO()!),
+    ]);
+
+  const oneOffToBlock = (o: { start_at: string; end_at: string }) => {
+    const startLocal = DateTime.fromISO(o.start_at, { zone: "utc" }).setZone(teacherTimezone);
+    const endLocal = DateTime.fromISO(o.end_at, { zone: "utc" }).setZone(teacherTimezone);
+    return {
+      day_of_week: startLocal.weekday === 7 ? 0 : startLocal.weekday,
+      local_start_time: startLocal.toFormat("HH:mm"),
+      duration_minutes: endLocal.diff(startLocal, "minutes").minutes,
+      timezone: teacherTimezone,
+    };
+  };
 
   const trialBlocks = ((trialOccurrences ?? []) as { start_at: string; end_at: string; leads: { full_name: string } | null }[]).map(
-    (o) => {
-      const startLocal = DateTime.fromISO(o.start_at, { zone: "utc" }).setZone(teacherTimezone);
-      const endLocal = DateTime.fromISO(o.end_at, { zone: "utc" }).setZone(teacherTimezone);
-      return {
-        day_of_week: startLocal.weekday === 7 ? 0 : startLocal.weekday,
-        local_start_time: startLocal.toFormat("HH:mm"),
-        duration_minutes: endLocal.diff(startLocal, "minutes").minutes,
-        timezone: teacherTimezone,
-        label: o.leads?.full_name ?? "Trial",
-        isTrial: true,
-      };
-    },
+    (o) => ({ ...oneOffToBlock(o), label: o.leads?.full_name ?? "Trial", isTrial: true }),
   );
+
+  const makeupBlocks = (
+    (makeupOccurrences ?? []) as { start_at: string; end_at: string; students: { full_name: string } | null }[]
+  ).map((o) => ({
+    ...oneOffToBlock(o),
+    label: `${o.students?.full_name ?? "Student"} (makeup)`,
+    isTrial: false,
+  }));
 
   return buildWeeklyTimetable(
     availability ?? [],
@@ -324,6 +346,7 @@ export async function loadTeacherTimetable(
         isTrial: s.students?.enrollment_status === "trial",
       })),
       ...trialBlocks,
+      ...makeupBlocks,
     ],
     teacherTimezone,
   );

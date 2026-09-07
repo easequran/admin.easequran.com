@@ -57,6 +57,15 @@ once `due_date` passes.
   nightly so schedules never run out of generated classes. Set `CRON_SECRET`
   in your Vercel project env vars.
 - Every user sees class times converted to their own profile timezone.
+- **Makeup classes** (`scheduleMakeupClass`, booked from Attendance when a
+  class is marked _excused_) are one-off `class_occurrences` with
+  `is_trial = false` and `recurring_schedule_id IS NULL` — that pair is the
+  signal used to tag them "Makeup" across the Schedule, dashboard, attendance
+  and teacher-timetable views. They are otherwise normal `scheduled` classes.
+- A student's whole weekly schedule can be cleared at once with **Remove all**
+  on the student page (`removeAllStudentSchedules`); like the per-row Remove it
+  deactivates the `recurring_schedules` and deletes only not-yet-happened
+  occurrences, keeping past attendance intact.
 
 ## Roles
 

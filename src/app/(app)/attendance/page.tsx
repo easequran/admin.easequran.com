@@ -23,8 +23,8 @@ export default async function AttendancePage({
     .from("class_occurrences")
     .select(
       profile.role === "teacher"
-        ? "id, start_at, is_trial, student_id, teacher_id, students(full_name, timezone), leads(full_name), attendance(status, notes), teachers!inner(profile_id)"
-        : "id, start_at, is_trial, student_id, teacher_id, students(full_name, timezone), leads(full_name), attendance(status, notes), teachers(id, profiles(full_name))",
+        ? "id, start_at, is_trial, recurring_schedule_id, student_id, teacher_id, students(full_name, timezone), leads(full_name), attendance(status, notes), teachers!inner(profile_id)"
+        : "id, start_at, is_trial, recurring_schedule_id, student_id, teacher_id, students(full_name, timezone), leads(full_name), attendance(status, notes), teachers(id, profiles(full_name))",
     )
     .lte("start_at", DateTime.utc().toISO()!)
     .order("start_at", { ascending: false })
@@ -73,6 +73,7 @@ export default async function AttendancePage({
               studentName={o.students?.full_name ?? o.leads?.full_name ?? "Unknown"}
               studentTimezone={o.students?.timezone}
               isTrial={o.is_trial}
+              isMakeup={!o.is_trial && !o.recurring_schedule_id && Boolean(o.students?.full_name)}
               startAt={o.start_at}
               viewerTimezone={profile.timezone}
               currentStatus={o.attendance?.status}
