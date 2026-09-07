@@ -42,6 +42,31 @@ export default async function FeesPage({
   const studentIdsWithPlan = new Set(plans.map((p) => p.student_id));
   const studentsWithoutPlan = (students ?? []).filter((s) => !studentIdsWithPlan.has(s.id));
 
+  // Sibling plans are one fee_plans row per student sharing a sibling_group_id
+  // (see createFeePlan). Keep those rows next to each other and label them as
+  // one group so the table doesn't read as N unrelated plans. All other rows
+  // keep their original (created_at desc) order.
+  const siblingNamesByGroup = new Map<string, string[]>();
+  for (const p of plans) {
+    if (!p.sibling_group_id) continue;
+    const names = siblingNamesByGroup.get(p.sibling_group_id) ?? [];
+    names.push(p.students?.full_name ?? "Student");
+    siblingNamesByGroup.set(p.sibling_group_id, names);
+  }
+  const orderedKeys: string[] = [];
+  const seenKeys = new Set<string>();
+  for (const p of plans) {
+    const key = p.sibling_group_id ?? `solo:${p.id}`;
+    if (seenKeys.has(key)) continue;
+    seenKeys.add(key);
+    orderedKeys.push(key);
+  }
+  const orderedPlans = orderedKeys.flatMap((key) =>
+    key.startsWith("solo:")
+      ? plans.filter((p) => `solo:${p.id}` === key)
+      : plans.filter((p) => p.sibling_group_id === key),
+  );
+
   // Advance block billing: how many classes of the currently-paid set have
   // been delivered. When this reaches classes_per_block, the next set's
   // invoice is generated automatically.
@@ -142,15 +167,35 @@ export default async function FeesPage({
                   </tr>
                 </thead>
                 <tbody>
-                  {plans.map((p, i) => {
+                  {orderedPlans.map((p, i) => {
                     const isBlock = p.billing_mode === "per_block";
                     const progress = progressByPlan.get(p.id) ?? 0;
+                    const groupMembers = p.sibling_group_id
+                      ? siblingNamesByGroup.get(p.sibling_group_id) ?? []
+                      : [];
+                    const otherSiblingNames = groupMembers.filter((n) => n !== p.students?.full_name);
                     return (
                       <tr
                         key={p.id}
-                        className={tableRowClass(i, p.student_id === highlightStudentId ? "!bg-accent-100/60" : undefined)}
+                        className={tableRowClass(
+                          i,
+                          cn(
+                            p.student_id === highlightStudentId ? "!bg-accent-100/60" : undefined,
+                            p.sibling_group_id ? "border-l-2 border-l-accent-400" : undefined,
+                          ),
+                        )}
                       >
-                        <td className={cn(TABLE_CELL_CLASS, "font-medium text-primary-900")}>{p.students?.full_name}</td>
+                        <td className={cn(TABLE_CELL_CLASS, "font-medium text-primary-900")}>
+                          {p.students?.full_name}
+                          {p.sibling_group_id && (
+                            <span className="mt-0.5 block text-xs font-medium text-accent-700">
+                              Sibling plan
+                              {otherSiblingNames.length > 0 && (
+                                <span className="font-normal text-slate-500"> · with {otherSiblingNames.join(", ")}</span>
+                              )}
+                            </span>
+                          )}
+                        </td>
                         <td className={cn(TABLE_CELL_CLASS, TABLE_CELL_SECONDARY_CLASS)}>
                           {isBlock
                             ? `${p.currency} ${Number(p.block_amount).toFixed(2)} / ${p.classes_per_block} classes`
@@ -170,7 +215,12 @@ export default async function FeesPage({
                         </td>
                         <td className={cn(TABLE_CELL_CLASS, TABLE_CELL_SECONDARY_CLASS)}>{p.classes_per_week}</td>
                         <td className={TABLE_CELL_CLASS}>
-                          <FeePlanRowActions feePlan={p} studentName={p.students?.full_name} today={today} />
+                          <FeePlanRowActions
+                            feePlan={p}
+                            studentName={p.students?.full_name}
+                            today={today}
+                            siblingNames={otherSiblingNames}
+                          />
                         </td>
                       </tr>
                     );

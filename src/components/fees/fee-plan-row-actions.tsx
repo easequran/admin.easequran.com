@@ -20,14 +20,19 @@ interface FeePlanRowActionsProps {
     block_amount: number | null;
     grace_days: number;
     block_billing_since: string | null;
+    sibling_group_id: string | null;
   };
   studentName?: string;
   today: string;
+  /** Other students sharing this plan's sibling_group_id (excludes this row's student). */
+  siblingNames?: string[];
 }
 
-export function FeePlanRowActions({ feePlan, studentName, today }: FeePlanRowActionsProps) {
+export function FeePlanRowActions({ feePlan, studentName, today, siblingNames = [] }: FeePlanRowActionsProps) {
   const [mode, setMode] = useState<"idle" | "editing" | "confirmingDeactivate">("idle");
   const [billingMode, setBillingMode] = useState<"monthly" | "per_block">(feePlan.billing_mode);
+  const inSiblingGroup = Boolean(feePlan.sibling_group_id) && siblingNames.length > 0;
+  const siblingGroupSize = siblingNames.length + 1;
 
   const boundUpdate = updateFeePlan.bind(null, feePlan.id, feePlan.student_id);
   const boundDeactivate = deactivateFeePlan.bind(null, feePlan.id, feePlan.student_id);
@@ -179,6 +184,23 @@ export function FeePlanRowActions({ feePlan, studentName, today }: FeePlanRowAct
                 </Select>
               </div>
 
+              {inSiblingGroup && (
+                <label className="flex items-start gap-2 rounded-lg bg-accent-50 p-2.5 text-sm text-primary-900">
+                  <input
+                    type="checkbox"
+                    name="apply_to_siblings"
+                    defaultChecked
+                    className="mt-0.5 h-4 w-4 rounded border-primary-300"
+                  />
+                  <span>
+                    Apply to all {siblingGroupSize} sibling plans
+                    <span className="mt-0.5 block text-xs text-slate-500">
+                      Also updates {siblingNames.join(", ")}. Uncheck to change only {studentName ?? "this student"}.
+                    </span>
+                  </span>
+                </label>
+              )}
+
               <div className="flex justify-end gap-2 pt-2">
                 <Button type="button" size="sm" variant="outline" onClick={() => setMode("idle")}>
                   Cancel
@@ -200,26 +222,42 @@ export function FeePlanRowActions({ feePlan, studentName, today }: FeePlanRowAct
               {studentName ? `${studentName}'s fee plan` : "This fee plan"} will stop generating new invoices. Past
               invoices are kept. You can set a new fee plan for this student afterwards.
             </p>
-            <div className="mt-4 flex justify-end gap-2">
-              <Button type="button" size="sm" variant="outline" onClick={() => setMode("idle")}>
-                Cancel
-              </Button>
-              <form
-                action={async () => {
-                  try {
-                    await boundDeactivate();
-                    toast.success("Fee plan deactivated");
-                    setMode("idle");
-                  } catch (err) {
-                    toast.error(err instanceof Error ? err.message : "Failed to deactivate fee plan");
-                  }
-                }}
-              >
+            <form
+              action={async (formData) => {
+                try {
+                  await boundDeactivate(formData);
+                  toast.success("Fee plan deactivated");
+                  setMode("idle");
+                } catch (err) {
+                  toast.error(err instanceof Error ? err.message : "Failed to deactivate fee plan");
+                }
+              }}
+            >
+              {inSiblingGroup && (
+                <label className="mt-3 flex items-start gap-2 rounded-lg bg-accent-50 p-2.5 text-sm text-primary-900">
+                  <input
+                    type="checkbox"
+                    name="apply_to_siblings"
+                    defaultChecked
+                    className="mt-0.5 h-4 w-4 rounded border-primary-300"
+                  />
+                  <span>
+                    Deactivate all {siblingGroupSize} sibling plans
+                    <span className="mt-0.5 block text-xs text-slate-500">
+                      Also stops {siblingNames.join(", ")}. Uncheck to deactivate only {studentName ?? "this student"}.
+                    </span>
+                  </span>
+                </label>
+              )}
+              <div className="mt-4 flex justify-end gap-2">
+                <Button type="button" size="sm" variant="outline" onClick={() => setMode("idle")}>
+                  Cancel
+                </Button>
                 <Button type="submit" size="sm" variant="danger">
                   Deactivate
                 </Button>
-              </form>
-            </div>
+              </div>
+            </form>
           </div>
         </div>
       )}
