@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -51,8 +52,8 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: "Billing",
     items: [
-      { href: "/fees", label: "Fees", icon: Wallet, roles: ["admin"] },
-      { href: "/invoices", label: "Invoices & Fees", icon: Receipt, roles: ["admin", "student"] },
+      { href: "/fees", label: "Fee plans", icon: Wallet, roles: ["admin"] },
+      { href: "/invoices", label: "Invoices", icon: Receipt, roles: ["admin", "student"] },
     ],
   },
   {
@@ -82,9 +83,39 @@ export function Sidebar({
   onToggleCollapse: () => void;
 }) {
   const pathname = usePathname();
+  const asideRef = useRef<HTMLElement>(null);
   const groups = NAV_GROUPS.map((g) => ({ ...g, items: g.items.filter((item) => item.roles.includes(role)) })).filter(
     (g) => g.items.length > 0,
   );
+
+  // Mobile drawer: Escape closes it, and while it's open Tab is trapped
+  // inside so keyboard focus can't wander onto the page behind the scrim.
+  useEffect(() => {
+    if (!open) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (e.key !== "Tab" || !asideRef.current) return;
+      const nodes = asideRef.current.querySelectorAll<HTMLElement>(
+        'a[href],button:not([disabled]),[tabindex]:not([tabindex="-1"])',
+      );
+      if (nodes.length === 0) return;
+      const first = nodes[0];
+      const last = nodes[nodes.length - 1];
+      if (e.shiftKey && (document.activeElement === first || !asideRef.current.contains(document.activeElement))) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+    asideRef.current?.querySelector<HTMLElement>("a[href],button:not([disabled])")?.focus();
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
 
   return (
     <>
@@ -97,6 +128,7 @@ export function Sidebar({
       )}
 
       <aside
+        ref={asideRef}
         className={cn(
           "fixed inset-y-0 left-0 z-40 flex h-screen w-64 flex-col border-r border-primary-100 bg-primary-600 text-white transition-transform duration-200 ease-in-out md:sticky md:top-0 md:h-screen md:shrink-0 md:translate-x-0 md:transition-[width] md:duration-200",
           open ? "translate-x-0" : "-translate-x-full",

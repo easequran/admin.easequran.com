@@ -82,10 +82,10 @@ export default async function EditTrialPage({
             <div>
               <Label htmlFor="teacher_id">Teacher</Label>
               <Select id="teacher_id" name="teacher_id" defaultValue={occurrence.teacher_id} required>
-                {teachers?.map((t) => (
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                {((teachers ?? []) as any[]).map((t) => (
                   <option key={t.id} value={t.id}>
-                    {/* @ts-expect-error joined shape */}
-                    {t.profiles?.full_name}
+                    {t.profiles?.full_name ?? "Unnamed"}
                   </option>
                 ))}
               </Select>

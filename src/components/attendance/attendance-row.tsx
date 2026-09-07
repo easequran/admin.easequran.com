@@ -6,7 +6,8 @@ import { markAttendance, updateAttendanceNote } from "@/lib/actions/attendance";
 import { scheduleMakeupClass } from "@/lib/actions/schedule";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/input";
-import { Input, Label, Select } from "@/components/ui/input";
+import { Label, Select } from "@/components/ui/input";
+import { FutureDateTimeInput } from "@/components/ui/future-datetime-input";
 import { TimezoneSelect } from "@/components/ui/timezone-select";
 import { Button } from "@/components/ui/button";
 import { SubmitButton } from "@/components/ui/submit-button";
@@ -179,7 +180,7 @@ export function AttendanceRow({
             >
               <div>
                 <Label htmlFor={`makeup-time-${occurrenceId}`}>Date & time</Label>
-                <Input id={`makeup-time-${occurrenceId}`} name="start_at_local" type="datetime-local" required className="w-56" />
+                <FutureDateTimeInput id={`makeup-time-${occurrenceId}`} name="start_at_local" required className="w-56" />
               </div>
               <div>
                 <Label htmlFor={`makeup-tz-${occurrenceId}`}>Timezone</Label>

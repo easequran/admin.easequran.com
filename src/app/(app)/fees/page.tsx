@@ -7,6 +7,7 @@ import { FeePlanForm } from "@/components/fees/fee-plan-form";
 import { FeePlanRowActions } from "@/components/fees/fee-plan-row-actions";
 import { cn } from "@/lib/utils/cn";
 import { DateTime } from "luxon";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Wallet, TrendingUp, AlertCircle, PlusCircle, ListChecks } from "lucide-react";
 import {
   TABLE_ELEMENT_CLASS,
@@ -158,7 +159,12 @@ export default async function FeesPage({
 
         <SectionCard icon={ListChecks} tone="success" title="Active fee plans" className="lg:col-span-2" contentClassName="p-0">
           {plans.length === 0 ? (
-            <p className="px-5 py-8 text-center text-sm text-slate-400">No fee plans set yet.</p>
+            <EmptyState
+              compact
+              icon={Wallet}
+              title="No fee plans yet"
+              description="Add a fee for a confirmed student to start billing."
+            />
           ) : (
             <div className="overflow-x-auto">
               <table className={cn(TABLE_ELEMENT_CLASS, "min-w-[680px]")}>

@@ -40,7 +40,7 @@ export function StatCard({
       )}
     >
       <CardContent className="flex items-start gap-3">
-        <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-lg", classes.bg)}>
+        <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-lg", classes.bg)}>
           <Icon className={cn("h-5 w-5", classes.icon)} />
         </div>
         <div className="min-w-0">

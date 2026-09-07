@@ -7,20 +7,34 @@ export function EmptyState({
   description,
   action,
   className,
+  compact = false,
 }: {
   icon: LucideIcon;
   title: string;
   description?: string;
   action?: React.ReactNode;
   className?: string;
+  /** Tighter padding + smaller icon, for use inside an existing card/section. */
+  compact?: boolean;
 }) {
   return (
-    <div className={cn("flex flex-col items-center justify-center gap-3 px-6 py-12 text-center", className)}>
-      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-50">
-        <Icon className="h-6 w-6 text-primary-400" />
+    <div
+      className={cn(
+        "flex flex-col items-center justify-center text-center",
+        compact ? "gap-2 px-4 py-8" : "gap-3 px-6 py-12",
+        className,
+      )}
+    >
+      <div
+        className={cn(
+          "flex items-center justify-center rounded-full bg-slate-100",
+          compact ? "h-9 w-9" : "h-11 w-11",
+        )}
+      >
+        <Icon className={cn("text-slate-500", compact ? "h-4 w-4" : "h-5 w-5")} />
       </div>
       <div>
-        <p className="font-medium text-primary-900">{title}</p>
+        <p className={cn("font-medium text-primary-900", compact && "text-sm")}>{title}</p>
         {description && <p className="mt-1 text-sm text-slate-500">{description}</p>}
       </div>
       {action}

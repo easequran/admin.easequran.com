@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
-import { Users, Download } from "lucide-react";
+import { Users, Download, ListChecks } from "lucide-react";
 import { DateTime } from "luxon";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -125,8 +125,13 @@ export function StudentsTable({
         <div className="min-w-0 flex-1">
           <SearchInput value={query} onChange={setQuery} placeholder="Search students..." />
         </div>
-        <Button variant={selectMode ? "outline" : "ghost"} size="sm" onClick={() => (selectMode ? exitSelectMode() : setSelectMode(true))}>
-          {selectMode ? "Cancel selection" : "Select"}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => (selectMode ? exitSelectMode() : setSelectMode(true))}
+        >
+          <ListChecks className="h-4 w-4" />
+          {selectMode ? "Cancel selection" : "Select rows"}
         </Button>
       </div>
 

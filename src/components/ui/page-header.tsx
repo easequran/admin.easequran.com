@@ -18,6 +18,7 @@ export function PageHeader({
   backLabel?: string;
   actions?: React.ReactNode;
   icon?: LucideIcon;
+  /** @deprecated Ignored -- page headers render neutral gray by design. */
   tone?: StatTone;
 }) {
   return (

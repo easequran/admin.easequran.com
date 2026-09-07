@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/data/profile";
-import { Input, Label, Select } from "@/components/ui/input";
+import { Label, Select } from "@/components/ui/input";
+import { FutureDateTimeInput } from "@/components/ui/future-datetime-input";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { bookTrialClass } from "@/lib/actions/schedule";
 import { PageHeader } from "@/components/ui/page-header";
@@ -39,7 +40,7 @@ export default async function NewTrialPage({
         </div>
         <div>
           <Label htmlFor="start_at_local">Date & time</Label>
-          <Input id="start_at_local" name="start_at_local" type="datetime-local" required />
+          <FutureDateTimeInput id="start_at_local" name="start_at_local" required />
         </div>
         <div>
           <Label htmlFor="duration_minutes">Duration</Label>

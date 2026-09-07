@@ -4,27 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils/cn";
 import type { StatTone } from "@/components/ui/stat-card";
 
-/** Kept for callers that still pass a `tone` prop -- SectionCard/SectionHeading/
- * PageHeader render neutral gray regardless, since per-section color turned
- * out to make the app feel busy rather than clearer. */
-export const SECTION_TONE_CLASSES: Record<StatTone, { border: string; iconBg: string; iconColor: string }> = {
-  neutral: { border: "border-l-slate-400", iconBg: "bg-slate-100", iconColor: "text-slate-600" },
-  success: { border: "border-l-emerald-500", iconBg: "bg-emerald-100", iconColor: "text-emerald-700" },
-  warning: { border: "border-l-amber-500", iconBg: "bg-amber-100", iconColor: "text-amber-700" },
-  danger: { border: "border-l-red-500", iconBg: "bg-red-100", iconColor: "text-red-600" },
-  info: { border: "border-l-blue-500", iconBg: "bg-blue-100", iconColor: "text-blue-700" },
-  accent: { border: "border-l-accent-500", iconBg: "bg-accent-100", iconColor: "text-accent-700" },
-};
-
-export const TABLE_HEAD_TONE_CLASSES: Record<StatTone, string> = {
-  neutral: "bg-slate-50 text-slate-500",
-  success: "bg-emerald-50 text-emerald-700",
-  warning: "bg-amber-50 text-amber-700",
-  danger: "bg-red-50 text-red-700",
-  info: "bg-blue-50 text-blue-700",
-  accent: "bg-accent-50 text-accent-700",
-};
-
 /**
  * A Card with an icon badge and a title/description header -- gives every
  * major section on a page a clear, consistent identity without needing a
@@ -42,6 +21,7 @@ export function SectionCard({
   id,
 }: {
   icon?: LucideIcon;
+  /** @deprecated Ignored -- sections render neutral gray by design. Accepted only so existing call sites don't need editing. */
   tone?: StatTone;
   title: ReactNode;
   description?: ReactNode;

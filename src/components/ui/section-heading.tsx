@@ -14,6 +14,7 @@ export function SectionHeading({
   actions,
 }: {
   icon: LucideIcon;
+  /** @deprecated Ignored -- sections render neutral gray by design. */
   tone?: StatTone;
   title: ReactNode;
   description?: ReactNode;

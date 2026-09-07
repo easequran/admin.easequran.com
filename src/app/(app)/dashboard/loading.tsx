@@ -1,5 +1,5 @@
-import { PageLoading } from "@/components/ui/skeleton";
+import { CardsLoading } from "@/components/ui/skeleton";
 
 export default function Loading() {
-  return <PageLoading />;
+  return <CardsLoading />;
 }

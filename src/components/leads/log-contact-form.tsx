@@ -1,4 +1,5 @@
-import { Input, Label, Select, Textarea } from "@/components/ui/input";
+import { Label, Select, Textarea } from "@/components/ui/input";
+import { FutureDateTimeInput } from "@/components/ui/future-datetime-input";
 import { SubmitButton } from "@/components/ui/submit-button";
 
 const OUTCOMES = [
@@ -44,7 +45,7 @@ export function LogContactForm({ action }: { action: (formData: FormData) => voi
 
       <div>
         <Label htmlFor="next_follow_up_at">Next follow-up (optional)</Label>
-        <Input id="next_follow_up_at" name="next_follow_up_at" type="datetime-local" />
+        <FutureDateTimeInput id="next_follow_up_at" name="next_follow_up_at" />
         <p className="mt-1 text-xs text-slate-400">
           Leave blank to keep the current follow-up date, or set a new one here.
         </p>

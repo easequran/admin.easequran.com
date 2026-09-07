@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
-import { UserPlus, Download, X, LayoutGrid, List } from "lucide-react";
+import { UserPlus, Download, X, LayoutGrid, List, ListChecks } from "lucide-react";
 import { DateTime } from "luxon";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -166,8 +166,13 @@ export function LeadsBoard({ leads, assignees }: { leads: Lead[]; assignees: { i
               <LayoutGrid className="h-3.5 w-3.5" /> Board
             </button>
           </div>
-          <Button variant={selectMode ? "outline" : "ghost"} size="sm" onClick={() => (selectMode ? exitSelectMode() : setSelectMode(true))}>
-            {selectMode ? "Cancel selection" : "Select"}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => (selectMode ? exitSelectMode() : setSelectMode(true))}
+          >
+            <ListChecks className="h-4 w-4" />
+            {selectMode ? "Cancel selection" : "Select rows"}
           </Button>
         </div>
       </div>

@@ -11,9 +11,8 @@ import { StatCard } from "@/components/ui/stat-card";
 import { SectionCard } from "@/components/ui/section-card";
 import { Pagination } from "@/components/ui/pagination";
 import { parsePageParam, pageRange, pageCount } from "@/lib/utils/pagination";
+import { formatDate, formatDateRange } from "@/lib/utils/format";
 import { CheckCircle2, Clock, AlertTriangle, XCircle, Receipt } from "lucide-react";
-
-const INVOICES_PER_PAGE = 50;
 import {
   TABLE_ELEMENT_CLASS,
   TABLE_HEAD_CLASS,
@@ -23,6 +22,8 @@ import {
   tableRowClass,
 } from "@/lib/utils/table-styles";
 import { cn } from "@/lib/utils/cn";
+
+const INVOICES_PER_PAGE = 50;
 import { INVOICE_STATUS_TONE } from "@/lib/utils/invoice-status";
 
 const statusTone = INVOICE_STATUS_TONE;
@@ -74,7 +75,7 @@ export default async function InvoicesPage({
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Invoices & Fees"
+        title="Invoices"
         icon={Receipt}
         tone="info"
         description="Monthly fees and per-class-block invoices across all students."
@@ -135,12 +136,12 @@ export default async function InvoicesPage({
                 <td className={cn(TABLE_CELL_CLASS, TABLE_CELL_SECONDARY_CLASS)}>
                   {inv.billing_mode === "per_block"
                     ? `${inv.block_index ? `Set ${inv.block_index}` : "Set"} · ${inv.classes_count ?? ""} classes (advance)`
-                    : `${inv.period_start} → ${inv.period_end}`}
+                    : formatDateRange(inv.period_start, inv.period_end)}
                 </td>
                 <td className={cn(TABLE_CELL_CLASS, TABLE_CELL_SECONDARY_CLASS)}>
                   {inv.currency} {Number(inv.amount).toFixed(2)}
                 </td>
-                <td className={cn(TABLE_CELL_CLASS, TABLE_CELL_SECONDARY_CLASS)}>{inv.due_date}</td>
+                <td className={cn(TABLE_CELL_CLASS, TABLE_CELL_SECONDARY_CLASS)}>{formatDate(inv.due_date)}</td>
                 <td className={TABLE_CELL_CLASS}>
                   <Badge tone={statusTone[inv.status as keyof typeof statusTone]}>{inv.status}</Badge>
                 </td>
