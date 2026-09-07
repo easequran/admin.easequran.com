@@ -20,10 +20,10 @@ export default async function SchedulePage({
     .from("class_occurrences")
     .select(
       profile.role === "teacher"
-        ? "id, start_at, status, is_trial, students(full_name), teachers!inner(profile_id, profiles(full_name))"
+        ? "id, start_at, status, is_trial, recurring_schedule_id, students(full_name), teachers!inner(profile_id, profiles(full_name))"
         : profile.role === "student"
-          ? "id, start_at, status, is_trial, students!inner(full_name, profile_id), teachers(profiles(full_name))"
-          : "id, start_at, status, is_trial, students(full_name), teachers(profiles(full_name))",
+          ? "id, start_at, status, is_trial, recurring_schedule_id, students!inner(full_name, profile_id), teachers(profiles(full_name))"
+          : "id, start_at, status, is_trial, recurring_schedule_id, students(full_name), teachers(profiles(full_name))",
     )
     .gte("start_at", DateTime.utc().startOf("day").toISO()!)
     .order("start_at")
@@ -56,6 +56,9 @@ export default async function SchedulePage({
     start_at: o.start_at,
     status: o.status,
     is_trial: o.is_trial,
+    // A one-off, non-trial occurrence with no parent recurring schedule is a
+    // makeup class booked from the Attendance screen (scheduleMakeupClass).
+    isMakeup: !o.is_trial && !o.recurring_schedule_id && Boolean(o.students?.full_name),
     studentName: o.students?.full_name,
     teacherName: o.teachers?.profiles?.full_name,
   }));

@@ -29,6 +29,7 @@ export function AttendanceRow({
   studentName,
   studentTimezone,
   isTrial,
+  isMakeup,
   startAt,
   viewerTimezone,
   currentStatus,
@@ -41,6 +42,7 @@ export function AttendanceRow({
   studentName: string;
   studentTimezone?: string;
   isTrial?: boolean;
+  isMakeup?: boolean;
   startAt: string;
   viewerTimezone: string;
   currentStatus?: AttendanceStatus;
@@ -63,6 +65,11 @@ export function AttendanceRow({
             {isTrial && (
               <Badge tone="accent" className="ml-2">
                 Trial
+              </Badge>
+            )}
+            {isMakeup && (
+              <Badge tone="warning" className="ml-2">
+                Makeup
               </Badge>
             )}
           </p>

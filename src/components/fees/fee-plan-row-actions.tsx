@@ -23,14 +23,33 @@ interface FeePlanRowActionsProps {
     block_amount: number | null;
     grace_days: number;
     block_billing_since: string | null;
+    sibling_group_id: string | null;
   };
   studentName?: string;
   today: string;
+  /** Other students sharing this plan's sibling_group_id (excludes this row's student). */
+  siblingNames?: string[];
+  /** Whole-family fee for the group (sum of every sibling row's amount) -- shown as the amount to edit for a sibling plan. */
+  siblingGroupAmount?: number;
 }
 
-export function FeePlanRowActions({ feePlan, studentName, today }: FeePlanRowActionsProps) {
+export function FeePlanRowActions({
+  feePlan,
+  studentName,
+  today,
+  siblingNames = [],
+  siblingGroupAmount,
+}: FeePlanRowActionsProps) {
   const [editing, setEditing] = useState(false);
   const [billingMode, setBillingMode] = useState<"monthly" | "per_block">(feePlan.billing_mode);
+
+  const inSiblingGroup = Boolean(feePlan.sibling_group_id) && siblingNames.length > 0;
+  const siblingGroupSize = siblingNames.length + 1;
+  const allSiblingNames = [studentName, ...siblingNames].filter(Boolean).join(", ");
+  // A sibling plan is edited as one unit: the amount field carries the whole
+  // family's fee and is split evenly across the children on save.
+  const monthlyDefault = inSiblingGroup ? siblingGroupAmount : feePlan.monthly_amount ?? undefined;
+  const blockDefault = inSiblingGroup ? siblingGroupAmount : feePlan.block_amount ?? undefined;
 
   const boundUpdate = updateFeePlan.bind(null, feePlan.id, feePlan.student_id);
   const boundDeactivate = deactivateFeePlan.bind(null, feePlan.id, feePlan.student_id);
@@ -43,17 +62,25 @@ export function FeePlanRowActions({ feePlan, studentName, today }: FeePlanRowAct
 
       <ConfirmButton
         action={boundDeactivate}
-        title="Deactivate this fee plan?"
+        title={inSiblingGroup ? "Deactivate this sibling fee plan?" : "Deactivate this fee plan?"}
         confirmText="Deactivate"
         confirmingText="Deactivating…"
-        successToast="Fee plan deactivated"
+        successToast={inSiblingGroup ? "Sibling fee plan deactivated" : "Fee plan deactivated"}
         errorToast="Failed to deactivate fee plan"
         body={
-          <>
-            {studentName ? `${studentName}'s fee plan` : "This fee plan"} will stop generating new
-            invoices. Past invoices are kept, and you can set a new fee plan for this student
-            afterwards.
-          </>
+          inSiblingGroup ? (
+            <>
+              The sibling plan for all {siblingGroupSize} students ({allSiblingNames}) will stop
+              generating new invoices. Past invoices are kept, and you can set a new fee plan
+              afterwards.
+            </>
+          ) : (
+            <>
+              {studentName ? `${studentName}'s fee plan` : "This fee plan"} will stop generating new
+              invoices. Past invoices are kept, and you can set a new fee plan for this student
+              afterwards.
+            </>
+          )
         }
       >
         Deactivate
@@ -62,7 +89,16 @@ export function FeePlanRowActions({ feePlan, studentName, today }: FeePlanRowAct
       <Modal
         open={editing}
         onClose={() => setEditing(false)}
-        title={`Edit fee${studentName ? ` — ${studentName}` : ""}`}
+        title={
+          inSiblingGroup
+            ? `Edit sibling fee — ${siblingGroupSize} students`
+            : `Edit fee${studentName ? ` — ${studentName}` : ""}`
+        }
+        description={
+          inSiblingGroup
+            ? `Applies to ${allSiblingNames}. The amount below is the whole family's fee; it's split evenly across all ${siblingGroupSize}.`
+            : undefined
+        }
         size="sm"
       >
         <form
@@ -98,7 +134,9 @@ export function FeePlanRowActions({ feePlan, studentName, today }: FeePlanRowAct
           {billingMode === "monthly" ? (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label htmlFor={`amount-${feePlan.id}`}>Fee / month</Label>
+                <Label htmlFor={`amount-${feePlan.id}`}>
+                  {inSiblingGroup ? "Total fee / month" : "Fee / month"}
+                </Label>
                 <Input
                   id={`amount-${feePlan.id}`}
                   name="monthly_amount"
@@ -106,7 +144,7 @@ export function FeePlanRowActions({ feePlan, studentName, today }: FeePlanRowAct
                   step="0.01"
                   min="0.01"
                   required
-                  defaultValue={feePlan.monthly_amount ?? undefined}
+                  defaultValue={monthlyDefault}
                 />
               </div>
               <div>
@@ -138,7 +176,9 @@ export function FeePlanRowActions({ feePlan, studentName, today }: FeePlanRowAct
                   />
                 </div>
                 <div>
-                  <Label htmlFor={`block_amount-${feePlan.id}`}>Fixed fee / set</Label>
+                  <Label htmlFor={`block_amount-${feePlan.id}`}>
+                    {inSiblingGroup ? "Total fee / set" : "Fixed fee / set"}
+                  </Label>
                   <Input
                     id={`block_amount-${feePlan.id}`}
                     name="block_amount"
@@ -146,7 +186,7 @@ export function FeePlanRowActions({ feePlan, studentName, today }: FeePlanRowAct
                     step="0.01"
                     min="0.01"
                     required
-                    defaultValue={feePlan.block_amount ?? undefined}
+                    defaultValue={blockDefault}
                   />
                 </div>
               </div>

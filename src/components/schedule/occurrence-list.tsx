@@ -32,6 +32,8 @@ export function OccurrenceList({
     start_at: string;
     status: OccurrenceStatus;
     is_trial: boolean;
+    /** One-off makeup class (rescheduled from an excused absence) -- not a recurring class or a trial. */
+    isMakeup?: boolean;
     studentName?: string;
     teacherName?: string;
     leadId?: string;
@@ -70,6 +72,11 @@ export function OccurrenceList({
                   {o.is_trial && (
                     <Badge tone="accent" className="ml-0.5">
                       Trial
+                    </Badge>
+                  )}
+                  {o.isMakeup && (
+                    <Badge tone="warning" className="ml-0.5">
+                      Makeup
                     </Badge>
                   )}
                 </div>

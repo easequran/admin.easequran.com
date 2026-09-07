@@ -29,7 +29,7 @@ export default async function DashboardPage() {
       supabase.from("leads").select("*", { count: "exact", head: true }).not("status", "in", "(converted,lost)"),
       supabase
         .from("class_occurrences")
-        .select("id, start_at, end_at, status, is_trial, students(full_name), teachers(profile_id, profiles(full_name))")
+        .select("id, start_at, end_at, status, is_trial, recurring_schedule_id, students(full_name), teachers(profile_id, profiles(full_name))")
         .gte("start_at", startOfDay!)
         .lte("start_at", endOfDay!)
         .order("start_at"),
@@ -72,6 +72,7 @@ export default async function DashboardPage() {
             end_at: c.end_at,
             status: c.status,
             is_trial: c.is_trial,
+            isMakeup: !c.is_trial && !c.recurring_schedule_id && Boolean(c.students?.full_name),
             studentName: c.students?.full_name ?? "Trial",
             teacherName: c.teachers?.profiles?.full_name ?? "—",
           }))}
@@ -108,7 +109,7 @@ export default async function DashboardPage() {
   // student
   const { data: upcoming } = await supabase
     .from("class_occurrences")
-    .select("id, start_at, status, is_trial, teachers(profiles(full_name)), students!inner(profile_id)")
+    .select("id, start_at, status, is_trial, recurring_schedule_id, teachers(profiles(full_name)), students!inner(profile_id)")
     .eq("students.profile_id", profile.id)
     .gte("start_at", DateTime.utc().toISO()!)
     .order("start_at")
@@ -128,6 +129,9 @@ export default async function DashboardPage() {
               start_at: c.start_at,
               status: c.status,
               is_trial: c.is_trial,
+              // Student's own view: any non-trial one-off with no recurring
+              // parent is a makeup class.
+              isMakeup: !c.is_trial && !c.recurring_schedule_id,
               teacherName: c.teachers?.profiles?.full_name ?? "—",
             }))}
             viewerTimezone={profile.timezone}

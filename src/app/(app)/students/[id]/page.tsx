@@ -7,6 +7,7 @@ import { ConfirmButton } from "@/components/ui/confirm-button";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { Badge } from "@/components/ui/badge";
 import { WeeklyScheduleFields } from "@/components/students/weekly-schedule-fields";
+import { RemoveAllSchedulesButton } from "@/components/students/remove-all-schedules-button";
 import { PageHeader } from "@/components/ui/page-header";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -72,6 +73,28 @@ export default async function StudentDetailPage({
   const activeFeePlan = allFeePlans.find((p) => p.active);
   const pastFeePlans = allFeePlans.filter((p) => p.id !== activeFeePlan?.id);
   const allInvoices = invoices ?? [];
+
+  // A sibling plan is one fee_plans row per student sharing a sibling_group_id
+  // (see createFeePlan) -- surface the link so it's clear this student's fee is
+  // managed together with their siblings, not in isolation.
+  let siblingPlanNames: string[] = [];
+  let siblingFamilyTotal = 0;
+  if (activeFeePlan?.sibling_group_id) {
+    const { data: sibs } = await supabase
+      .from("fee_plans")
+      .select("student_id, billing_mode, monthly_amount, block_amount, students(full_name)")
+      .eq("sibling_group_id", activeFeePlan.sibling_group_id)
+      .eq("active", true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sibRows = (sibs ?? []) as any[];
+    siblingPlanNames = sibRows
+      .filter((s) => s.student_id !== id)
+      .map((s) => s.students?.full_name ?? "Student");
+    siblingFamilyTotal = sibRows.reduce(
+      (sum, s) => sum + (Number(s.billing_mode === "per_block" ? s.block_amount : s.monthly_amount) || 0),
+      0,
+    );
+  }
 
   // Advance per_block plan: how many classes of the currently-paid set have
   // been delivered (absent counts, excused doesn't, only since the plan's
@@ -212,7 +235,16 @@ export default async function StudentDetailPage({
         </div>
 
         <div className="space-y-6">
-          <SectionCard icon={CalendarClock} tone="success" title="Weekly schedule">
+          <SectionCard
+            icon={CalendarClock}
+            tone="success"
+            title="Weekly schedule"
+            actions={
+              schedules && schedules.length > 0 ? (
+                <RemoveAllSchedulesButton studentId={id} count={schedules.length} />
+              ) : undefined
+            }
+          >
               {!schedules || schedules.length === 0 ? (
                 <p className="mb-4 text-sm text-slate-500">No recurring classes yet.</p>
               ) : (
@@ -293,6 +325,19 @@ export default async function StudentDetailPage({
                 )
               ) : (
                 <p className="mb-3 text-sm text-slate-500">No active fee plan set.</p>
+              )}
+              {activeFeePlan?.sibling_group_id && (
+                <p className="-mt-1 mb-3 text-xs font-medium text-accent-700">
+                  Shared sibling plan
+                  {siblingPlanNames.length > 0 && (
+                    <span className="font-normal text-slate-500"> · linked with {siblingPlanNames.join(", ")}</span>
+                  )}
+                  <span className="font-normal text-slate-500">
+                    {" "}
+                    · {activeFeePlan.currency} {siblingFamilyTotal.toFixed(2)} family fee split evenly, this
+                    student&apos;s share above. Edit it on the Fees page to update the whole group.
+                  </span>
+                </p>
               )}
               <Link
                 href={`/fees?student=${id}`}
