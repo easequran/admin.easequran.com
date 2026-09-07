@@ -207,6 +207,17 @@ export async function updateFeePlan(feePlanId: string, studentId: string, formDa
       .update({ ...base, [amountField]: shares[i] })
       .eq("id", ids[i]);
     if (error) throw new Error(error.message);
+
+    // Keep still-unpaid invoices for this plan in step with the new amount --
+    // otherwise a corrected fee leaves stale bills (e.g. the £64-each invoice
+    // a sibling plan raised before its family total was split). Paid and
+    // cancelled invoices are historical and left alone.
+    const { error: invErr } = await supabase
+      .from("invoices")
+      .update({ amount: shares[i], currency: base.currency })
+      .eq("fee_plan_id", ids[i])
+      .in("status", ["pending", "overdue"]);
+    if (invErr) throw new Error(invErr.message);
   }
 
   // Now on per_block: an older "count from" date may mean a block is already
