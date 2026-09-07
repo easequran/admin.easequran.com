@@ -47,7 +47,6 @@ export function Topbar({
               {ROLE_LABEL[profile.role]}
             </Badge>
           </div>
-          <p className="hidden text-xs text-slate-500 sm:block">Welcome back</p>
         </div>
       </div>
       <div className="flex min-w-0 flex-1 items-center justify-end gap-2 sm:gap-4">

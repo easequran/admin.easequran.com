@@ -116,7 +116,7 @@ export function CommandPalette({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 px-4 pt-[10vh]"
+      className="eq-anim-overlay fixed inset-0 z-50 flex items-start justify-center bg-black/40 px-4 pt-[10vh]"
       onMouseDown={onClose}
     >
       <div
@@ -124,7 +124,7 @@ export function CommandPalette({
         role="dialog"
         aria-modal="true"
         aria-label="Search the portal"
-        className="w-full max-w-lg rounded-2xl border border-primary-100 bg-white shadow-xl"
+        className="eq-anim-panel w-full max-w-lg rounded-2xl border border-primary-100 bg-white shadow-xl"
         onMouseDown={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDown}
       >
@@ -167,7 +167,9 @@ export function CommandPalette({
 
           {!isPending && query.trim().length < 2 && (
             <p className="px-3 py-4 text-sm text-slate-500">
-              Type at least 2 characters to search the whole portal.
+              {role === "admin"
+                ? "Type at least 2 characters to search leads, students, teachers, trials and invoices."
+                : "Type at least 2 characters to search your records."}
             </p>
           )}
 

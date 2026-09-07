@@ -140,7 +140,12 @@ export function StudentsTable({
           <span className="text-sm font-medium text-primary-900">{selected.size} selected</span>
 
           <div className="flex items-center gap-2">
-            <Select value={bulkStatus} onChange={(e) => setBulkStatus(e.target.value as EnrollmentStatus)} className="w-auto">
+            <Select
+              aria-label="Set enrollment status"
+              value={bulkStatus}
+              onChange={(e) => setBulkStatus(e.target.value as EnrollmentStatus)}
+              className="w-auto"
+            >
               {STATUSES.map((s) => (
                 <option key={s} value={s}>
                   {s}

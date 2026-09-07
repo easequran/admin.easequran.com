@@ -107,7 +107,7 @@ export function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-primary-950/40 p-4"
+      className="eq-anim-overlay fixed inset-0 z-50 flex items-center justify-center bg-primary-950/40 p-4"
       onMouseDown={requestClose}
     >
       <div
@@ -120,7 +120,7 @@ export function Modal({
         onMouseDown={(e) => e.stopPropagation()}
         onKeyDown={handleTrap}
         className={cn(
-          "flex max-h-[calc(100vh-2rem)] w-full flex-col overflow-hidden rounded-xl bg-white shadow-xl outline-none",
+          "eq-anim-panel flex max-h-[calc(100vh-2rem)] w-full flex-col overflow-hidden rounded-xl bg-white shadow-xl outline-none",
           SIZE_CLASS[size],
         )}
       >

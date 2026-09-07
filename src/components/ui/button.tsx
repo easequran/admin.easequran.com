@@ -32,7 +32,7 @@ export function Button({ variant = "primary", size = "md", className, ...props }
   return (
     <button
       className={cn(
-        "inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg font-medium transition-all duration-150 hover:-translate-y-px active:translate-y-0 active:scale-[0.97] active:shadow-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none disabled:hover:translate-y-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2",
+        "inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg font-medium transition-[transform,box-shadow,background-color,border-color,color] duration-150 hover:-translate-y-px active:translate-y-0 active:scale-[0.97] active:shadow-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none disabled:hover:translate-y-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2",
         variantClasses[variant],
         sizeClasses[size],
         className,
@@ -59,7 +59,7 @@ export function LinkButton({
     <Link
       href={href}
       className={cn(
-        "inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg font-medium transition-all duration-150 hover:-translate-y-px active:translate-y-0 active:scale-[0.97] active:shadow-none",
+        "inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg font-medium transition-[transform,box-shadow,background-color,border-color,color] duration-150 hover:-translate-y-px active:translate-y-0 active:scale-[0.97] active:shadow-none",
         variantClasses[variant],
         sizeClasses[size],
         className,

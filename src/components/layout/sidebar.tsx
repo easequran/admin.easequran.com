@@ -189,11 +189,10 @@ export function Sidebar({
                       title={collapsed ? label : undefined}
                       aria-current={active ? "page" : undefined}
                       className={cn(
-                        "flex items-center gap-3 rounded-lg border-l-[3px] border-transparent py-2 pl-[9px] pr-3 text-sm font-medium text-primary-100 transition-all duration-150 hover:translate-x-0.5 hover:bg-primary-500/40 hover:text-white",
+                        "flex items-center gap-3 rounded-lg border-l-[3px] border-transparent py-2 pl-[9px] pr-3 text-sm font-medium text-primary-100 transition-colors duration-150 hover:bg-primary-500/40 hover:text-white",
                         FOCUS_RING,
                         "focus-visible:outline-accent-300",
-                        active &&
-                          "border-accent-300 bg-accent-500 text-primary-900 hover:translate-x-0 hover:bg-accent-500 hover:text-primary-900",
+                        active && "border-accent-300 bg-accent-500 text-primary-900 hover:bg-accent-500 hover:text-primary-900",
                         collapsed && "md:justify-center md:border-l-0 md:px-0",
                       )}
                     >

@@ -32,11 +32,13 @@ export function PasswordField({ glass = false }: { glass?: boolean }) {
       <button
         type="button"
         onClick={() => setVisible((v) => !v)}
-        tabIndex={-1}
         aria-label={visible ? "Hide password" : "Show password"}
+        aria-pressed={visible}
         className={cn(
-          "absolute right-3 top-1/2 -translate-y-1/2",
-          glass ? "text-white/50 hover:text-white" : "text-slate-400 hover:text-primary-600",
+          "absolute right-3 top-1/2 -translate-y-1/2 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1",
+          glass
+            ? "text-white/50 hover:text-white focus-visible:outline-white/60"
+            : "text-slate-400 hover:text-primary-600 focus-visible:outline-primary-400",
         )}
       >
         {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}

@@ -66,10 +66,7 @@ export default async function LoginPage({
                 </div>
                 <PasswordField />
               </div>
-              <SubmitButton
-                className="w-full justify-center bg-primary-700 py-2.5 hover:bg-primary-800"
-                pendingText="Signing in..."
-              >
+              <SubmitButton className="w-full justify-center py-2.5" pendingText="Signing in...">
                 Sign in
               </SubmitButton>
             </form>

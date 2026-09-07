@@ -183,7 +183,12 @@ export function LeadsBoard({
           <span className="text-sm font-medium text-primary-900">{selected.size} selected</span>
 
           <div className="flex items-center gap-2">
-            <Select value={bulkStatus} onChange={(e) => setBulkStatus(e.target.value as LeadStatus)} className="w-auto">
+            <Select
+              aria-label="Set lead stage"
+              value={bulkStatus}
+              onChange={(e) => setBulkStatus(e.target.value as LeadStatus)}
+              className="w-auto"
+            >
               {MANUAL_STAGES.map((s) => (
                 <option key={s.key} value={s.key}>
                   {s.label}
@@ -196,7 +201,12 @@ export function LeadsBoard({
           </div>
 
           <div className="flex items-center gap-2">
-            <Select value={bulkAssignee} onChange={(e) => setBulkAssignee(e.target.value)} className="w-auto">
+            <Select
+              aria-label="Assign selected leads to"
+              value={bulkAssignee}
+              onChange={(e) => setBulkAssignee(e.target.value)}
+              className="w-auto"
+            >
               <option value="">Assign to…</option>
               {assignees.map((a) => (
                 <option key={a.id} value={a.id}>

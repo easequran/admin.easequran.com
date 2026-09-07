@@ -64,6 +64,32 @@ body {
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
+/* Subtle enter for dialogs/popovers (Modal, command palette). Enter only --
+   no exit animation, to keep it cheap and unobtrusive. */
+@keyframes eq-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes eq-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.985);
+  }
+}
+.eq-anim-overlay {
+  animation: eq-fade-in 120ms ease-out;
+}
+.eq-anim-panel {
+  animation: eq-pop-in 140ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .eq-anim-overlay,
+  .eq-anim-panel {
+    animation: none;
+  }
+}
+
 /* Print an id="*-print-area" block on its own, hiding app chrome (sidebar,
    nav, filters, action buttons) so "Download PDF" (window.print) produces a
    clean printable table instead of the whole dashboard shell. */
