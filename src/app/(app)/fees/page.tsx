@@ -47,11 +47,16 @@ export default async function FeesPage({
   // one group so the table doesn't read as N unrelated plans. All other rows
   // keep their original (created_at desc) order.
   const siblingNamesByGroup = new Map<string, string[]>();
+  // Family total = sum of every sibling row's amount (the entered fee is split
+  // evenly across the group at create/update time -- see createFeePlan).
+  const siblingTotalByGroup = new Map<string, number>();
   for (const p of plans) {
     if (!p.sibling_group_id) continue;
     const names = siblingNamesByGroup.get(p.sibling_group_id) ?? [];
     names.push(p.students?.full_name ?? "Student");
     siblingNamesByGroup.set(p.sibling_group_id, names);
+    const rowAmount = Number(p.billing_mode === "per_block" ? p.block_amount : p.monthly_amount) || 0;
+    siblingTotalByGroup.set(p.sibling_group_id, (siblingTotalByGroup.get(p.sibling_group_id) ?? 0) + rowAmount);
   }
   const orderedKeys: string[] = [];
   const seenKeys = new Set<string>();
@@ -174,6 +179,9 @@ export default async function FeesPage({
                       ? siblingNamesByGroup.get(p.sibling_group_id) ?? []
                       : [];
                     const otherSiblingNames = groupMembers.filter((n) => n !== p.students?.full_name);
+                    const familyTotal = p.sibling_group_id
+                      ? siblingTotalByGroup.get(p.sibling_group_id) ?? 0
+                      : 0;
                     return (
                       <tr
                         key={p.id}
@@ -200,6 +208,11 @@ export default async function FeesPage({
                           {isBlock
                             ? `${p.currency} ${Number(p.block_amount).toFixed(2)} / ${p.classes_per_block} classes`
                             : `${p.currency} ${Number(p.monthly_amount).toFixed(2)} / month`}
+                          {p.sibling_group_id && (
+                            <span className="mt-0.5 block text-xs text-slate-400">
+                              this student&apos;s share of {p.currency} {familyTotal.toFixed(2)} family fee
+                            </span>
+                          )}
                         </td>
                         <td className={cn(TABLE_CELL_CLASS, TABLE_CELL_SECONDARY_CLASS)}>
                           {isBlock ? (
@@ -220,6 +233,7 @@ export default async function FeesPage({
                             studentName={p.students?.full_name}
                             today={today}
                             siblingNames={otherSiblingNames}
+                            siblingGroupAmount={p.sibling_group_id ? familyTotal : undefined}
                           />
                         </td>
                       </tr>

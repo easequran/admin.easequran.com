@@ -77,15 +77,22 @@ export default async function StudentDetailPage({
   // (see createFeePlan) -- surface the link so it's clear this student's fee is
   // managed together with their siblings, not in isolation.
   let siblingPlanNames: string[] = [];
+  let siblingFamilyTotal = 0;
   if (activeFeePlan?.sibling_group_id) {
     const { data: sibs } = await supabase
       .from("fee_plans")
-      .select("student_id, students(full_name)")
+      .select("student_id, billing_mode, monthly_amount, block_amount, students(full_name)")
       .eq("sibling_group_id", activeFeePlan.sibling_group_id)
-      .eq("active", true)
-      .neq("student_id", id);
+      .eq("active", true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    siblingPlanNames = ((sibs ?? []) as any[]).map((s) => s.students?.full_name ?? "Student");
+    const sibRows = (sibs ?? []) as any[];
+    siblingPlanNames = sibRows
+      .filter((s) => s.student_id !== id)
+      .map((s) => s.students?.full_name ?? "Student");
+    siblingFamilyTotal = sibRows.reduce(
+      (sum, s) => sum + (Number(s.billing_mode === "per_block" ? s.block_amount : s.monthly_amount) || 0),
+      0,
+    );
   }
 
   // Advance per_block plan: how many classes of the currently-paid set have
@@ -301,7 +308,11 @@ export default async function StudentDetailPage({
                   {siblingPlanNames.length > 0 && (
                     <span className="font-normal text-slate-500"> · linked with {siblingPlanNames.join(", ")}</span>
                   )}
-                  . Editing it on the Fees page can update all siblings at once.
+                  <span className="font-normal text-slate-500">
+                    {" "}
+                    · {activeFeePlan.currency} {siblingFamilyTotal.toFixed(2)} family fee split evenly, this
+                    student&apos;s share above. Edit it on the Fees page to update the whole group.
+                  </span>
                 </p>
               )}
               <Link
