@@ -25,6 +25,28 @@ const OPTIONS: { value: AttendanceStatus; label: string }[] = [
   { value: "excused", label: "Excused" },
 ];
 
+/** Present = green, absent = red, excused = yellow -- "late" keeps the neutral style below (no color requested for it). */
+const STATUS_BADGE_TONE: Partial<Record<AttendanceStatus, "success" | "danger" | "warning">> = {
+  present: "success",
+  absent: "danger",
+  excused: "warning",
+};
+
+const STATUS_BUTTON_TONE: Partial<Record<AttendanceStatus, { selected: string; unselected: string }>> = {
+  present: {
+    selected: "border-emerald-500 bg-emerald-100 text-emerald-800",
+    unselected: "border-emerald-200 text-emerald-700 hover:bg-emerald-50",
+  },
+  absent: {
+    selected: "border-red-500 bg-red-100 text-red-800",
+    unselected: "border-red-200 text-red-700 hover:bg-red-50",
+  },
+  excused: {
+    selected: "border-amber-500 bg-amber-100 text-amber-800",
+    unselected: "border-amber-200 text-amber-700 hover:bg-amber-50",
+  },
+};
+
 export function AttendanceRow({
   occurrenceId,
   studentId,
@@ -80,9 +102,7 @@ export function AttendanceRow({
         </div>
         {currentStatus && !editingStatus ? (
           <div className="flex items-center gap-2">
-            <Badge tone={currentStatus === "present" ? "success" : currentStatus === "absent" ? "danger" : "warning"}>
-              {currentStatus}
-            </Badge>
+            <Badge tone={(currentStatus && STATUS_BADGE_TONE[currentStatus]) ?? "warning"}>{currentStatus}</Badge>
             <button
               type="button"
               onClick={() => setEditingStatus(true)}
@@ -111,21 +131,29 @@ export function AttendanceRow({
               />
             )}
             <div className="flex flex-wrap gap-2">
-              {OPTIONS.map((o) => (
-                <button
-                  key={o.value}
-                  type="submit"
-                  name="status"
-                  value={o.value}
-                  className={`rounded-md border px-2 py-1 text-xs font-medium ${FOCUS_RING} ${
-                    o.value === currentStatus
-                      ? "border-primary-400 bg-primary-50 text-primary-900"
-                      : "border-primary-200 text-primary-700 hover:bg-primary-50"
-                  }`}
-                >
-                  {o.label}
-                </button>
-              ))}
+              {OPTIONS.map((o) => {
+                const tone = STATUS_BUTTON_TONE[o.value];
+                const selected = o.value === currentStatus;
+                return (
+                  <button
+                    key={o.value}
+                    type="submit"
+                    name="status"
+                    value={o.value}
+                    className={`rounded-md border px-2 py-1 text-xs font-medium ${FOCUS_RING} ${
+                      tone
+                        ? selected
+                          ? tone.selected
+                          : tone.unselected
+                        : selected
+                          ? "border-primary-400 bg-primary-50 text-primary-900"
+                          : "border-primary-200 text-primary-700 hover:bg-primary-50"
+                    }`}
+                  >
+                    {o.label}
+                  </button>
+                );
+              })}
               {currentStatus && (
                 <button
                   type="button"
