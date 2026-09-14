@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { TeacherDashboardView } from "@/components/teachers/teacher-dashboard-view";
 import { AdminDashboardLive } from "@/components/dashboard/admin-dashboard-live";
 import { OccurrenceList } from "@/components/schedule/occurrence-list";
+import { UnconfirmedTrialsBanner } from "@/components/trials/unconfirmed-trials-banner";
 import { DateTime } from "luxon";
 import { PageHeader } from "@/components/ui/page-header";
 import { LayoutDashboard, CalendarClock } from "lucide-react";
@@ -52,6 +53,8 @@ export default async function DashboardPage() {
           icon={LayoutDashboard}
           tone="info"
         />
+
+        <UnconfirmedTrialsBanner viewerTimezone={profile.timezone} />
 
         <AdminDashboardLive
           timezone={profile.timezone}

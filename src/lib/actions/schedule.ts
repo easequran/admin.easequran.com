@@ -162,7 +162,14 @@ export async function bookTrialClass(formData: FormData) {
   const supabase = await createClient();
 
   const leadId = String(formData.get("lead_id") || "") || null;
-  const teacherId = String(formData.get("teacher_id"));
+  // Teacher is optional at booking time -- the actual teacher is often only
+  // confirmed later, and forcing a guess here is what caused trials to end
+  // up assigned to the wrong (or a random) teacher.
+  const teacherId = String(formData.get("teacher_id") || "").trim() || null;
+  // If no real teacher record exists yet, this records who was actually
+  // confirmed with the family so it isn't lost -- shown as a reminder until
+  // someone assigns a real teacher.
+  const pendingTeacherName = teacherId ? null : String(formData.get("pending_teacher_name") || "").trim() || null;
   const startAtLocal = String(formData.get("start_at_local")); // yyyy-MM-ddTHH:mm
   const timezone = String(formData.get("timezone"));
   const durationMinutes = Number(formData.get("duration_minutes") || 30);
@@ -181,15 +188,17 @@ export async function bookTrialClass(formData: FormData) {
     throw new Error("That time is in the past — pick a future date and time.");
   }
 
-  const conflict = await hasConflict({
-    teacherId,
-    startAt: startAt.toUTC().toISO()!,
-    endAt: endAt.toUTC().toISO()!,
-  });
-  // Surface the clash inline (so the booking form keeps its values) rather
-  // than redirecting away with a query-string error.
-  if (conflict) {
-    throw new Error("That teacher already has a class at that time.");
+  if (teacherId) {
+    const conflict = await hasConflict({
+      teacherId,
+      startAt: startAt.toUTC().toISO()!,
+      endAt: endAt.toUTC().toISO()!,
+    });
+    // Surface the clash inline (so the booking form keeps its values) rather
+    // than redirecting away with a query-string error.
+    if (conflict) {
+      throw new Error("That teacher already has a class at that time.");
+    }
   }
 
   const { data: occurrence, error } = await supabase
@@ -197,6 +206,7 @@ export async function bookTrialClass(formData: FormData) {
     .insert({
       lead_id: leadId,
       teacher_id: teacherId,
+      pending_teacher_name: pendingTeacherName,
       is_trial: true,
       start_at: startAt.toUTC().toISO()!,
       end_at: endAt.toUTC().toISO()!,
@@ -207,14 +217,17 @@ export async function bookTrialClass(formData: FormData) {
 
   const [{ data: lead }, { data: teacher }] = await Promise.all([
     leadId ? supabase.from("leads").select("full_name, email").eq("id", leadId).single() : Promise.resolve({ data: null }),
-    supabase.from("teachers").select("profiles(full_name, email)").eq("id", teacherId).single(),
+    teacherId
+      ? supabase.from("teachers").select("profiles(full_name, email)").eq("id", teacherId).single()
+      : Promise.resolve({ data: null }),
   ]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const teacherProfile = (teacher as any)?.profiles;
+  const teacherLabel = teacherProfile?.full_name ?? pendingTeacherName ?? "teacher TBD";
 
   try {
     const eventId = await createCalendarEvent({
-      summary: `Trial class: ${lead?.full_name ?? "Prospective student"} with ${teacherProfile?.full_name ?? "Teacher"}`,
+      summary: `Trial class: ${lead?.full_name ?? "Prospective student"} with ${teacherLabel}`,
       description: "Ease Quran academy trial class",
       startAtUtcIso: startAt.toUTC().toISO()!,
       endAtUtcIso: endAt.toUTC().toISO()!,
@@ -233,6 +246,7 @@ export async function bookTrialClass(formData: FormData) {
 
   revalidatePath("/trials");
   revalidatePath("/leads");
+  revalidatePath("/dashboard");
   redirect(withToast("/trials", "Trial class booked"));
 }
 
@@ -240,7 +254,8 @@ export async function updateTrialClass(occurrenceId: string, formData: FormData)
   await requireAdmin();
   const supabase = await createClient();
 
-  const teacherId = String(formData.get("teacher_id"));
+  const teacherId = String(formData.get("teacher_id") || "").trim() || null;
+  const pendingTeacherName = teacherId ? null : String(formData.get("pending_teacher_name") || "").trim() || null;
   const startAtLocal = String(formData.get("start_at_local"));
   const timezone = String(formData.get("timezone"));
   const durationMinutes = Number(formData.get("duration_minutes") || 30);
@@ -249,14 +264,16 @@ export async function updateTrialClass(occurrenceId: string, formData: FormData)
   const startAt = DateTime.fromISO(startAtLocal, { zone: timezone });
   const endAt = startAt.plus({ minutes: durationMinutes });
 
-  const conflict = await hasConflict({
-    teacherId,
-    startAt: startAt.toUTC().toISO()!,
-    endAt: endAt.toUTC().toISO()!,
-    excludeOccurrenceId: occurrenceId,
-  });
-  if (conflict) {
-    redirect(`/trials/${occurrenceId}?error=${encodeURIComponent("Teacher already has a class at that time.")}`);
+  if (teacherId) {
+    const conflict = await hasConflict({
+      teacherId,
+      startAt: startAt.toUTC().toISO()!,
+      endAt: endAt.toUTC().toISO()!,
+      excludeOccurrenceId: occurrenceId,
+    });
+    if (conflict) {
+      redirect(`/trials/${occurrenceId}?error=${encodeURIComponent("Teacher already has a class at that time.")}`);
+    }
   }
 
   const { data: existing } = await supabase
@@ -269,6 +286,7 @@ export async function updateTrialClass(occurrenceId: string, formData: FormData)
     .from("class_occurrences")
     .update({
       teacher_id: teacherId,
+      pending_teacher_name: pendingTeacherName,
       start_at: startAt.toUTC().toISO()!,
       end_at: endAt.toUTC().toISO()!,
     })
@@ -279,14 +297,17 @@ export async function updateTrialClass(occurrenceId: string, formData: FormData)
     existing?.lead_id
       ? supabase.from("leads").select("full_name, email").eq("id", existing.lead_id).single()
       : Promise.resolve({ data: null }),
-    supabase.from("teachers").select("profiles(full_name, email)").eq("id", teacherId).single(),
+    teacherId
+      ? supabase.from("teachers").select("profiles(full_name, email)").eq("id", teacherId).single()
+      : Promise.resolve({ data: null }),
   ]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const teacherProfile = (teacher as any)?.profiles;
+  const teacherLabel = teacherProfile?.full_name ?? pendingTeacherName ?? "teacher TBD";
 
   if (existing?.calendar_event_id) {
     await updateCalendarEvent(existing.calendar_event_id, {
-      summary: `Trial class: ${lead?.full_name ?? "Prospective student"} with ${teacherProfile?.full_name ?? "Teacher"}`,
+      summary: `Trial class: ${lead?.full_name ?? "Prospective student"} with ${teacherLabel}`,
       startAtUtcIso: startAt.toUTC().toISO()!,
       endAtUtcIso: endAt.toUTC().toISO()!,
       attendeeEmails: [teacherProfile?.email, lead?.email].filter(Boolean) as string[],
@@ -295,6 +316,7 @@ export async function updateTrialClass(occurrenceId: string, formData: FormData)
 
   revalidatePath("/trials");
   revalidatePath(`/trials/${occurrenceId}`);
+  revalidatePath("/dashboard");
   redirect(withToast("/trials", "Trial class updated"));
 }
 

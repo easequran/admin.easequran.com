@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/data/profile";
 import { LinkButton } from "@/components/ui/button";
 import { OccurrenceList } from "@/components/schedule/occurrence-list";
+import { UnconfirmedTrialsBanner } from "@/components/trials/unconfirmed-trials-banner";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { SectionCard } from "@/components/ui/section-card";
@@ -26,7 +27,7 @@ export default async function TrialsPage({
   const { data: trials, count } = await supabase
     .from("class_occurrences")
     .select(
-      "id, start_at, status, is_trial, leads(id, full_name, status), teachers(profiles(full_name))",
+      "id, start_at, status, is_trial, pending_teacher_name, leads(id, full_name, status), teachers(profiles(full_name))",
       { count: "exact" },
     )
     .eq("is_trial", true)
@@ -42,6 +43,7 @@ export default async function TrialsPage({
     is_trial: t.is_trial,
     studentName: t.leads?.full_name,
     teacherName: t.teachers?.profiles?.full_name,
+    pendingTeacherName: t.pending_teacher_name ?? undefined,
     leadId: t.leads?.id,
     leadConverted: t.leads?.status === "converted",
   }));
@@ -63,6 +65,8 @@ export default async function TrialsPage({
       {params.error && (
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{params.error}</p>
       )}
+
+      <UnconfirmedTrialsBanner viewerTimezone={profile.timezone} />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Total trials" value={mapped.length} icon={CalendarClock} tone="info" />

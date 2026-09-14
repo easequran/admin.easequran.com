@@ -1,17 +1,18 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/data/profile";
 import { SectionCard } from "@/components/ui/section-card";
-import { Label, Select } from "@/components/ui/input";
+import { Input, Label, Select } from "@/components/ui/input";
 import { FutureDateTimeInput } from "@/components/ui/future-datetime-input";
 import { TimezoneSelect } from "@/components/ui/timezone-select";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { ConfirmButton } from "@/components/ui/confirm-button";
+import { LinkButton } from "@/components/ui/button";
 import { updateTrialClass, cancelTrialClass } from "@/lib/actions/schedule";
 import { DeleteTrialButton } from "@/components/schedule/delete-trial-button";
 import { PageHeader } from "@/components/ui/page-header";
 import { notFound } from "next/navigation";
 import { DateTime } from "luxon";
-import { CalendarClock } from "lucide-react";
+import { CalendarClock, AlertTriangle } from "lucide-react";
 
 export default async function EditTrialPage({
   params,
@@ -78,11 +79,29 @@ export default async function EditTrialPage({
 
       {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
+      {!occurrence.teacher_id && (
+        <div className="flex flex-wrap items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+          <div className="flex-1">
+            <p className="font-medium text-amber-900">No teacher assigned yet</p>
+            <p className="mt-0.5 text-amber-800">
+              {occurrence.pending_teacher_name
+                ? `Confirmed with ${occurrence.pending_teacher_name}, who isn't added to the app yet.`
+                : "Pick a teacher below once one is confirmed."}
+            </p>
+          </div>
+          <LinkButton href="/teachers/new" variant="outline" size="sm">
+            Add teacher
+          </LinkButton>
+        </div>
+      )}
+
       <SectionCard icon={CalendarClock} tone="accent" title="Trial details">
           <form action={boundUpdate} className="max-w-xl space-y-4">
             <div>
               <Label htmlFor="teacher_id">Teacher</Label>
-              <Select id="teacher_id" name="teacher_id" defaultValue={occurrence.teacher_id} required>
+              <Select id="teacher_id" name="teacher_id" defaultValue={occurrence.teacher_id ?? ""}>
+                <option value="">Not decided yet</option>
                 {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 {((teachers ?? []) as any[]).map((t) => (
                   <option key={t.id} value={t.id}>
@@ -90,6 +109,18 @@ export default async function EditTrialPage({
                   </option>
                 ))}
               </Select>
+            </div>
+            <div>
+              <Label htmlFor="pending_teacher_name">Confirmed teacher, not added to the app yet?</Label>
+              <Input
+                id="pending_teacher_name"
+                name="pending_teacher_name"
+                placeholder="Their name (optional)"
+                defaultValue={occurrence.pending_teacher_name ?? ""}
+              />
+              <p className="mt-1 text-xs text-slate-500">
+                Only used when &quot;Teacher&quot; above is left as &quot;Not decided yet&quot;.
+              </p>
             </div>
             <div>
               <Label htmlFor="start_at_local">Date & time</Label>

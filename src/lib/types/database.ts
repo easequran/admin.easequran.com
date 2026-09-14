@@ -123,7 +123,8 @@ export interface ClassOccurrence {
   id: string;
   recurring_schedule_id: string | null;
   student_id: string | null;
-  teacher_id: string;
+  /** Nullable only for a trial (is_trial: true) that has no teacher confirmed yet. */
+  teacher_id: string | null;
   lead_id: string | null;
   start_at: string;
   end_at: string;
@@ -131,6 +132,8 @@ export interface ClassOccurrence {
   status: OccurrenceStatus;
   meeting_link: string | null;
   notes: string | null;
+  /** Free-text name of a teacher confirmed for a trial but not yet added as a real teacher record. */
+  pending_teacher_name: string | null;
   created_at: string;
 }
 

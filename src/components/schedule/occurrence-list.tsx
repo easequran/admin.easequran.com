@@ -45,6 +45,8 @@ export function OccurrenceList({
     isMakeup?: boolean;
     studentName?: string;
     teacherName?: string;
+    /** Confirmed teacher's name for a trial that has no real teacher record yet (is_trial && !teacherName). */
+    pendingTeacherName?: string;
     leadId?: string;
     leadConverted?: boolean;
   }[];
@@ -89,11 +91,18 @@ export function OccurrenceList({
                     </Badge>
                   )}
                 </div>
-                {o.teacherName && (
+                {o.teacherName ? (
                   <div className="mt-1 flex items-center gap-2 text-sm text-slate-600">
                     <GraduationCap className="h-4 w-4 shrink-0 text-slate-400" />
                     {o.teacherName}
                   </div>
+                ) : (
+                  o.is_trial && (
+                    <div className="mt-1 flex items-center gap-2 text-sm text-amber-700">
+                      <GraduationCap className="h-4 w-4 shrink-0 text-amber-500" />
+                      {o.pendingTeacherName ? `Confirmed: ${o.pendingTeacherName} (not added)` : "No teacher assigned"}
+                    </div>
+                  )
                 )}
               </>
             ) : (

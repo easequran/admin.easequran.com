@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/data/profile";
-import { Label, Select } from "@/components/ui/input";
+import { Input, Label, Select } from "@/components/ui/input";
 import { FutureDateTimeInput } from "@/components/ui/future-datetime-input";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { ActionForm } from "@/components/ui/action-form";
@@ -30,7 +30,8 @@ export default async function NewTrialPage({
         <LeadTimezoneFields leads={leads ?? []} defaultLeadId={leadId} />
         <div>
           <Label htmlFor="teacher_id">Teacher</Label>
-          <Select id="teacher_id" name="teacher_id" required>
+          <Select id="teacher_id" name="teacher_id" defaultValue="">
+            <option value="">Not decided yet</option>
             {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             {(teachers as any[] | null)?.map((t) => (
               <option key={t.id} value={t.id}>
@@ -38,6 +39,18 @@ export default async function NewTrialPage({
               </option>
             ))}
           </Select>
+          <p className="mt-1 text-xs text-slate-500">
+            Don&apos;t know who&apos;s teaching yet? Leave this as &quot;Not decided yet&quot; and assign a
+            teacher later, once confirmed.
+          </p>
+        </div>
+        <div>
+          <Label htmlFor="pending_teacher_name">Confirmed teacher, not added to the app yet?</Label>
+          <Input id="pending_teacher_name" name="pending_teacher_name" placeholder="Their name (optional)" />
+          <p className="mt-1 text-xs text-slate-500">
+            Only used when &quot;Teacher&quot; above is left as &quot;Not decided yet&quot; -- keeps a note
+            of who was confirmed until you add them as a real teacher and assign them here.
+          </p>
         </div>
         <div>
           <Label htmlFor="start_at_local">Date & time</Label>
