@@ -448,3 +448,105 @@ export async function scheduleMakeupClass(
   revalidatePath("/schedule");
   revalidatePath(`/students/${studentId}`);
 }
+
+/** Reschedules an existing makeup class (teacher/time/duration), mirroring updateTrialClass. */
+export async function updateMakeupClass(occurrenceId: string, formData: FormData) {
+  await requireAdmin();
+  const supabase = await createClient();
+
+  const teacherId = String(formData.get("teacher_id"));
+  const startAtLocal = String(formData.get("start_at_local"));
+  const timezone = String(formData.get("timezone"));
+  const durationMinutes = Number(formData.get("duration_minutes") || 30);
+
+  const { DateTime } = await import("luxon");
+  const startAt = DateTime.fromISO(startAtLocal, { zone: timezone });
+  const endAt = startAt.plus({ minutes: durationMinutes });
+
+  const conflict = await hasConflict({
+    teacherId,
+    startAt: startAt.toUTC().toISO()!,
+    endAt: endAt.toUTC().toISO()!,
+    excludeOccurrenceId: occurrenceId,
+  });
+  if (conflict) {
+    redirect(`/schedule/makeup/${occurrenceId}?error=${encodeURIComponent("Teacher already has a class at that time.")}`);
+  }
+
+  const { data: existing } = await supabase
+    .from("class_occurrences")
+    .select("calendar_event_id, student_id")
+    .eq("id", occurrenceId)
+    .eq("is_trial", false)
+    .is("recurring_schedule_id", null)
+    .single();
+  if (!existing) redirect("/schedule");
+
+  const { error } = await supabase
+    .from("class_occurrences")
+    .update({
+      teacher_id: teacherId,
+      start_at: startAt.toUTC().toISO()!,
+      end_at: endAt.toUTC().toISO()!,
+    })
+    .eq("id", occurrenceId);
+  if (error) throw new Error(error.message);
+
+  const [{ data: student }, { data: teacher }] = await Promise.all([
+    existing.student_id
+      ? supabase
+          .from("students")
+          .select("full_name, guardian_email, profiles(email)")
+          .eq("id", existing.student_id)
+          .single()
+      : Promise.resolve({ data: null }),
+    supabase.from("teachers").select("profiles(full_name, email)").eq("id", teacherId).single(),
+  ]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const studentEmail = (student as any)?.profiles?.email ?? (student as any)?.guardian_email;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const teacherProfile = (teacher as any)?.profiles;
+
+  if (existing.calendar_event_id) {
+    await updateCalendarEvent(existing.calendar_event_id, {
+      summary: `Makeup class: ${student?.full_name ?? "Student"} with ${teacherProfile?.full_name ?? "Teacher"}`,
+      startAtUtcIso: startAt.toUTC().toISO()!,
+      endAtUtcIso: endAt.toUTC().toISO()!,
+      attendeeEmails: [teacherProfile?.email, studentEmail].filter(Boolean) as string[],
+    }).catch((err) => console.error("Failed to update Google Calendar event", err));
+  }
+
+  revalidatePath("/schedule");
+  revalidatePath("/dashboard");
+  revalidatePath(`/schedule/makeup/${occurrenceId}`);
+  redirect(withToast("/schedule", "Makeup class updated"));
+}
+
+/** Permanently removes a makeup class booking from the schedule entirely, not just marking it cancelled. */
+export async function deleteMakeupClass(occurrenceId: string) {
+  await requireAdmin();
+  const supabase = await createClient();
+
+  const { data: occurrence } = await supabase
+    .from("class_occurrences")
+    .select("calendar_event_id")
+    .eq("id", occurrenceId)
+    .eq("is_trial", false)
+    .is("recurring_schedule_id", null)
+    .single();
+  if (occurrence?.calendar_event_id) {
+    await deleteCalendarEvent(occurrence.calendar_event_id).catch(() => {});
+  }
+
+  const { error } = await supabase
+    .from("class_occurrences")
+    .delete()
+    .eq("id", occurrenceId)
+    .eq("is_trial", false)
+    .is("recurring_schedule_id", null);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/schedule");
+  revalidatePath("/dashboard");
+  redirect(withToast("/schedule", "Makeup class deleted"));
+}

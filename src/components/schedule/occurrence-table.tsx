@@ -31,11 +31,19 @@ const statusTone: Record<OccurrenceStatus, "neutral" | "success" | "warning" | "
   rescheduled: "warning",
 };
 
+/** Where a row's name should link to for editing, per occurrence type -- undefined for a
+ * recurring class, which has no dedicated edit page yet. */
+function editHrefFor(o: { id: string; is_trial: boolean; isMakeup?: boolean }): string | undefined {
+  if (o.is_trial) return `/trials/${o.id}`;
+  if (o.isMakeup) return `/schedule/makeup/${o.id}`;
+  return undefined;
+}
+
 /** Same data/behavior as OccurrenceList, laid out as a proper table (Student / Teacher / Date & time / Status) to match the Students/Teachers/Leads tables. */
 export function OccurrenceTable({
   occurrences,
   viewerTimezone,
-  editBasePath,
+  canManage = false,
   showStatusActions = false,
 }: {
   occurrences: {
@@ -51,7 +59,8 @@ export function OccurrenceTable({
     leadConverted?: boolean;
   }[];
   viewerTimezone: string;
-  editBasePath?: string;
+  /** When true, a trial or makeup row's name links to its edit page (recurring classes have no edit page yet). */
+  canManage?: boolean;
   showStatusActions?: boolean;
 }) {
   const [now, setNow] = useState(() => DateTime.now());
@@ -84,12 +93,13 @@ export function OccurrenceTable({
             // student their own schedule (their name would be redundant) --
             // fall back to "With {teacher}" in that one case.
             const label = o.studentName !== undefined ? o.studentName || "Trial" : `With ${o.teacherName ?? "—"}`;
+            const href = canManage ? editHrefFor(o) : undefined;
             return (
               <tr key={o.id} className={tableRowClass(i)}>
                 <td className={TABLE_CELL_CLASS}>
                   <div className="flex items-center gap-2 font-medium text-primary-900">
-                    {editBasePath ? (
-                      <Link href={`${editBasePath}/${o.id}`} prefetch={false} className="hover:underline">
+                    {href ? (
+                      <Link href={href} prefetch={false} className="hover:underline">
                         {label}
                       </Link>
                     ) : (

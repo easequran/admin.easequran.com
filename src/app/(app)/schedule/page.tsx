@@ -90,13 +90,13 @@ export default async function SchedulePage({
       )}
 
       <SectionCard icon={CalendarDays} tone="danger" title={`Today (${todayStartLocal.toFormat("EEEE, MMMM d")})`}>
-        <OccurrenceTable occurrences={todayClasses} viewerTimezone={profile.timezone} />
+        <OccurrenceTable occurrences={todayClasses} viewerTimezone={profile.timezone} canManage={isAdmin} />
       </SectionCard>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <SectionCard icon={CalendarClock} tone="info" title={`Upcoming classes (${profile.timezone})`}>
-            <OccurrenceTable occurrences={mapped} viewerTimezone={profile.timezone} />
+            <OccurrenceTable occurrences={mapped} viewerTimezone={profile.timezone} canManage={isAdmin} />
           </SectionCard>
         </div>
 

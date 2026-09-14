@@ -72,7 +72,7 @@ export default async function TrialsPage({
       </div>
 
       <SectionCard icon={CalendarClock} tone="accent" title="Trial bookings">
-        <OccurrenceList occurrences={mapped} viewerTimezone={profile.timezone} editBasePath="/trials" showStatusActions />
+        <OccurrenceList occurrences={mapped} viewerTimezone={profile.timezone} canManage showStatusActions />
       </SectionCard>
 
       <Pagination

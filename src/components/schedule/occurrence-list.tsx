@@ -22,10 +22,18 @@ const statusTone: Record<OccurrenceStatus, "neutral" | "success" | "warning" | "
   rescheduled: "warning",
 };
 
+/** Where a row's name should link to for editing, per occurrence type -- undefined for a
+ * recurring class, which has no dedicated edit page yet. */
+function editHrefFor(o: { id: string; is_trial: boolean; isMakeup?: boolean }): string | undefined {
+  if (o.is_trial) return `/trials/${o.id}`;
+  if (o.isMakeup) return `/schedule/makeup/${o.id}`;
+  return undefined;
+}
+
 export function OccurrenceList({
   occurrences,
   viewerTimezone,
-  editBasePath,
+  canManage = false,
   showStatusActions = false,
 }: {
   occurrences: {
@@ -41,8 +49,8 @@ export function OccurrenceList({
     leadConverted?: boolean;
   }[];
   viewerTimezone: string;
-  /** When provided, each row's name links to `${editBasePath}/${id}` for editing. */
-  editBasePath?: string;
+  /** When true, a trial or makeup row's name links to its edit page (recurring classes have no edit page yet). */
+  canManage?: boolean;
   /** Show Completed / Didn't show / Cancel quick actions on scheduled rows (trials only). */
   showStatusActions?: boolean;
 }) {
@@ -102,11 +110,12 @@ export function OccurrenceList({
           </>
         );
 
+        const href = canManage ? editHrefFor(o) : undefined;
         return (
           <li key={o.id} className="flex flex-col gap-2 py-3.5 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-3">
             <div className="min-w-0">
-              {editBasePath ? (
-                <Link href={`${editBasePath}/${o.id}`} prefetch={false} className="hover:underline">
+              {href ? (
+                <Link href={href} prefetch={false} className="hover:underline">
                   {label}
                 </Link>
               ) : (
