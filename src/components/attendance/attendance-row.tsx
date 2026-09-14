@@ -169,7 +169,11 @@ export function AttendanceRow({
             <form
               action={async (formData) => {
                 try {
-                  await scheduleMakeupClass(studentId!, teacherId!, occurrenceId, formData);
+                  const result = await scheduleMakeupClass(studentId!, teacherId!, occurrenceId, formData);
+                  if (result?.error) {
+                    toast.error(result.error);
+                    return;
+                  }
                   toast.success(`Makeup class scheduled for ${studentName}`);
                   setSchedulingMakeup(false);
                 } catch (err) {

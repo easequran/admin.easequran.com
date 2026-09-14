@@ -362,7 +362,7 @@ export async function scheduleMakeupClass(
   teacherId: string,
   sourceOccurrenceId: string,
   formData: FormData,
-) {
+): Promise<{ error?: string }> {
   await requireAdmin();
   const supabase = await createClient();
 
@@ -376,11 +376,18 @@ export async function scheduleMakeupClass(
 
   // A makeup class is scheduled forward only -- server backstop for the
   // client `min` (2-minute grace for clock skew).
+  //
+  // This is called directly from a client event handler (not through a
+  // <form>/useActionState), so a thrown Error's message never reaches the
+  // browser in production -- Next.js redacts it to a generic "Server
+  // Components render" message. Returning { error } as normal data (same
+  // idea as lib/actions/form-actions.ts's toState) is what actually lets
+  // the admin see why the booking failed.
   if (!startAt.isValid) {
-    throw new Error("Enter a valid date and time for the makeup class.");
+    return { error: "Enter a valid date and time for the makeup class." };
   }
   if (startAt.toUTC() < DateTime.utc().minus({ minutes: 2 })) {
-    throw new Error("That time is in the past — pick a future date and time.");
+    return { error: "That time is in the past — pick a future date and time." };
   }
 
   const conflict = await hasConflict({
@@ -389,7 +396,7 @@ export async function scheduleMakeupClass(
     endAt: endAt.toUTC().toISO()!,
   });
   if (conflict) {
-    throw new Error("Teacher already has a class at that time.");
+    return { error: "Teacher already has a class at that time." };
   }
 
   const { data: occurrence, error } = await supabase
@@ -404,7 +411,7 @@ export async function scheduleMakeupClass(
     })
     .select("id")
     .single();
-  if (error) throw new Error(error.message);
+  if (error) return { error: error.message };
 
   const [{ data: student }, { data: teacher }] = await Promise.all([
     supabase.from("students").select("full_name, guardian_email, profiles(email)").eq("id", studentId).single(),
@@ -447,6 +454,7 @@ export async function scheduleMakeupClass(
   revalidatePath("/attendance");
   revalidatePath("/schedule");
   revalidatePath(`/students/${studentId}`);
+  return {};
 }
 
 /** Reschedules an existing makeup class (teacher/time/duration), mirroring updateTrialClass. */
