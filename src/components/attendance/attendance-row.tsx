@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { formatInZone } from "@/lib/utils/timezone";
 import { markAttendance, updateAttendanceNote } from "@/lib/actions/attendance";
-import { scheduleMakeupClass } from "@/lib/actions/schedule";
+import { scheduleMakeupClass, deleteMakeupClass } from "@/lib/actions/schedule";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/input";
 import { Label, Select } from "@/components/ui/input";
@@ -11,9 +12,10 @@ import { FutureDateTimeInput } from "@/components/ui/future-datetime-input";
 import { TimezoneSelect } from "@/components/ui/timezone-select";
 import { Button } from "@/components/ui/button";
 import { SubmitButton } from "@/components/ui/submit-button";
+import { ConfirmButton } from "@/components/ui/confirm-button";
 import { FOCUS_RING } from "@/lib/utils/focus";
 import { toast } from "@/lib/toast";
-import { CalendarPlus } from "lucide-react";
+import { CalendarPlus, Pencil } from "lucide-react";
 import type { AttendanceStatus } from "@/lib/types/database";
 
 const OPTIONS: { value: AttendanceStatus; label: string }[] = [
@@ -137,6 +139,29 @@ export function AttendanceRow({
           </form>
         )}
       </div>
+
+      {isMakeup && canScheduleMakeup && (
+        <div className="flex items-center gap-3 pl-1">
+          <Link
+            href={`/schedule/makeup/${occurrenceId}`}
+            className={`flex items-center gap-1 rounded text-xs font-medium text-primary-700 hover:underline ${FOCUS_RING}`}
+          >
+            <Pencil className="h-3.5 w-3.5" /> Edit makeup class
+          </Link>
+          <ConfirmButton
+            action={deleteMakeupClass.bind(null, occurrenceId)}
+            variant="ghost"
+            size="sm"
+            triggerClassName="h-auto p-0 text-xs font-medium text-red-600 hover:bg-transparent hover:underline"
+            title="Delete this makeup class?"
+            confirmText="Delete makeup class"
+            errorToast="Failed to delete makeup class"
+            body="This removes the makeup booking entirely, along with its calendar invite. This can't be undone."
+          >
+            Delete
+          </ConfirmButton>
+        </div>
+      )}
 
       {currentStatus &&
         (editingNote ? (
