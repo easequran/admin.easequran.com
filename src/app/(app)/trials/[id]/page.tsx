@@ -55,22 +55,26 @@ export default async function EditTrialPage({
         backLabel="Back to Trial classes"
         actions={
           occurrence.status === "scheduled" ? (
-            <ConfirmButton
-              action={boundCancel}
-              title="Cancel this trial class?"
-              confirmText="Cancel trial"
-              confirmingText="Cancelling…"
-              errorToast="Failed to cancel trial"
-              body={
-                <>
-                  The booking is marked cancelled and its calendar invite is removed. Unless the lead
-                  is already converted, they&apos;re moved to the &quot;lost&quot; stage. You can
-                  book a new trial for them afterwards.
-                </>
-              }
-            >
-              Cancel trial
-            </ConfirmButton>
+            <>
+              <ConfirmButton
+                action={boundCancel}
+                variant="outline"
+                title="Cancel this trial class?"
+                confirmText="Cancel trial"
+                confirmingText="Cancelling…"
+                errorToast="Failed to cancel trial"
+                body={
+                  <>
+                    The booking is marked cancelled and its calendar invite is removed. Unless the lead
+                    is already converted, they&apos;re moved to the &quot;lost&quot; stage. The record stays
+                    in the trials list, and you can book a new trial for them afterwards.
+                  </>
+                }
+              >
+                Cancel trial
+              </ConfirmButton>
+              <DeleteTrialButton occurrenceId={id} />
+            </>
           ) : (
             <DeleteTrialButton occurrenceId={id} />
           )

@@ -358,7 +358,7 @@ export async function deleteTrialClass(occurrenceId: string) {
 
   const { data: occurrence } = await supabase
     .from("class_occurrences")
-    .select("calendar_event_id")
+    .select("calendar_event_id, lead_id")
     .eq("id", occurrenceId)
     .eq("is_trial", true)
     .single();
@@ -368,6 +368,18 @@ export async function deleteTrialClass(occurrenceId: string) {
 
   const { error } = await supabase.from("class_occurrences").delete().eq("id", occurrenceId).eq("is_trial", true);
   if (error) throw new Error(error.message);
+
+  // Deleting a still-scheduled trial (the direct-delete shortcut, skipping
+  // Cancel) needs the same lead-status handling Cancel does -- otherwise
+  // the lead is left stuck on "trial_scheduled" for a trial that no longer
+  // exists.
+  if (occurrence?.lead_id) {
+    const { data: lead } = await supabase.from("leads").select("status").eq("id", occurrence.lead_id).single();
+    if (lead?.status !== "converted") {
+      await supabase.from("leads").update({ status: "lost" }).eq("id", occurrence.lead_id);
+      revalidatePath("/leads");
+    }
+  }
 
   revalidatePath("/trials");
   redirect(withToast("/trials", "Trial class deleted"));

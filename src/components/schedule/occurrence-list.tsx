@@ -159,14 +159,24 @@ export function OccurrenceList({
                   </form>
                   <ConfirmButton
                     action={updateOccurrenceStatus.bind(null, o.id, "cancelled")}
+                    variant="outline"
                     title="Cancel this trial?"
                     confirmText="Cancel trial"
                     confirmingText="Cancelling…"
                     successToast="Trial cancelled"
                     errorToast="Failed to cancel trial"
-                    body="The booking is marked cancelled and its calendar invite removed. Unless the lead is already converted, they're moved to the 'lost' stage."
+                    body="The booking is marked cancelled and its calendar invite removed. Unless the lead is already converted, they're moved to the 'lost' stage. The record stays in the trials list."
                   >
                     Cancel
+                  </ConfirmButton>
+                  <ConfirmButton
+                    action={deleteTrialClass.bind(null, o.id)}
+                    title="Delete this trial permanently?"
+                    confirmText="Delete trial"
+                    errorToast="Failed to delete trial"
+                    body="This removes the trial booking from the list entirely, along with its calendar invite. Unless the lead is already converted, they're moved to the 'lost' stage. This can't be undone."
+                  >
+                    Delete
                   </ConfirmButton>
                 </div>
               ) : o.status === "completed" && o.leadId && !o.leadConverted ? (
