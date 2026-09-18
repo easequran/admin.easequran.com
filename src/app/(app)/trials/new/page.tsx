@@ -18,7 +18,11 @@ export default async function NewTrialPage({
   const supabase = await createClient();
 
   const [{ data: leads }, { data: teachers }] = await Promise.all([
-    supabase.from("leads").select("id, full_name, timezone").not("status", "in", "(converted,lost)"),
+    supabase
+      .from("leads")
+      .select("id, full_name, timezone")
+      .not("status", "in", "(converted,lost)")
+      .order("created_at", { ascending: false }),
     supabase.from("teachers").select("id, profiles(full_name)").eq("active", true),
   ]);
 
