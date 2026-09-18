@@ -8,8 +8,7 @@ import { scheduleMakeupClass, deleteMakeupClass } from "@/lib/actions/schedule";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/input";
 import { Label, Select } from "@/components/ui/input";
-import { FutureDateTimeInput } from "@/components/ui/future-datetime-input";
-import { TimezoneSelect } from "@/components/ui/timezone-select";
+import { DateTimeTimezoneFields } from "@/components/ui/datetime-timezone-fields";
 import { Button } from "@/components/ui/button";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { ConfirmButton } from "@/components/ui/confirm-button";
@@ -235,14 +234,15 @@ export function AttendanceRow({
               }}
               className="flex flex-wrap items-end gap-2 rounded-lg border border-primary-100 bg-primary-50/50 p-3"
             >
-              <div>
-                <Label htmlFor={`makeup-time-${occurrenceId}`}>Date & time</Label>
-                <FutureDateTimeInput id={`makeup-time-${occurrenceId}`} name="start_at_local" required className="w-56" />
-              </div>
-              <div>
-                <Label htmlFor={`makeup-tz-${occurrenceId}`}>Timezone</Label>
-                <TimezoneSelect name="timezone" defaultValue={studentTimezone ?? viewerTimezone} required />
-              </div>
+              <DateTimeTimezoneFields
+                dateTimeId={`makeup-time-${occurrenceId}`}
+                dateTimeName="start_at_local"
+                dateTimeClassName="w-56"
+                dateTimeLabel="Date & time"
+                timezoneName="timezone"
+                timezoneLabel="Timezone"
+                defaultTimezone={studentTimezone ?? viewerTimezone}
+              />
               <div>
                 <Label htmlFor={`makeup-dur-${occurrenceId}`}>Duration</Label>
                 <Select id={`makeup-dur-${occurrenceId}`} name="duration_minutes" defaultValue="30" className="w-32">

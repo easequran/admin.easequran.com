@@ -2,8 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/data/profile";
 import { SectionCard } from "@/components/ui/section-card";
 import { Label, Select } from "@/components/ui/input";
-import { FutureDateTimeInput } from "@/components/ui/future-datetime-input";
-import { TimezoneSelect } from "@/components/ui/timezone-select";
+import { DateTimeTimezoneFields } from "@/components/ui/datetime-timezone-fields";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { updateMakeupClass, deleteMakeupClass } from "@/lib/actions/schedule";
@@ -85,14 +84,13 @@ export default async function EditMakeupClassPage({
               ))}
             </Select>
           </div>
-          <div>
-            <Label htmlFor="start_at_local">Date & time</Label>
-            <FutureDateTimeInput id="start_at_local" name="start_at_local" defaultValue={startLocal} required />
-          </div>
-          <div>
-            <Label htmlFor="timezone">That time is in timezone</Label>
-            <TimezoneSelect name="timezone" defaultValue={timezone} required />
-          </div>
+          <DateTimeTimezoneFields
+            dateTimeId="start_at_local"
+            dateTimeName="start_at_local"
+            defaultDateTime={startLocal}
+            timezoneName="timezone"
+            defaultTimezone={timezone}
+          />
           <div>
             <Label htmlFor="duration_minutes">Duration</Label>
             <Select id="duration_minutes" name="duration_minutes" defaultValue={String(durationMinutes)}>

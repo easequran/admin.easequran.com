@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/data/profile";
 import { Input, Label, Select } from "@/components/ui/input";
-import { FutureDateTimeInput } from "@/components/ui/future-datetime-input";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { ActionForm } from "@/components/ui/action-form";
 import { bookTrialAction } from "@/lib/actions/form-actions";
@@ -51,10 +50,6 @@ export default async function NewTrialPage({
             Only used when &quot;Teacher&quot; above is left as &quot;Not decided yet&quot; -- keeps a note
             of who was confirmed until you add them as a real teacher and assign them here.
           </p>
-        </div>
-        <div>
-          <Label htmlFor="start_at_local">Date & time</Label>
-          <FutureDateTimeInput id="start_at_local" name="start_at_local" required />
         </div>
         <div>
           <Label htmlFor="duration_minutes">Duration</Label>
